@@ -18,7 +18,7 @@ export class Vault {
     public settings: Settings;
     public files: { [key: string]: Classe } = {};
 
-    public static classes: { [key: string]: typeof Classe };
+    public static classes: { [key: string]: typeof Classe } = {};
     private static dynamicClassFactory: DynamicClassFactory | null = null;
 
     constructor(app: IApp, settings: Settings) {
