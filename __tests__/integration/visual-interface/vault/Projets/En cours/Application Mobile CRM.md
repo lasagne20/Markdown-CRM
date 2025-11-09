@@ -4,25 +4,33 @@ nom: Application Mobile CRM
 description: Développement d'une application mobile pour la gestion client
 statut: En cours
 priorite: +++++
-dateDebut: 2025-11-15
+dateDebut: 2025-11-10 to 2025-11-14
 dateFin: 2026-03-01
-responsable: [[Pierre Durand]]
-budget: 45000
-budgetUtilise: 0
-pourcentageCompletion: 0
-client: [[Jean Dupont]]
+responsable: [[/Clients/Freelance/Pierre Durand.md|Pierre Durand]]
+budget: 41008 €
+budgetUtilise: 170
+pourcentageCompletion: 450
+client: "https://exemple.com/client/jean-dupont"
 dateFinReelle: 2025-11-05
-equipe: 
-tags: []
-fichiers: 
-demarrer: 
-mettrePause: 
-reprendre: 
-terminer: 
-genererRapport: 
-budgetRestant: 
-dureeEnJours: 
-retard: 
+equipe:
+  - "[[/Clients/Startups/Marie Martin.md|Marie Martin]]"
+  - "[[/Clients/Freelance/Pierre Durand.md|Pierre Durand]]"
+  - "[[/Projets/En cours/Site Web Entreprise.md|Site Web Entreprise]]"
+tags:
+  - Web
+  - Desktop
+  - Marketing
+fichiers:
+  - "[[/Projets/En cours/Site Web Entreprise.md|Site Web Entreprise]]"
+  - "[[/Projets/En cours/Application Mobile CRM.md|Application Mobile CRM]]"
+demarrer: []
+mettrePause: []
+reprendre: []
+terminer: []
+genererRapport: []
+budgetRestant: []
+dureeEnJours: []
+retard: []
 ---
 
 # Application Mobile CRM

@@ -2,7 +2,6 @@ import { File } from "../vault/File";
 import { Property } from "./Property";
 import { Classe } from "../vault/Classe";
 import { LinkProperty } from "./LinkProperty";
-import { val } from "cheerio/dist/commonjs/api/attributes";
 import { Vault } from "../vault/Vault";
 
 
@@ -54,12 +53,14 @@ export class FileProperty extends LinkProperty{
 
     // If readLinkFile returned a path and the file exists in the vault, use it.
     if (filePath) {
-      return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+      return this.vault.app.getUrl(filePath);
     }
-
-    // Fallback: extract the name only from the link
-    const nameOnly = this.vault.readLinkFile(value);
-    return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(nameOnly)}`;
+    // Fallback: generate obsidian URL with filename
+    const fileName = this.vault.readLinkFile(value, false);
+    if (fileName) {
+      return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(fileName)}`;
+    }
+    return ""
    }
   
    override createIconContainer(update: (value: string) => Promise<void>) {
@@ -83,10 +84,13 @@ export class FileProperty extends LinkProperty{
         let selectedFileObj = await this.vault.app.selectFile(this.vault, this.classes, {hint:"Choisissez un fichier " + this.getClasses().join(" ou ")});
         if (selectedFileObj){
           const selectedFile = selectedFileObj.getLink();
-          await update(selectedFile)
-          const link = (event.target as HTMLElement).closest('.metadata-field')?.querySelector('.field-link') as HTMLElement;
+          await update(selectedFile);
+          const link = (event.target as HTMLElement).closest('.metadata-field')?.querySelector('.field-link') as HTMLAnchorElement;
             if (link) {
-              link.textContent = selectedFile.slice(2, -2);
+              // Utiliser getPretty pour extraire le nom à afficher correctement
+              link.textContent = this.getPretty(selectedFile);
+              // Mettre à jour l'URL du lien
+              link.href = this.getLink(selectedFile);
             }
         }
     }

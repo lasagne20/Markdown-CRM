@@ -161,16 +161,14 @@ describe('PhoneProperty', () => {
 
     describe('getLink', () => {
         it('should generate callto links', () => {
-            // The actual implementation only removes the first dot
-            expect(phoneProperty.getLink('01.23.45.67.89')).toBe('callto:0123.45.67.89');
-            expect(phoneProperty.getLink('06.12.34.56.78')).toBe('callto:0612.34.56.78');
+            expect(phoneProperty.getLink('01.23.45.67.89')).toBe('callto:0123456789');
+            expect(phoneProperty.getLink('06.12.34.56.78')).toBe('callto:0612345678');
             expect(phoneProperty.getLink('0987654321')).toBe('callto:0987654321');
         });
 
-        it('should handle formatted numbers by removing first dot only', () => {
-            // The getLink method only removes the first dot, which is a quirk of the implementation
-            expect(phoneProperty.getLink('01.23.45.67.89')).toBe('callto:0123.45.67.89');
-            expect(phoneProperty.getLink('06.78.90.12.34')).toBe('callto:0678.90.12.34');
+        it('should handle formatted numbers', () => {
+            expect(phoneProperty.getLink('01.23.45.67.89')).toBe('callto:0123456789');
+            expect(phoneProperty.getLink('06.78.90.12.34')).toBe('callto:0678901234');
         });
 
         it('should handle unformatted numbers', () => {
@@ -196,7 +194,7 @@ describe('PhoneProperty', () => {
             const link = phoneProperty.createFieldLink('01.23.45.67.89');
             
             expect(link.tagName).toBe('A');
-            expect(link.href).toBe('callto:0123.45.67.89');
+            expect(link.href).toBe('callto:0123456789');
             expect(link.classList.contains('field-link')).toBe(true);
         });
 
@@ -204,7 +202,7 @@ describe('PhoneProperty', () => {
             const phoneNumber = '06.12.34.56.78';
             const link = phoneProperty.createFieldLink(phoneNumber);
             
-            expect(link.href).toBe('callto:0612.34.56.78');
+            expect(link.href).toBe('callto:0612345678');
             expect(link.textContent).toContain('06.12.34.56.78');
         });
     });
@@ -223,7 +221,7 @@ describe('PhoneProperty', () => {
             
             // Create callto link
             const calltoLink = phoneProperty.getLink(validatedPhone);
-            expect(calltoLink).toBe('callto:0123.45.67.89');
+            expect(calltoLink).toBe('callto:0123456789');
         });
 
         it('should handle invalid phone in workflow', () => {
@@ -272,7 +270,7 @@ describe('PhoneProperty', () => {
             // Should contain phone-specific elements
             const link = display.querySelector('a');
             expect(link).toBeTruthy();
-            expect(link?.href).toBe('callto:0123.45.67.89');
+            expect(link?.href).toBe('callto:0123456789');
         });
 
         it('should handle phone field interactions', () => {
@@ -284,7 +282,7 @@ describe('PhoneProperty', () => {
             expect(validatedPhone).toBe('06.12.34.56.78');
             
             const link = phoneProperty.createFieldLink(validatedPhone);
-            expect(link.href).toBe('callto:0612.34.56.78');
+            expect(link.href).toBe('callto:0612345678');
             
             // Test context menu (copy functionality)
             link.textContent = phoneNumber;

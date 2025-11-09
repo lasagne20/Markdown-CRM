@@ -1,13 +1,14 @@
 import { FormulaProperty } from './FormulaProperty.js';
 import { Property } from './Property.js';
 export class NumberProperty extends Property {
-    constructor(name, vault, unit = "", args = { icon: "", static: true }) {
+    constructor(name, vault, unit = "", args = {}) {
         super(name, vault, args);
         this.unit = "";
         this.type = "number";
         this.formulaProperty = null;
+        this.static = args.static || false; // Initialiser explicitement à false si non défini
         if (args.formula) {
-            this.formulaProperty = new FormulaProperty(name, vault, args.formula, { icon: args.icon, static: args.static, write: true });
+            this.formulaProperty = new FormulaProperty(name, vault, args.formula, { icon: args.icon || "", static: args.static, write: true });
         }
         this.unit = unit;
     }
@@ -19,7 +20,11 @@ export class NumberProperty extends Property {
         // Convert to string if not already
         const stringValue = String(value);
         // Trim whitespace
-        const trimmedValue = stringValue.trim();
+        let trimmedValue = stringValue.trim();
+        // Retirer l'unité si présente à la fin
+        if (this.unit && trimmedValue.endsWith(this.unit)) {
+            trimmedValue = trimmedValue.slice(0, -this.unit.length).trim();
+        }
         // Return empty string for empty or whitespace-only input
         if (!trimmedValue) {
             return "";
@@ -36,14 +41,36 @@ export class NumberProperty extends Property {
         }
         return numberValue.toString();
     }
+    async read(file) {
+        const value = await super.read(file);
+        // Retirer l'unité si elle est présente dans la valeur lue
+        if (value && this.unit) {
+            const stringValue = String(value).trim();
+            if (stringValue.endsWith(this.unit)) {
+                return stringValue.slice(0, -this.unit.length).trim();
+            }
+        }
+        return value;
+    }
     async getDisplay(file, args = { staticMode: false, title: "" }) {
         this.static = args.staticMode ? true : this.static;
         this.title = args.title ? args.title : "";
-        let value = this.read(file);
+        let value = await this.read(file);
         if (!value && this.formulaProperty) {
-            value = this.formulaProperty.read(file);
+            value = await this.formulaProperty.read(file);
         }
-        return this.fillDisplay(value, async (value) => await file.updateMetadata(this.name, value));
+        // Wrapper l'update pour ajouter l'unité avant d'écrire
+        const wrappedUpdate = async (value) => {
+            if (value && this.unit) {
+                const numValue = this.validate(value);
+                if (numValue) {
+                    await file.updateMetadata(this.name, `${numValue} ${this.unit}`);
+                    return;
+                }
+            }
+            await file.updateMetadata(this.name, value);
+        };
+        return this.fillDisplay(value, wrappedUpdate);
     }
     fillDisplay(value, update) {
         const field = this.createFieldContainer();

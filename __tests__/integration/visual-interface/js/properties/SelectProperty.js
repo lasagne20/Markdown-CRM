@@ -9,7 +9,7 @@ export class SelectProperty extends Property {
         const field = this.createFieldContainer();
         console.log("Options :", this.options);
         const fieldContainer = document.createElement("div");
-        fieldContainer.classList.add("metadata-field");
+        fieldContainer.classList.add("field-container-column");
         const iconContainer = this.createIconContainer(update);
         fieldContainer.appendChild(iconContainer);
         if (this.title) {

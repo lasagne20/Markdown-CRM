@@ -65,7 +65,7 @@ describe('RatingProperty', () => {
         });
 
         test('should create display with correct structure', () => {
-            const result = ratingProperty.fillDisplay(mockVault, '+++', mockUpdate);
+            const result = ratingProperty.fillDisplay('+++', mockUpdate);
             
             expect(result.classList.contains('metadata-field')).toBe(true);
             
@@ -80,7 +80,7 @@ describe('RatingProperty', () => {
         });
 
         test('should set vault property', () => {
-            ratingProperty.fillDisplay(mockVault, '++', mockUpdate);
+            ratingProperty.fillDisplay('++', mockUpdate);
             
             expect(ratingProperty.vault).toBe(mockVault);
         });
@@ -273,7 +273,7 @@ describe('RatingProperty', () => {
 
         test('should work with complete workflow', async () => {
             // Create full display
-            const display = ratingProperty.fillDisplay(mockVault, '++', mockUpdate);
+            const display = ratingProperty.fillDisplay('++', mockUpdate);
             const starContainer = display.querySelector('.star-rating') as HTMLDivElement;
             
             expect(starContainer).toBeTruthy();
@@ -320,7 +320,7 @@ describe('RatingProperty', () => {
             expect(ratingProperty.previewStars).toHaveBeenCalledWith(container, 3);
             
             // Test mouseleave
-            thirdStar.dispatchEvent(new Event('mouseleave'));
+            container.dispatchEvent(new Event('mouseleave'));
             expect(ratingProperty.previewStars).toHaveBeenCalledWith(container, 2); // Should restore to current rating
         });
     });

@@ -88,11 +88,6 @@ export class ConfigLoader {
      * Create a Property instance from configuration
      */
     createProperty(config) {
-        console.log(`🔧 createProperty appelé pour ${config.name} (${config.type})`, {
-            vaultExiste: !!this.vault,
-            vaultApp: !!this.vault?.app,
-            vaultType: typeof this.vault
-        });
         const options = config.icon ? { icon: config.icon } : {};
         switch (config.type) {
             case 'Property':
@@ -107,10 +102,9 @@ export class ConfigLoader {
                     : { name: opt.name, color: opt.color || '' });
                 return new SelectProperty(config.name, this.vault, selectOptions, options);
             case 'MultiSelectProperty':
-                const multiSelectOptions = (config.options || []).map(opt => ({
-                    name: opt.name,
-                    color: opt.color || ''
-                }));
+                const multiSelectOptions = (config.options || []).map(opt => typeof opt === 'string'
+                    ? { name: opt, color: '' }
+                    : { name: opt.name, color: opt.color || '' });
                 return new MultiSelectProperty(config.name, this.vault, multiSelectOptions, options);
             case 'EmailProperty':
                 return new EmailProperty(config.name, this.vault, options);
@@ -158,7 +152,7 @@ export class ConfigLoader {
             case 'BooleanProperty':
                 return new BooleanProperty(config.name, this.vault, options);
             case 'NumberProperty':
-                return new NumberProperty(config.name, this.vault, '', { icon: config.icon || '', static: true });
+                return new NumberProperty(config.name, this.vault, config.unit || '', { icon: config.icon || '', static: config.static || false });
             case 'SubClassProperty':
                 // This will be handled separately in createSubClassProperty
                 return new Property(config.name, this.vault, options); // Placeholder

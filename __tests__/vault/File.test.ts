@@ -329,7 +329,10 @@ Body content here`;
             await file.updateMetadata('newKey', 'newValue');
             
             expect(mockJsYaml.load).toHaveBeenCalledWith('existing: value');
-            expect(mockJsYaml.dump).toHaveBeenCalledWith({ existing: 'value', newKey: 'newValue' });
+            expect(mockJsYaml.dump).toHaveBeenCalledWith(
+                { existing: 'value', newKey: 'newValue' },
+                { flowLevel: -1, lineWidth: -1, noRefs: true, sortKeys: false }
+            );
             expect(mockApp.writeFile).toHaveBeenCalledWith(mockIFile, expectedNewContent);
             expect(mockApp.waitForFileMetaDataUpdate).toHaveBeenCalledWith(
                 'folder/test.md',
@@ -457,7 +460,10 @@ Body content`;
             
             await file.saveFrontmatter(frontmatter);
             
-            expect(mockJsYaml.dump).toHaveBeenCalledWith(frontmatter);
+            expect(mockJsYaml.dump).toHaveBeenCalledWith(
+                frontmatter,
+                { flowLevel: -1, lineWidth: -1, noRefs: true, sortKeys: false }
+            );
             expect(mockApp.writeFile).toHaveBeenCalledWith(mockIFile, expectedContent);
         });
 
@@ -535,7 +541,10 @@ Content`;
             
             const result = file.formatFrontmatter(frontmatter);
             
-            expect(mockJsYaml.dump).toHaveBeenCalledWith(frontmatter);
+            expect(mockJsYaml.dump).toHaveBeenCalledWith(
+                frontmatter,
+                { flowLevel: -1, lineWidth: -1, noRefs: true, sortKeys: false }
+            );
             expect(result).toBe('testKey: testValue\n');
         });
     });
@@ -583,11 +592,11 @@ Content`;
     });
 
     describe('External references', () => {
-        it('should get from link through vault', () => {
+        it('should get from link through vault', async () => {
             const expectedResult = { path: 'linked/file.md' };
-            mockVault.getFromLink.mockReturnValue(expectedResult);
+            (mockVault.getFromLink as jest.Mock).mockResolvedValue(expectedResult);
             
-            const result = file.getFromLink('[[linked/file]]');
+            const result = await file.getFromLink('[[linked/file]]');
             
             expect(mockVault.getFromLink).toHaveBeenCalledWith('[[linked/file]]');
             expect(result).toBe(expectedResult);

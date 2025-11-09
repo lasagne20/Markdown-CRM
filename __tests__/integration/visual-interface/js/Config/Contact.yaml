@@ -30,19 +30,25 @@ properties:
     required: false
     defaultValue: ""
     
-  - name: entreprise
-    type: TextProperty
-    title: Entreprise
+  - name: infosEntreprise
+    type: ObjectProperty
+    title: Informations entreprise
     icon: 🏢
     required: false
-    defaultValue: ""
-    
-  - name: poste
-    type: TextProperty
-    title: Poste
-    icon: 💼
-    required: false
-    defaultValue: ""
+    display: inline
+    properties:
+      - name: entreprise
+        type: TextProperty
+        title: Nom de l'entreprise
+        icon: 🏢
+        required: false
+        defaultValue: ""
+      - name: poste
+        type: TextProperty
+        title: Poste occupé
+        icon: 💼
+        required: false
+        defaultValue: ""
     
   - name: adresse
     type: AdressProperty

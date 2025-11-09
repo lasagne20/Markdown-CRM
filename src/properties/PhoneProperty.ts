@@ -31,8 +31,8 @@ export class PhoneProperty extends LinkProperty{
       // Remove leading + if present
       cleaned = cleaned.replace(/^\+/, "");
   
-      // Must be exactly 10 digits and start with 0
-      if (cleaned.length !== 10 || !cleaned.startsWith("0")) {
+      // Must be exactly 10 digits
+      if (cleaned.length !== 10) {
           return "";
       }
       
@@ -63,17 +63,17 @@ export class PhoneProperty extends LinkProperty{
       }
     }
     
-    if (cleaned.length === 10 && cleaned.startsWith("0")) {
+    if (cleaned.length === 10) {
       return this.formatPhone(cleaned);
     }
     
-    return value;
+    return "";
  }
 
   override getLink(value : string){
     // Extract only digits for the callto link
-    const cleaned = value?.replace(/[^0-9+]/g, "") || "";
-    return `tel:${cleaned}`;
+    const cleaned = (value?.replace(/[^0-9+]/g, "") || value) ?? 'undefined';
+    return `callto:${cleaned}`;
   }
 
   override createIconContainer(update: (value: string) => Promise<void>) {

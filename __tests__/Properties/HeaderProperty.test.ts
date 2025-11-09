@@ -53,7 +53,7 @@ describe('HearderProperty', () => {
 
         it('should create container with correct structure', () => {
             const mockUpdate = jest.fn();
-            const container = headerProperty.fillDisplay({}, 'Test Header', mockUpdate);
+            const container = headerProperty.fillDisplay('Test Header', mockUpdate);
             
             expect(container.tagName).toBe('DIV');
             expect(container.classList.contains('metadata-headerfield')).toBe(true);
@@ -64,7 +64,7 @@ describe('HearderProperty', () => {
 
         it('should apply custom size to header elements', () => {
             const mockUpdate = jest.fn();
-            const container = headerProperty.fillDisplay({}, 'Test Header', mockUpdate, { size: '3em' });
+            const container = headerProperty.fillDisplay('Test Header', mockUpdate, { size: '3em' });
             
             const link = container.querySelector('.field-headerlink') as HTMLElement;
             const input = container.querySelector('.field-header') as HTMLInputElement;
@@ -75,7 +75,7 @@ describe('HearderProperty', () => {
 
         it('should use default size when no size specified', () => {
             const mockUpdate = jest.fn();
-            const container = headerProperty.fillDisplay({}, 'Test Header', mockUpdate);
+            const container = headerProperty.fillDisplay('Test Header', mockUpdate);
             
             const link = container.querySelector('.field-headerlink') as HTMLElement;
             const input = container.querySelector('.field-header') as HTMLInputElement;

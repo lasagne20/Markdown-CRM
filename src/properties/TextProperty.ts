@@ -1,6 +1,5 @@
 import { LinkProperty } from "./LinkProperty";
 import { Property } from "./Property";
-import axios from 'axios';
 import { IFile } from "../interfaces/IApp";
 import { Vault } from "../vault/Vault";
 
@@ -32,9 +31,17 @@ export class TextProperty extends Property {
   }
 
   override createFieldLink(value: string) {
+    console.log("Name of the property:", this.name);
+    console.log("Creating field link with value:", value);
     const link = document.createElement("div");
-    link.innerHTML = value
-      ? value.replace(/\[\[(.*?)(?:\|(.*?))?\]\]/g, (_, path, alias) => {
+    
+    // Ensure value is a string - handle arrays or other types
+    const stringValue = typeof value === 'string' ? value : 
+                       (Array.isArray(value) ? (value as any[]).join(', ') : 
+                       (value ? String(value) : ''));
+    
+    link.innerHTML = stringValue
+      ? stringValue.replace(/\[\[(.*?)(?:\|(.*?))?\]\]/g, (_match: string, path: string, alias: string) => {
         const display = alias || path;
         return `<strong><a href="#">${display}</a></strong>`;
       })

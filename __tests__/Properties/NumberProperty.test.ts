@@ -292,57 +292,54 @@ describe('NumberProperty', () => {
     });
 
     describe('getDisplay', () => {
-        it('should use regular value when available', () => {
-            numberProperty.read = jest.fn(() => '123');
+        it('should use regular value when available', async () => {
+            numberProperty.read = jest.fn().mockResolvedValue('123');
             numberProperty.fillDisplay = jest.fn(() => document.createElement('div'));
             
-            const result = numberProperty.getDisplay(mockFile, { staticMode: true, title: 'Test Number' });
+            await numberProperty.getDisplay(mockFile, { staticMode: true, title: 'Test Number' });
             
             expect(numberProperty.static).toBe(true);
             expect(numberProperty.title).toBe('Test Number');
             expect(numberProperty.read).toHaveBeenCalledWith(mockFile);
             expect(numberProperty.fillDisplay).toHaveBeenCalledWith(
-                mockFile.vault,
                 '123',
                 expect.any(Function)
             );
         });
 
-        it('should use formula value when regular value not available', () => {
+        it('should use formula value when regular value not available', async () => {
             const mockFormulaProperty = {
-                read: jest.fn(() => '42')
+                read: jest.fn().mockResolvedValue('42')
             };
             
             numberProperty.formulaProperty = mockFormulaProperty as any;
-            numberProperty.read = jest.fn(() => null);
+            numberProperty.read = jest.fn().mockResolvedValue(null);
             numberProperty.fillDisplay = jest.fn(() => document.createElement('div'));
             
-            const result = numberProperty.getDisplay(mockFile);
+            await numberProperty.getDisplay(mockFile);
             
             expect(numberProperty.read).toHaveBeenCalledWith(mockFile);
             expect(mockFormulaProperty.read).toHaveBeenCalledWith(mockFile);
             expect(numberProperty.fillDisplay).toHaveBeenCalledWith(
-                mockFile.vault,
                 '42', // Mock formula result
                 expect.any(Function)
             );
         });
 
-        it('should use regular value when both regular and formula available', () => {
+        it('should use regular value when both regular and formula available', async () => {
             const mockFormulaProperty = {
-                read: jest.fn(() => '42')
+                read: jest.fn().mockResolvedValue('42')
             };
             
             numberProperty.formulaProperty = mockFormulaProperty as any;
-            numberProperty.read = jest.fn(() => '999');
+            numberProperty.read = jest.fn().mockResolvedValue('999');
             numberProperty.fillDisplay = jest.fn(() => document.createElement('div'));
             
-            const result = numberProperty.getDisplay(mockFile);
+            await numberProperty.getDisplay(mockFile);
             
             expect(numberProperty.read).toHaveBeenCalledWith(mockFile);
             expect(mockFormulaProperty.read).not.toHaveBeenCalled();
             expect(numberProperty.fillDisplay).toHaveBeenCalledWith(
-                mockFile.vault,
                 '999',
                 expect.any(Function)
             );
@@ -354,7 +351,7 @@ describe('NumberProperty', () => {
             numberProperty.title = 'Weight';
             const updateFn = jest.fn();
             
-            const result = numberProperty.fillDisplay(mockVault, '150', updateFn);
+            const result = numberProperty.fillDisplay('150', updateFn);
             
             expect(numberProperty.vault).toBe(mockVault);
             expect(result.querySelector('.metadata-title')).toBeTruthy();
@@ -367,7 +364,7 @@ describe('NumberProperty', () => {
             numberProperty.title = '';
             const updateFn = jest.fn();
             
-            const result = numberProperty.fillDisplay(mockVault, '150', updateFn);
+            const result = numberProperty.fillDisplay('150', updateFn);
             
             expect(result.querySelector('.metadata-title')).toBeFalsy();
         });

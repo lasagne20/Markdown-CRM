@@ -175,7 +175,13 @@ export class File {
                 }
                 ;
                 frontmatter[key] = value;
-                const newFrontmatter = dump(frontmatter);
+                // Options pour dump : utiliser le format YAML multi-ligne pour les tableaux
+                const newFrontmatter = dump(frontmatter, {
+                    flowLevel: -1, // Force le format multi-ligne pour les tableaux
+                    lineWidth: -1, // Pas de limite de largeur de ligne
+                    noRefs: true, // Pas de références YAML
+                    sortKeys: false // Garder l'ordre des clés
+                });
                 const newContent = `---\n${newFrontmatter}\n---\n${body}`; //${extraText}
                 await this.vault.app.writeFile(this.file, newContent);
                 await this.vault.app.waitForFileMetaDataUpdate(this.getPath(), key, async () => { return; });
@@ -212,8 +218,13 @@ export class File {
     async saveFrontmatter(frontmatter, extraProperties = []) {
         const fileContent = await this.vault.app.readFile(this.file);
         const { body } = this.extractFrontmatter(fileContent);
-        // Reformater le frontmatter
-        const newFrontmatter = dump(frontmatter);
+        // Reformater le frontmatter avec format YAML multi-ligne
+        const newFrontmatter = dump(frontmatter, {
+            flowLevel: -1,
+            lineWidth: -1,
+            noRefs: true,
+            sortKeys: false
+        });
         const filteredExtraProperties = extraProperties.filter(prop => prop && prop.trim() !== "");
         //const extraText = filteredExtraProperties.length > 0 ? `\n${filteredExtraProperties.join("\n")}` : "";
         // Sauvegarde du fichier
@@ -233,7 +244,12 @@ export class File {
     // Trier les propriétés et identifier celles en surplus
     // Méthode simple pour les tests
     formatFrontmatter(frontmatter) {
-        return dump(frontmatter);
+        return dump(frontmatter, {
+            flowLevel: -1,
+            lineWidth: -1,
+            noRefs: true,
+            sortKeys: false
+        });
     }
     sortFrontmatter(frontmatter, propertiesOrder) {
         let sortedFrontmatter = {};

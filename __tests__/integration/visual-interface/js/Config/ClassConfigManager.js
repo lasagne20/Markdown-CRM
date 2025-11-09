@@ -19,34 +19,11 @@ export class ClassConfigManager {
                 super(vault, file, data);
                 this.name = config.className || className;
                 this.icon = config.classIcon || '📄';
-                console.log(`🏗️ Construction de DynamicClasse pour ${config.className}`, {
-                    vaultExiste: !!vault,
-                    vaultType: typeof vault,
-                    nombreConfigs: Object.keys(DynamicClasse.PropertyConfigs).length
-                });
                 // Initialize instance properties from static configuration
-                // IMPORTANT: Créer de NOUVELLES instances des propriétés pour cette instance
-                // au lieu de réutiliser les propriétés statiques partagées
                 this.properties = [];
-                // Créer le configLoader avec le vault de cette instance et le configPath stocké
-                const configLoader = new ConfigLoader(DynamicClasse.configPath || '', vault);
-                console.log(`📦 ConfigLoader créé avec vault:`, {
-                    vaultExiste: !!vault,
-                    vaultApp: !!vault?.app,
-                    configPath: DynamicClasse.configPath
-                });
-                for (const [key, propConfig] of Object.entries(DynamicClasse.PropertyConfigs)) {
-                    // Créer une NOUVELLE instance de la propriété avec le vault de cette instance
-                    const newProperty = configLoader.createProperty(propConfig);
-                    console.log(`  ✅ Propriété créée: ${key}`, {
-                        type: propConfig.type,
-                        vaultExiste: !!newProperty.vault,
-                        vaultAppExiste: !!newProperty.vault?.app,
-                        vaultEstObjet: typeof newProperty.vault
-                    });
-                    this.properties.push(newProperty);
+                for (const [key, property] of Object.entries(DynamicClasse.Properties)) {
+                    this.properties.push(property);
                 }
-                console.log(`✅ DynamicClasse construite avec ${this.properties.length} propriétés`);
             }
             static getConstructor() {
                 return DynamicClasse;
@@ -108,22 +85,14 @@ export class ClassConfigManager {
             }
         }
         DynamicClasse.Properties = {};
-        // Stocker aussi les configurations des propriétés pour pouvoir recréer les propriétés
-        DynamicClasse.PropertyConfigs = {};
-        // Stocker le configPath pour que les instances puissent créer leur ConfigLoader
-        DynamicClasse.configPath = this.configLoader['configPath'];
         // Initialize static properties
         if (config.parentProperty) {
             DynamicClasse.parentProperty = this.configLoader.createProperty(config.parentProperty);
         }
         console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasse.parentProperty);
         console.log("Propriétés : ", config.properties);
-        // Initialize all properties statically (pour compatibilité)
-        // ET stocker les configurations pour recréer les propriétés par instance
+        // Initialize all properties
         for (const [key, propConfig] of Object.entries(config.properties)) {
-            // Stocker la configuration
-            DynamicClasse.PropertyConfigs[key] = propConfig;
-            // Créer une propriété statique aussi (pour compatibilité avec le code existant)
             DynamicClasse.Properties[key] = this.configLoader.createProperty(propConfig);
         }
         this.loadedClasses.set(className, DynamicClasse);

@@ -76,6 +76,7 @@ properties:
   - name: budget
     type: NumberProperty
     title: Budget alloué (€)
+    unit : "€"
     icon: 💰
     required: false
     defaultValue: 0
@@ -138,55 +139,3 @@ display:
     - dateDebut
     - dateFin
     - pourcentageCompletion
-  
-# Actions disponibles
-actions:
-  - name: demarrer
-    label: "Démarrer le projet"
-    icon: 🚀
-    condition: "statut == 'Planifié'"
-    
-  - name: mettrePause
-    label: "Mettre en pause"
-    icon: ⏸️
-    condition: "statut == 'En cours'"
-    
-  - name: reprendre
-    label: "Reprendre"
-    icon: ▶️
-    condition: "statut == 'En pause'"
-    
-  - name: terminer
-    label: "Terminer"
-    icon: ✅
-    condition: "statut == 'En cours'"
-    
-  - name: genererRapport
-    label: "Générer rapport"
-    icon: 📊
-
-# Relations avec autres classes
-relations:
-  - targetClass: Tache
-    relationName: "taches"
-    type: "one-to-many"
-    description: "Tâches liées à ce projet"
-    
-  - targetClass: Contact
-    relationName: "participants"
-    type: "many-to-many"
-    description: "Participants au projet"
-
-# Formules calculées
-formulas:
-  - name: budgetRestant
-    formula: "budget - budgetUtilise"
-    description: "Budget restant disponible"
-    
-  - name: dureeEnJours
-    formula: "dateFin - dateDebut"
-    description: "Durée prévue en jours"
-    
-  - name: retard
-    formula: "today() - dateFin"
-    description: "Nombre de jours de retard (si applicable)"

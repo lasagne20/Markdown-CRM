@@ -26,12 +26,6 @@ export class Property {
         this.flexSpan = 0;
         this.type = "text";
         const { icon = "align-left", staticProperty = false, flexSpan = 1, defaultValue = "", ...additionalOptions } = options;
-        console.log(`🏗️ Property constructor appelé pour ${name}`, {
-            vaultRecu: !!vault,
-            vaultApp: !!vault?.app,
-            vaultType: typeof vault,
-            icon
-        });
         this.flexSpan = flexSpan;
         this.name = name;
         this.vault = vault;
@@ -40,10 +34,6 @@ export class Property {
         this.static = staticProperty;
         // Assign additional options to the instance
         Object.assign(this, additionalOptions);
-        console.log(`✅ Property ${name} créée, this.vault =`, {
-            existe: !!this.vault,
-            app: !!this.vault?.app
-        });
     }
     /**
      * Gets the default value of the property.
@@ -170,6 +160,7 @@ export class Property {
             this.vault.app.setIcon(icon, this.icon);
             iconContainer.appendChild(icon);
             if (!this.static) {
+                icon.style.cursor = "pointer";
                 icon.addEventListener("click", (event) => {
                     this.modifyField(event);
                 });

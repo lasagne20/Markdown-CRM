@@ -19,9 +19,134 @@ class AdminInterface {
             
             console.log('✅ Environnement fake initialisé');
             await this.loadInterface();
+            
+            // Vérifier s'il y a un paramètre de fichier dans l'URL
+            await this.handleUrlParameters();
         } catch (error) {
             console.error('❌ Erreur lors de l\'initialisation:', error);
             this.showError('Erreur lors de l\'initialisation de l\'environnement: ' + error.message);
+        }
+    }
+    
+    async handleUrlParameters() {
+        try {
+            // Récupérer le hash de l'URL (par exemple: #file=%2FPierre%20Durand.md)
+            const hash = window.location.hash;
+            
+            if (!hash) {
+                console.log('ℹ️ Aucun paramètre d\'URL détecté');
+                return;
+            }
+            
+            // Parser les paramètres du hash
+            const params = new URLSearchParams(hash.substring(1)); // Enlever le #
+            const filePath = params.get('file');
+            
+            if (filePath) {
+                console.log(`🔗 Ouverture du fichier depuis l'URL: ${filePath}`);
+                
+                // Décoder le chemin (remplace %2F par /, etc.)
+                const decodedPath = decodeURIComponent(filePath);
+                console.log(`📂 Chemin décodé: ${decodedPath}`);
+                
+                // Attendre un court instant pour s'assurer que l'arborescence est chargée
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Chercher le fichier dans le vault
+                await this.openFileFromPath(decodedPath);
+            }
+        } catch (error) {
+            console.error('❌ Erreur lors du traitement des paramètres d\'URL:', error);
+            this.showError('Impossible d\'ouvrir le fichier spécifié: ' + error.message);
+        }
+    }
+    
+    async openFileFromPath(filePath) {
+        try {
+            // Normaliser le chemin (enlever le / initial si présent et ajouter .md si nécessaire)
+            let normalizedPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+            if (!normalizedPath.endsWith('.md')) {
+                normalizedPath += '.md';
+            }
+            
+            console.log(`🔍 Recherche du fichier: ${normalizedPath}`);
+            
+            // Chercher le fichier dans tous les fichiers disponibles
+            const allFiles = this.fakeEnvironment.app.getAllFiles();
+            const targetFile = allFiles.find(file => {
+                // Vérifier si le chemin correspond exactement ou si le nom correspond
+                return file.path === normalizedPath || 
+                       file.path === `/${normalizedPath}` ||
+                       file.name === normalizedPath ||
+                       file.path.endsWith(`/${normalizedPath}`);
+            });
+            
+            if (targetFile) {
+                console.log(`✅ Fichier trouvé: ${targetFile.path}`);
+                
+                // Mettre en évidence le fichier dans l'arborescence
+                this.highlightFileInTree(targetFile.path);
+                
+                // Charger le contenu du fichier
+                await this.loadFileContent(targetFile);
+                
+                this.showSuccess(`Fichier ouvert: ${targetFile.name}`);
+            } else {
+                console.warn(`⚠️ Fichier non trouvé: ${normalizedPath}`);
+                this.showError(`Fichier non trouvé: ${filePath}`);
+                
+                // Afficher la liste des fichiers disponibles dans la console pour debug
+                console.log('Fichiers disponibles:', allFiles.map(f => f.path));
+            }
+        } catch (error) {
+            console.error('❌ Erreur lors de l\'ouverture du fichier:', error);
+            this.showError('Erreur lors de l\'ouverture du fichier: ' + error.message);
+        }
+    }
+    
+    highlightFileInTree(filePath) {
+        try {
+            // Retirer toutes les sélections actives
+            document.querySelectorAll('.file-tree-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Trouver l'élément correspondant au fichier
+            const fileItems = document.querySelectorAll('.file-tree-item.file');
+            for (const item of fileItems) {
+                const label = item.querySelector('.file-tree-label');
+                if (label) {
+                    const fileName = label.textContent;
+                    // Vérifier si c'est le bon fichier
+                    if (filePath.includes(fileName) || filePath.endsWith(`/${fileName}.md`)) {
+                        item.classList.add('active');
+                        
+                        // Dérouler tous les dossiers parents
+                        let parent = item.parentElement;
+                        while (parent) {
+                            if (parent.classList && parent.classList.contains('file-tree-children')) {
+                                parent.classList.remove('collapsed');
+                                
+                                // Trouver le toggle du dossier parent
+                                const prevSibling = parent.previousElementSibling;
+                                if (prevSibling && prevSibling.classList.contains('file-tree-item')) {
+                                    const toggle = prevSibling.querySelector('.folder-toggle');
+                                    if (toggle) {
+                                        toggle.classList.add('expanded');
+                                    }
+                                }
+                            }
+                            parent = parent.parentElement;
+                        }
+                        
+                        // Faire défiler jusqu'à l'élément
+                        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        break;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Erreur lors de la mise en évidence du fichier:', error);
         }
     }
 
@@ -815,8 +940,26 @@ class AdminInterface {
         
         this.selectedFile = fileNode.path;
         
+        // Mettre à jour l'URL avec le chemin du fichier
+        this.updateUrlWithFile(fileNode.path);
+        
         // Charger et afficher les détails du fichier
         await this.loadFileContent(fileNode.file);
+    }
+    
+    updateUrlWithFile(filePath) {
+        try {
+            // Encoder le chemin du fichier pour l'URL
+            const encodedPath = encodeURIComponent(filePath);
+            
+            // Mettre à jour le hash de l'URL sans recharger la page
+            const newUrl = `${window.location.pathname}#file=${encodedPath}`;
+            window.history.pushState(null, '', newUrl);
+            
+            console.log(`🔗 URL mise à jour: ${newUrl}`);
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de l\'URL:', error);
+        }
     }
 
     async loadFileContent(file) {
@@ -1002,6 +1145,77 @@ class AdminInterface {
         setTimeout(() => {
             const inputs = propertiesDisplay.querySelectorAll('input, select, textarea, button');
             inputs.forEach(input => {
+                // Pour les boutons "plus" de MultiFileProperty
+                if (input.classList.contains('metadata-add-button-inline-small')) {
+                    input.addEventListener('click', async () => {
+                        console.log('➕ Clic sur bouton d\'ajout MultiFileProperty détecté');
+                        const saveIndicator = document.getElementById('saveIndicator');
+                        if (saveIndicator) {
+                            saveIndicator.textContent = '💾 Sauvegarde en cours...';
+                            saveIndicator.style.color = '#007bff';
+                        }
+                        
+                        // Attendre que la sélection soit terminée et updateMetadata appelé
+                        // Utiliser un délai plus long pour laisser le temps à selectMultipleFile
+                        setTimeout(async () => {
+                            const editor = document.getElementById('markdownEditor');
+                            if (editor) {
+                                // Attendre que l'écriture soit terminée
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                                
+                                // Récupérer le contenu mis à jour depuis le fichier
+                                const updatedContent = await file.getContent();
+                                console.log('📥 Contenu mis à jour récupéré après ajout, longueur:', updatedContent.length);
+                                editor.value = updatedContent;
+                                
+                                if (saveIndicator) {
+                                    saveIndicator.textContent = '✅ Sauvegardé automatiquement';
+                                    saveIndicator.style.color = '#28a745';
+                                    setTimeout(() => {
+                                        saveIndicator.textContent = '';
+                                    }, 3000);
+                                }
+                            }
+                        }, 1500); // Délai plus long pour selectMultipleFile
+                    });
+                    return; // Skip other event listeners for this button
+                }
+                
+                // Pour les boutons de suppression de MultiFileProperty
+                if (input.classList.contains('metadata-delete-button-inline-small')) {
+                    input.addEventListener('click', async () => {
+                        console.log('🗑️ Clic sur bouton de suppression MultiFileProperty détecté');
+                        const saveIndicator = document.getElementById('saveIndicator');
+                        if (saveIndicator) {
+                            saveIndicator.textContent = '💾 Sauvegarde en cours...';
+                            saveIndicator.style.color = '#007bff';
+                        }
+                        
+                        // Attendre que updateMetadata soit terminé
+                        setTimeout(async () => {
+                            const editor = document.getElementById('markdownEditor');
+                            if (editor) {
+                                // Attendre que l'écriture soit terminée
+                                await new Promise(resolve => setTimeout(resolve, 200));
+                                
+                                // Récupérer le contenu mis à jour depuis le fichier
+                                const updatedContent = await file.getContent();
+                                console.log('📥 Contenu mis à jour récupéré après suppression, longueur:', updatedContent.length);
+                                editor.value = updatedContent;
+                                
+                                if (saveIndicator) {
+                                    saveIndicator.textContent = '✅ Sauvegardé automatiquement';
+                                    saveIndicator.style.color = '#28a745';
+                                    setTimeout(() => {
+                                        saveIndicator.textContent = '';
+                                    }, 3000);
+                                }
+                            }
+                        }, 500);
+                    });
+                    return; // Skip other event listeners for this button
+                }
+                
                 // Pour les boutons boolean, rating, etc.
                 input.addEventListener('click', async () => {
                     console.log('🔄 Clic sur propriété détecté');
@@ -1069,6 +1283,95 @@ class AdminInterface {
                     });
                 }
             });
+            
+            // Ajouter un écouteur spécial pour les étoiles de rating (ce sont des divs)
+            const stars = propertiesDisplay.querySelectorAll('.star');
+            stars.forEach(star => {
+                star.addEventListener('click', async () => {
+                    console.log('⭐ Clic sur étoile de rating détecté');
+                    const saveIndicator = document.getElementById('saveIndicator');
+                    if (saveIndicator) {
+                        saveIndicator.textContent = '💾 Sauvegarde en cours...';
+                        saveIndicator.style.color = '#007bff';
+                    }
+                    
+                    // Attendre que updateMetadata soit terminé
+                    setTimeout(async () => {
+                        const editor = document.getElementById('markdownEditor');
+                        if (editor) {
+                            // Attendre un peu plus pour s'assurer que l'écriture est terminée
+                            await new Promise(resolve => setTimeout(resolve, 200));
+                            
+                            // Récupérer le contenu mis à jour depuis le fichier
+                            const updatedContent = await file.getContent();
+                            console.log('📥 Contenu mis à jour récupéré, longueur:', updatedContent.length);
+                            editor.value = updatedContent;
+                            
+                            if (saveIndicator) {
+                                saveIndicator.textContent = '✅ Sauvegardé automatiquement';
+                                saveIndicator.style.color = '#28a745';
+                                setTimeout(() => {
+                                    saveIndicator.textContent = '';
+                                }, 3000);
+                            }
+                        }
+                    }, 500);
+                });
+            });
+            
+            // Ajouter un MutationObserver pour détecter les changements dans le DOM
+            // (quand MultiFileProperty recharge son interface)
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.addedNodes.length > 0) {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                // Chercher les boutons ajoutés
+                                const buttons = node.querySelectorAll ? node.querySelectorAll('button') : [];
+                                buttons.forEach(button => {
+                                    // Vérifier si c'est un bouton qui n'a pas déjà d'écouteur
+                                    if (!button.dataset.listenerAdded) {
+                                        button.dataset.listenerAdded = 'true';
+                                        button.addEventListener('click', async () => {
+                                            console.log('🔄 Clic sur bouton détecté (MutationObserver)');
+                                            const saveIndicator = document.getElementById('saveIndicator');
+                                            if (saveIndicator) {
+                                                saveIndicator.textContent = '💾 Sauvegarde en cours...';
+                                                saveIndicator.style.color = '#007bff';
+                                            }
+                                            
+                                            // Attendre la fin de l'opération
+                                            setTimeout(async () => {
+                                                const editor = document.getElementById('markdownEditor');
+                                                if (editor) {
+                                                    await new Promise(resolve => setTimeout(resolve, 500));
+                                                    const updatedContent = await file.getContent();
+                                                    console.log('📥 Contenu mis à jour récupéré (après mutation), longueur:', updatedContent.length);
+                                                    editor.value = updatedContent;
+                                                    
+                                                    if (saveIndicator) {
+                                                        saveIndicator.textContent = '✅ Sauvegardé automatiquement';
+                                                        saveIndicator.style.color = '#28a745';
+                                                        setTimeout(() => {
+                                                            saveIndicator.textContent = '';
+                                                        }, 3000);
+                                                    }
+                                                }
+                                            }, 1000);
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+            
+            // Observer les changements dans propertiesDisplay
+            observer.observe(propertiesDisplay, {
+                childList: true,
+                subtree: true
+            });
         }, 500);
     }
 
@@ -1135,6 +1438,22 @@ let adminInterface;
 
 document.addEventListener('DOMContentLoaded', function() {
     adminInterface = new AdminInterface();
+});
+
+// Gérer les changements d'historique (bouton retour/avant du navigateur)
+window.addEventListener('popstate', async function(event) {
+    if (adminInterface && adminInterface.fakeEnvironment) {
+        console.log('🔙 Navigation dans l\'historique détectée');
+        await adminInterface.handleUrlParameters();
+    }
+});
+
+// Gérer les changements de hash
+window.addEventListener('hashchange', async function(event) {
+    if (adminInterface && adminInterface.fakeEnvironment) {
+        console.log('🔗 Changement de hash détecté');
+        await adminInterface.handleUrlParameters();
+    }
 });
 
 // Handle modal clicks (close modal when clicking outside)

@@ -5,7 +5,7 @@
 import { TextProperty } from '../../src/properties/TextProperty';
 
 // Mock axios
-jest.mock('axios');
+jest.mock('axios', () => ({}), { virtual: true });
 
 // Mock App module
 jest.mock('../../src/vault/Utils', () => ({

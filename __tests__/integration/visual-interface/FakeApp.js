@@ -16,6 +16,74 @@ export class FakeApp {
         return this.vaultPath;
     }
 
+    parseYamlFrontmatter(frontmatterText) {
+        const metadata = {};
+        const lines = frontmatterText.split('\n');
+        let currentKey = null;
+        let currentArray = null;
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            if (!trimmedLine) continue;
+            
+            // Check if this is an array item (starts with -)
+            if (trimmedLine.startsWith('-')) {
+                if (currentArray !== null) {
+                    // Extract the value after the dash
+                    let arrayValue = trimmedLine.substring(1).trim();
+                    
+                    // Remove quotes if present
+                    if ((arrayValue.startsWith('"') && arrayValue.endsWith('"')) || 
+                        (arrayValue.startsWith("'") && arrayValue.endsWith("'"))) {
+                        arrayValue = arrayValue.slice(1, -1);
+                    }
+                    
+                    currentArray.push(arrayValue);
+                }
+                continue;
+            }
+            
+            // Check if this is a key:value pair
+            const colonIndex = trimmedLine.indexOf(':');
+            if (colonIndex === -1) continue;
+            
+            const key = trimmedLine.substring(0, colonIndex).trim();
+            let value = trimmedLine.substring(colonIndex + 1).trim();
+            
+            // If value is empty, this might be the start of an array
+            if (value === '' || value === '[]') {
+                currentKey = key;
+                currentArray = [];
+                metadata[key] = currentArray;
+                continue;
+            }
+            
+            // Reset array context when we encounter a new key:value
+            currentKey = null;
+            currentArray = null;
+            
+            // Remove quotes
+            if ((value.startsWith('"') && value.endsWith('"')) || 
+                (value.startsWith("'") && value.endsWith("'"))) {
+                value = value.slice(1, -1);
+            }
+            
+            // Parse special values
+            if (value === 'true') value = true;
+            else if (value === 'false') value = false;
+            else if (value === '[]') value = [];
+            else if (!isNaN(value) && value !== '') {
+                value = Number(value);
+            }
+            
+            metadata[key] = value;
+        }
+        
+        return metadata;
+    }
+
     async createFile(filePath, content) {
         const cleanPath = filePath.startsWith('/') ? filePath : '/' + filePath;
         
@@ -29,33 +97,8 @@ export class FakeApp {
                 const frontmatterText = parts[1];
                 fileContent = parts.slice(2).join('---');
                 
-                // Parse YAML frontmatter (support quotes, numbers, booleans)
-                frontmatterText.split('\n').forEach(line => {
-                    line = line.trim();
-                    if (!line) return;
-                    
-                    const colonIndex = line.indexOf(':');
-                    if (colonIndex === -1) return;
-                    
-                    const key = line.substring(0, colonIndex).trim();
-                    let value = line.substring(colonIndex + 1).trim();
-                    
-                    // Remove quotes
-                    if ((value.startsWith('"') && value.endsWith('"')) || 
-                        (value.startsWith("'") && value.endsWith("'"))) {
-                        value = value.slice(1, -1);
-                    }
-                    
-                    // Parse booleans
-                    if (value === 'true') value = true;
-                    else if (value === 'false') value = false;
-                    // Parse numbers
-                    else if (!isNaN(value) && value !== '') {
-                        value = Number(value);
-                    }
-                    
-                    metadata[key] = value;
-                });
+                // Parse YAML frontmatter
+                metadata = this.parseYamlFrontmatter(frontmatterText);
             }
         }
 
@@ -140,23 +183,26 @@ export class FakeApp {
                         yamlContent += `${key}: \n`;
                     } else if (value === '') {
                         yamlContent += `${key}: \n`;
-                    } else {
-                        let formattedValue;
-                        if (typeof value === 'string') {
-                            if (value.includes(':') || value.includes('#') || value.includes('\n') || value.includes('"')) {
-                                formattedValue = `"${value.replace(/"/g, '\\"')}"`;
-                            } else {
-                                formattedValue = value;
-                            }
-                        } else if (typeof value === 'boolean') {
-                            formattedValue = value ? 'true' : 'false';
-                        } else if (typeof value === 'number') {
-                            formattedValue = value.toString();
-                        } else if (Array.isArray(value)) {
-                            formattedValue = value.length === 0 ? '[]' : JSON.stringify(value);
+                    } else if (Array.isArray(value)) {
+                        if (value.length === 0) {
+                            yamlContent += `${key}: []\n`;
                         } else {
-                            formattedValue = String(value);
+                            // Format multi-line array
+                            yamlContent += `${key}:\n`;
+                            for (const item of value) {
+                                const formattedItem = this.formatYamlValue(item);
+                                // Quote the item if it's not already quoted
+                                if (typeof item === 'string' && (item.includes('[[') || item.includes(']]') || item.includes(':'))) {
+                                    yamlContent += `  - "${item}"\n`;
+                                } else if (formattedItem.startsWith('"')) {
+                                    yamlContent += `  - ${formattedItem}\n`;
+                                } else {
+                                    yamlContent += `  - ${formattedItem}\n`;
+                                }
+                            }
                         }
+                    } else {
+                        const formattedValue = this.formatYamlValue(value, key);
                         yamlContent += `${key}: ${formattedValue}\n`;
                     }
                 }
@@ -176,6 +222,42 @@ export class FakeApp {
         } catch (error) {
             console.error(`❌ Erreur lors de la complétion des propriétés:`, error);
         }
+    }
+
+    formatYamlValue(value, key = '') {
+        // Formater une valeur selon son type pour YAML
+        if (value === undefined || value === null) {
+            return '';
+        }
+        
+        if (typeof value === 'string') {
+            if (value === '') {
+                return '';
+            }
+            // Échapper les guillemets et ajouter des guillemets si nécessaire
+            if (value.includes(':') || value.includes('#') || value.includes('\n') || value.includes('"')) {
+                return `"${value.replace(/"/g, '\\"')}"`;
+            }
+            return value;
+        }
+        
+        if (typeof value === 'boolean') {
+            return value ? 'true' : 'false';
+        }
+        
+        if (typeof value === 'number') {
+            return value.toString();
+        }
+        
+        if (Array.isArray(value)) {
+            if (value.length === 0) {
+                return '[]';
+            }
+            // Format as YAML array with proper indentation
+            return null; // Signal to use multi-line format
+        }
+        
+        return String(value);
     }
 
     async updateMetadata(file, metadata) {
@@ -206,33 +288,26 @@ export class FakeApp {
                 // Inclure toutes les propriétés, même celles avec des valeurs vides
                 if (value === undefined || value === null) {
                     yamlContent += `${key}: \n`;
-                } else {
-                    // Formater la valeur selon son type
-                    let formattedValue;
-                    if (typeof value === 'string') {
-                        // Valeur vide
-                        if (value === '') {
-                            formattedValue = '';
-                        }
-                        // Échapper les guillemets et ajouter des guillemets si nécessaire
-                        else if (value.includes(':') || value.includes('#') || value.includes('\n') || value.includes('"')) {
-                            formattedValue = `"${value.replace(/"/g, '\\"')}"`;
-                        } else {
-                            formattedValue = value;
-                        }
-                    } else if (typeof value === 'boolean') {
-                        formattedValue = value ? 'true' : 'false';
-                    } else if (typeof value === 'number') {
-                        formattedValue = value.toString();
-                    } else if (Array.isArray(value)) {
-                        if (value.length === 0) {
-                            formattedValue = '[]';
-                        } else {
-                            formattedValue = JSON.stringify(value);
-                        }
+                } else if (Array.isArray(value)) {
+                    if (value.length === 0) {
+                        yamlContent += `${key}: []\n`;
                     } else {
-                        formattedValue = String(value);
+                        // Format multi-line array
+                        yamlContent += `${key}:\n`;
+                        for (const item of value) {
+                            const formattedItem = this.formatYamlValue(item);
+                            // Quote the item if it's not already quoted
+                            if (typeof item === 'string' && (item.includes('[[') || item.includes(']]') || item.includes(':'))) {
+                                yamlContent += `  - "${item}"\n`;
+                            } else if (formattedItem.startsWith('"')) {
+                                yamlContent += `  - ${formattedItem}\n`;
+                            } else {
+                                yamlContent += `  - ${formattedItem}\n`;
+                            }
+                        }
                     }
+                } else {
+                    const formattedValue = this.formatYamlValue(value, key);
                     yamlContent += `${key}: ${formattedValue}\n`;
                 }
             }
@@ -297,36 +372,7 @@ export class FakeApp {
                 const parts = content.split('---');
                 if (parts.length >= 3) {
                     const frontmatterText = parts[1];
-                    const metadata = {};
-                    
-                    frontmatterText.split('\n').forEach(line => {
-                        line = line.trim();
-                        if (!line) return;
-                        
-                        const colonIndex = line.indexOf(':');
-                        if (colonIndex === -1) return;
-                        
-                        const key = line.substring(0, colonIndex).trim();
-                        let value = line.substring(colonIndex + 1).trim();
-                        
-                        // Remove quotes
-                        if ((value.startsWith('"') && value.endsWith('"')) || 
-                            (value.startsWith("'") && value.endsWith("'"))) {
-                            value = value.slice(1, -1);
-                        }
-                        
-                        // Parse booleans
-                        if (value === 'true') value = true;
-                        else if (value === 'false') value = false;
-                        // Parse numbers
-                        else if (!isNaN(value) && value !== '') {
-                            value = Number(value);
-                        }
-                        
-                        metadata[key] = value;
-                    });
-                    
-                    existing.metadata = metadata;
+                    existing.metadata = this.parseYamlFrontmatter(frontmatterText);
                 }
             }
         }
@@ -622,18 +668,388 @@ export class FakeApp {
     }
 
     async selectFile(vault, classNames, options) {
-        // Create a new file with the provided name from hint
-        const fileName = options?.hint || 'Nouveau fichier';
-        const className = classNames?.[0] || 'Classe';
-        
-        const file = await this.createFile(`${fileName}.md`, `---\nClasse: ${className}\n---\n\n# ${fileName}`);
-        
-        // Return a mock classe object
-        return {
-            file: file,
-            name: fileName,
-            getDisplay: () => []
-        };
+        return new Promise((resolve) => {
+            console.log(`📂 Sélection de fichier demandée pour les classes: ${classNames?.join(', ')}`);
+            
+            // Créer un modal pour sélectionner un fichier
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '10000';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.maxWidth = '600px';
+            
+            const modalHeader = document.createElement('div');
+            modalHeader.className = 'modal-header';
+            modalHeader.innerHTML = '<h3 class="modal-title">📂 Sélectionner un fichier</h3>';
+            
+            const fileList = document.createElement('div');
+            fileList.style.maxHeight = '400px';
+            fileList.style.overflowY = 'auto';
+            fileList.style.marginTop = '20px';
+            
+            // Filtrer les fichiers par classe si spécifié
+            const allFiles = this.getAllFiles();
+            const filteredFiles = classNames && classNames.length > 0 ? 
+                allFiles.filter(file => {
+                    const metadata = this.fileSystem.get(file.path)?.metadata;
+                    return metadata && classNames.includes(metadata.Classe);
+                }) : allFiles;
+            
+            if (filteredFiles.length === 0) {
+                fileList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Aucun fichier disponible</p>';
+            } else {
+                filteredFiles.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.style.padding = '12px';
+                    fileItem.style.margin = '5px 0';
+                    fileItem.style.border = '2px solid #e1e5e9';
+                    fileItem.style.borderRadius = '8px';
+                    fileItem.style.cursor = 'pointer';
+                    fileItem.style.transition = 'all 0.2s ease';
+                    
+                    const metadata = this.fileSystem.get(file.path)?.metadata || {};
+                    const className = metadata.Classe || 'Sans classe';
+                    const displayName = file.basename || file.name.replace('.md', '');
+                    
+                    fileItem.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">📄</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #333;">${displayName}</div>
+                                <div style="font-size: 0.85rem; color: #666;">Classe: ${className}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    fileItem.onmouseover = () => {
+                        fileItem.style.borderColor = '#667eea';
+                        fileItem.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+                    };
+                    
+                    fileItem.onmouseout = () => {
+                        fileItem.style.borderColor = '#e1e5e9';
+                        fileItem.style.backgroundColor = 'transparent';
+                    };
+                    
+                    fileItem.onclick = async () => {
+                        console.log(`✅ Fichier sélectionné: ${file.path}`);
+                        document.body.removeChild(modal);
+                        
+                        // Créer un objet File pour avoir toutes les méthodes nécessaires
+                        const fileWrapper = {
+                            ...file,
+                            file: file, // Référence au fichier IFile
+                            getLink: () => file.getLink(),
+                            getPath: () => file.getPath(),
+                            getName: (md = true) => file.getName(md),
+                            getFile: () => file
+                        };
+                        
+                        // Charger la classe dynamique si disponible
+                        try {
+                            const dynamicFactory = vault.getDynamicClassFactory();
+                            if (dynamicFactory && metadata.Classe) {
+                                const ClassConstructor = await dynamicFactory.getClass(metadata.Classe);
+                                const classInstance = new ClassConstructor(vault, file);
+                                
+                                // Ajouter les méthodes manquantes pour la compatibilité avec FileProperty
+                                if (!classInstance.getLink) {
+                                    classInstance.getLink = () => file.getLink();
+                                }
+                                if (!classInstance.getPath) {
+                                    classInstance.getPath = () => file.getPath();
+                                }
+                                if (!classInstance.getName) {
+                                    classInstance.getName = (md = true) => file.getName(md);
+                                }
+                                if (!classInstance.file) {
+                                    classInstance.file = file;
+                                }
+                                
+                                resolve(classInstance);
+                            } else {
+                                // Fallback: retourner un objet avec toutes les méthodes nécessaires
+                                resolve(fileWrapper);
+                            }
+                        } catch (error) {
+                            console.error('Erreur lors du chargement de la classe:', error);
+                            resolve(fileWrapper);
+                        }
+                    };
+                    
+                    fileList.appendChild(fileItem);
+                });
+            }
+            
+            const modalActions = document.createElement('div');
+            modalActions.className = 'modal-actions';
+            modalActions.style.marginTop = '20px';
+            
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'btn-secondary';
+            cancelButton.textContent = 'Annuler';
+            cancelButton.onclick = () => {
+                console.log('❌ Sélection de fichier annulée');
+                document.body.removeChild(modal);
+                resolve(null);
+            };
+            
+            modalActions.appendChild(cancelButton);
+            
+            modalContent.appendChild(modalHeader);
+            
+            if (options?.hint) {
+                const hint = document.createElement('p');
+                hint.style.color = '#666';
+                hint.style.marginTop = '10px';
+                hint.textContent = options.hint;
+                modalContent.appendChild(hint);
+            }
+            
+            modalContent.appendChild(fileList);
+            modalContent.appendChild(modalActions);
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Fermer le modal en cliquant à l'extérieur
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                    resolve(null);
+                }
+            };
+        });
+    }
+
+    async selectMultipleFile(vault, classNames, options) {
+        return new Promise((resolve) => {
+            console.log(`📂 Sélection multiple de fichiers demandée pour les classes: ${classNames?.join(', ')}`);
+            
+            // Créer un modal pour sélectionner plusieurs fichiers
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '10000';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.maxWidth = '600px';
+            
+            const modalHeader = document.createElement('div');
+            modalHeader.className = 'modal-header';
+            modalHeader.innerHTML = '<h3 class="modal-title">📂 Sélectionner des fichiers (plusieurs)</h3>';
+            
+            const fileList = document.createElement('div');
+            fileList.style.maxHeight = '400px';
+            fileList.style.overflowY = 'auto';
+            fileList.style.marginTop = '20px';
+            
+            const selectedFiles = new Set();
+            
+            // Filtrer les fichiers par classe si spécifié
+            const allFiles = this.getAllFiles();
+            const filteredFiles = classNames && classNames.length > 0 ? 
+                allFiles.filter(file => {
+                    const metadata = this.fileSystem.get(file.path)?.metadata;
+                    return metadata && classNames.includes(metadata.Classe);
+                }) : allFiles;
+            
+            if (filteredFiles.length === 0) {
+                fileList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Aucun fichier disponible</p>';
+            } else {
+                filteredFiles.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.style.padding = '12px';
+                    fileItem.style.margin = '5px 0';
+                    fileItem.style.border = '2px solid #e1e5e9';
+                    fileItem.style.borderRadius = '8px';
+                    fileItem.style.cursor = 'pointer';
+                    fileItem.style.transition = 'all 0.2s ease';
+                    fileItem.style.display = 'flex';
+                    fileItem.style.alignItems = 'center';
+                    fileItem.style.gap = '10px';
+                    
+                    const metadata = this.fileSystem.get(file.path)?.metadata || {};
+                    const className = metadata.Classe || 'Sans classe';
+                    const displayName = file.basename || file.name.replace('.md', '');
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.style.width = '20px';
+                    checkbox.style.height = '20px';
+                    checkbox.style.cursor = 'pointer';
+                    
+                    const fileInfo = document.createElement('div');
+                    fileInfo.style.flex = '1';
+                    fileInfo.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">📄</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #333;">${displayName}</div>
+                                <div style="font-size: 0.85rem; color: #666;">Classe: ${className}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    fileItem.appendChild(checkbox);
+                    fileItem.appendChild(fileInfo);
+                    
+                    const toggleSelection = () => {
+                        if (selectedFiles.has(file.path)) {
+                            selectedFiles.delete(file.path);
+                            checkbox.checked = false;
+                            fileItem.style.borderColor = '#e1e5e9';
+                            fileItem.style.backgroundColor = 'transparent';
+                        } else {
+                            selectedFiles.add(file.path);
+                            checkbox.checked = true;
+                            fileItem.style.borderColor = '#667eea';
+                            fileItem.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+                        }
+                        
+                        // Mettre à jour le compteur
+                        updateCounter();
+                    };
+                    
+                    fileItem.onmouseover = () => {
+                        if (!selectedFiles.has(file.path)) {
+                            fileItem.style.borderColor = '#667eea';
+                            fileItem.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+                        }
+                    };
+                    
+                    fileItem.onmouseout = () => {
+                        if (!selectedFiles.has(file.path)) {
+                            fileItem.style.borderColor = '#e1e5e9';
+                            fileItem.style.backgroundColor = 'transparent';
+                        }
+                    };
+                    
+                    fileItem.onclick = toggleSelection;
+                    checkbox.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleSelection();
+                    };
+                    
+                    fileList.appendChild(fileItem);
+                });
+            }
+            
+            const counter = document.createElement('div');
+            counter.style.textAlign = 'center';
+            counter.style.marginTop = '10px';
+            counter.style.fontWeight = '600';
+            counter.style.color = '#667eea';
+            
+            const updateCounter = () => {
+                counter.textContent = `${selectedFiles.size} fichier(s) sélectionné(s)`;
+            };
+            updateCounter();
+            
+            const modalActions = document.createElement('div');
+            modalActions.className = 'modal-actions';
+            modalActions.style.marginTop = '20px';
+            
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'btn-secondary';
+            cancelButton.textContent = 'Annuler';
+            cancelButton.onclick = () => {
+                console.log('❌ Sélection multiple annulée');
+                document.body.removeChild(modal);
+                resolve([]);
+            };
+            
+            const confirmButton = document.createElement('button');
+            confirmButton.className = 'btn';
+            confirmButton.textContent = 'Valider';
+            confirmButton.onclick = async () => {
+                console.log(`✅ ${selectedFiles.size} fichier(s) sélectionné(s)`);
+                document.body.removeChild(modal);
+                
+                // Charger les classes dynamiques pour chaque fichier sélectionné
+                const selectedInstances = [];
+                const dynamicFactory = vault.getDynamicClassFactory();
+                
+                for (const filePath of selectedFiles) {
+                    const file = allFiles.find(f => f.path === filePath);
+                    if (!file) continue;
+                    
+                    const metadata = this.fileSystem.get(file.path)?.metadata || {};
+                    const displayName = file.basename || file.name.replace('.md', '');
+                    
+                    // Créer un objet File wrapper pour avoir toutes les méthodes nécessaires
+                    const fileWrapper = {
+                        ...file,
+                        file: file,
+                        getLink: () => file.getLink(),
+                        getPath: () => file.getPath(),
+                        getName: (md = true) => file.getName(md),
+                        getFile: () => file
+                    };
+                    
+                    try {
+                        if (dynamicFactory && metadata.Classe) {
+                            const ClassConstructor = await dynamicFactory.getClass(metadata.Classe);
+                            const classInstance = new ClassConstructor(vault, file);
+                            
+                            // Ajouter les méthodes manquantes pour la compatibilité
+                            if (!classInstance.getLink) {
+                                classInstance.getLink = () => file.getLink();
+                            }
+                            if (!classInstance.getPath) {
+                                classInstance.getPath = () => file.getPath();
+                            }
+                            if (!classInstance.getName) {
+                                classInstance.getName = (md = true) => file.getName(md);
+                            }
+                            if (!classInstance.file) {
+                                classInstance.file = file;
+                            }
+                            
+                            selectedInstances.push(classInstance);
+                        } else {
+                            // Fallback: retourner l'objet wrapper
+                            selectedInstances.push(fileWrapper);
+                        }
+                    } catch (error) {
+                        console.error(`Erreur lors du chargement de la classe pour ${filePath}:`, error);
+                        selectedInstances.push(fileWrapper);
+                    }
+                }
+                
+                resolve(selectedInstances);
+            };
+            
+            modalActions.appendChild(cancelButton);
+            modalActions.appendChild(confirmButton);
+            
+            modalContent.appendChild(modalHeader);
+            
+            if (options?.hint) {
+                const hint = document.createElement('p');
+                hint.style.color = '#666';
+                hint.style.marginTop = '10px';
+                hint.textContent = options.hint;
+                modalContent.appendChild(hint);
+            }
+            
+            modalContent.appendChild(fileList);
+            modalContent.appendChild(counter);
+            modalContent.appendChild(modalActions);
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Fermer le modal en cliquant à l'extérieur
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                    resolve([]);
+                }
+            };
+        });
     }
 
     printFileSystem() {
@@ -779,14 +1195,12 @@ export class FakeApp {
         return mediaFile;
     }
 
-    async selectMultipleFile(vault, classes, options) {
-        // Mock implementation - return multiple files
-        const files = [];
-        for (let i = 0; i < 2; i++) {
-            const file = await this.createFile(`/${classes[0]}_${i}.md`, `---\nClasse: ${classes[0]}\n---\n\n# Document ${i}`);
-            files.push(file);
-        }
-        console.log(`📄 Fichiers multiples sélectionnés: ${files.length}`);
-        return files;
+    getUrl(filePath) {
+        // Générer une URL pour afficher le fichier dans l'interface d'administration
+        const cleanPath = filePath.startsWith('/') ? filePath : '/' + filePath;
+        const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/admin.html');
+        const url = `${baseUrl}#file=${encodeURIComponent(cleanPath)}`;
+
+        return url;
     }
 }

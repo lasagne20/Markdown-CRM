@@ -57,7 +57,7 @@ export class RatingProperty extends Property {
             // Ajout des événements pour l'interaction utilisateur
             star.onmouseover = () => {
                 // Prévisualiser toutes les étoiles jusqu'à celle-ci
-                this.highlightStars(starContainer, i, true);
+                this.previewStars(starContainer, i);
             };
             
             star.onclick = async () => {
@@ -71,7 +71,7 @@ export class RatingProperty extends Property {
 
         // Ajouter gestionnaire pour restaurer l'état au survol du conteneur
         starContainer.onmouseleave = () => {
-            this.updateStarRating(starContainer, selectedRating);
+            this.previewStars(starContainer, selectedRating);
         };
 
         this.updateStarRating(starContainer, selectedRating); // Initial update to ensure correct state
@@ -143,6 +143,11 @@ export class RatingProperty extends Property {
                 }
             }
         });
+    }
+
+    // Preview stars for hover and restore
+    previewStars(container: HTMLDivElement, rating: number) {
+        this.highlightStars(container, rating, true);
     }
 }
 

@@ -1,5 +1,4 @@
 import { Property } from "./Property";
-import { File } from "../vault/File";
 import { Vault } from "../vault/Vault";
 
 export class MultiSelectProperty extends Property {
@@ -15,6 +14,7 @@ export class MultiSelectProperty extends Property {
         const field = this.createFieldContainer();
         const fieldContainer = document.createElement("div");
         fieldContainer.classList.add("field-container-column");
+        console.log("Options MultiSelect :", this.options);
 
         const header = document.createElement("div");
         header.classList.add("metadata-header");

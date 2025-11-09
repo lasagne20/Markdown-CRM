@@ -7,9 +7,10 @@ entreprise: InnoStart
 poste: CEO
 priorite: Normale
 actif: true
-adresse: 
-dateRencontre: 
-notes: 
+adresse: []
+dateRencontre: []
+notes: []
+infosEntreprise: 
 ---
 
 # Marie Martin

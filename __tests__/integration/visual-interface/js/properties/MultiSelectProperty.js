@@ -9,6 +9,7 @@ export class MultiSelectProperty extends Property {
         const field = this.createFieldContainer();
         const fieldContainer = document.createElement("div");
         fieldContainer.classList.add("field-container-column");
+        console.log("Options MultiSelect :", this.options);
         const header = document.createElement("div");
         header.classList.add("metadata-header");
         header.textContent = this.name;

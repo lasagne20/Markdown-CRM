@@ -29,7 +29,7 @@ module.exports = {
   // Performance optimizations
   watchman: true, // Enable for faster file watching
   watchPlugins: [],
-  maxWorkers: 2, // Use fixed number instead of percentage for consistency
+  maxWorkers: 4, // Increased for faster execution on multi-core systems
   cache: true,
   cacheDirectory: '<rootDir>/.jest-cache',
   clearMocks: true,

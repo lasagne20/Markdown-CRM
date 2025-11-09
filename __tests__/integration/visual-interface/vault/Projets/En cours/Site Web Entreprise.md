@@ -3,26 +3,30 @@ Classe: Projet
 nom: Site Web Entreprise
 description: Refonte complète du site web corporate avec nouveau design moderne
 statut: En cours
-priorite: 4
+priorite: +++
 dateDebut: 2025-10-01
 dateFin: 2025-12-15
 responsable: [[Jean Dupont]]
-budget: 25000
-budgetUtilise: 12000
+budget: 25000 €
+budgetUtilise: 12000 €
 pourcentageCompletion: 45
-client: [[Marie Martin]]
-dateFinReelle: 
-equipe: 
-tags: 
-fichiers: 
-demarrer: 
-mettrePause: 
-reprendre: 
-terminer: 
-genererRapport: 
-budgetRestant: 
-dureeEnJours: 
-retard: 
+client: "https://exemple.com/client/marie-martin"
+dateFinReelle: []
+equipe:
+  - "[[/Clients/Entreprises/Jean Dupont.md|Jean Dupont]]"
+  - "[[/Clients/Startups/Marie Martin.md|Marie Martin]]"
+tags:
+  - Web
+  - Design
+fichiers: []
+demarrer: []
+mettrePause: []
+reprendre: []
+terminer: []
+genererRapport: []
+budgetRestant: []
+dureeEnJours: []
+retard: []
 ---
 
 # Site Web Entreprise

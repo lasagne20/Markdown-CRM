@@ -21,9 +21,15 @@ export class TextProperty extends Property {
         return field;
     }
     createFieldLink(value) {
+        console.log("Name of the property:", this.name);
+        console.log("Creating field link with value:", value);
         const link = document.createElement("div");
-        link.innerHTML = value
-            ? value.replace(/\[\[(.*?)(?:\|(.*?))?\]\]/g, (_, path, alias) => {
+        // Ensure value is a string - handle arrays or other types
+        const stringValue = typeof value === 'string' ? value :
+            (Array.isArray(value) ? value.join(', ') :
+                (value ? String(value) : ''));
+        link.innerHTML = stringValue
+            ? stringValue.replace(/\[\[(.*?)(?:\|(.*?))?\]\]/g, (_match, path, alias) => {
                 const display = alias || path;
                 return `<strong><a href="#">${display}</a></strong>`;
             })

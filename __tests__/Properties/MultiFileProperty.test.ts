@@ -234,7 +234,6 @@ describe('MultiFileProperty', () => {
             const row = multiFileProperty.createObjectRow(values, mockUpdate, '[[File1]]', 0, container);
 
             expect(mockFileProperty.fillDisplay).toHaveBeenCalledWith(
-                mockVault, 
                 '[[File1]]', 
                 expect.any(Function)
             );
@@ -252,7 +251,7 @@ describe('MultiFileProperty', () => {
             
             const button = multiFileProperty.createDeleteButton(values, mockUpdate, 0, container);
 
-            expect(mockVault.app.setIcon).toHaveBeenCalledWith(button, 'minus');
+            expect(mockVault.app.setIcon).toHaveBeenCalledWith(button, 'x');
             expect(button.classList.contains('metadata-delete-button-inline-small')).toBe(true);
         });
 

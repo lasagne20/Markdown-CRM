@@ -39,11 +39,14 @@ export class FileProperty extends LinkProperty {
         const filePath = this.vault.readLinkFile(value, true);
         // If readLinkFile returned a path and the file exists in the vault, use it.
         if (filePath) {
-            return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+            return this.vault.app.getUrl(filePath);
         }
-        // Fallback: extract the name only from the link
-        const nameOnly = this.vault.readLinkFile(value);
-        return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(nameOnly)}`;
+        // Fallback: generate obsidian URL with filename
+        const fileName = this.vault.readLinkFile(value, false);
+        if (fileName) {
+            return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(fileName)}`;
+        }
+        return "";
     }
     createIconContainer(update) {
         const iconContainer = document.createElement("div");
@@ -65,7 +68,10 @@ export class FileProperty extends LinkProperty {
             await update(selectedFile);
             const link = event.target.closest('.metadata-field')?.querySelector('.field-link');
             if (link) {
-                link.textContent = selectedFile.slice(2, -2);
+                // Utiliser getPretty pour extraire le nom à afficher correctement
+                link.textContent = this.getPretty(selectedFile);
+                // Mettre à jour l'URL du lien
+                link.href = this.getLink(selectedFile);
             }
         }
     }

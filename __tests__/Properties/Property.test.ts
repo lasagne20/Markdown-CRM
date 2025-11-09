@@ -208,13 +208,17 @@ describe('Property', () => {
                 // We'll spy on the modifyField method and then simulate a click
                 const spy = jest.spyOn(property, 'modifyField');
                 
-                // Create and dispatch a click event on the icon container
+                // Get the icon element and dispatch click on it
+                const icon = container.querySelector('div') as HTMLElement;
+                expect(icon).toBeTruthy();
+                
+                // Create and dispatch a click event on the icon
                 const clickEvent = new MouseEvent('click', {
                     bubbles: true,
                     cancelable: true,
                 });
                 
-                container.dispatchEvent(clickEvent);
+                icon.dispatchEvent(clickEvent);
                 
                 // Verify modifyField was called
                 expect(spy).toHaveBeenCalled();

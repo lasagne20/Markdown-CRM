@@ -7,9 +7,10 @@ entreprise: Freelance
 poste: Consultant
 priorite: Normale
 actif: false
-adresse: 
-dateRencontre: 
-notes: 
+adresse: []
+dateRencontre: []
+notes: []
+infosEntreprise: 
 ---
 
 # Pierre Durand

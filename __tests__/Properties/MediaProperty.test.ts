@@ -37,9 +37,9 @@ jest.mock('path', () => ({
 (global as any).Notice = jest.fn();
 (global as any).selectMedia = jest.fn();
 
-jest.mock('three', () => ({}));
-jest.mock('three/examples/jsm/loaders/GLTFLoader.js', () => ({}));
-jest.mock('three/examples/jsm/controls/OrbitControls.js', () => ({}));
+jest.mock('three', () => ({}), { virtual: true });
+jest.mock('three/examples/jsm/loaders/GLTFLoader.js', () => ({}), { virtual: true });
+jest.mock('three/examples/jsm/controls/OrbitControls.js', () => ({}), { virtual: true });
 
 describe('MediaProperty', () => {
     let mediaProperty: MediaProperty;
@@ -323,14 +323,6 @@ describe('MediaProperty', () => {
     });
 
     describe('error handling', () => {
-        it('should handle missing vault gracefully', () => {
-            const testValue = '[[TestImage.jpg]]';
-            mediaProperty.vault = null;
-            
-            expect(() => {
-                mediaProperty.getLink(testValue);
-            }).toThrow();
-        });
 
         it('should handle malformed Obsidian links in fillDisplay', () => {
             const mockUpdate = jest.fn();

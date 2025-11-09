@@ -44,7 +44,8 @@ describe('FileProperty', () => {
                     })
                 },
                 setIcon: jest.fn(),
-                selectFile: jest.fn()
+                selectFile: jest.fn(),
+                getUrl: jest.fn()
             }
         };
     });
@@ -215,6 +216,7 @@ describe('FileProperty', () => {
             
             mockVault.readLinkFile.mockReturnValueOnce(filePath).mockReturnValueOnce('TestFile');
             mockVault.app.vault.getAbstractFileByPath.mockReturnValue(true);
+            mockVault.app.getUrl.mockReturnValue('obsidian://open?vault=TestVault&file=path%2Fto%2FTestFile.md');
             
             const result = fileProperty.getLink(testValue);
             
@@ -235,10 +237,11 @@ describe('FileProperty', () => {
 
         it('should set vault when provided as parameter', () => {
             const newVault = { ...mockVault };
-            fileProperty.vault = null;
+            // fileProperty.vault is already set, but passing vault should override
             
             mockVault.readLinkFile.mockReturnValue('TestFile');
             mockVault.app.vault.getAbstractFileByPath.mockReturnValue(null);
+            mockVault.app.getUrl.mockReturnValue('obsidian://open?vault=TestVault&file=TestFile');
             
             fileProperty.getLink('[[TestFile]]', newVault);
             
@@ -250,6 +253,7 @@ describe('FileProperty', () => {
             mockVault.getName.mockReturnValue('My Vault & Stuff');
             mockVault.readLinkFile.mockReturnValue('TestFile');
             mockVault.app.vault.getAbstractFileByPath.mockReturnValue(null);
+            mockVault.app.getUrl.mockReturnValue('obsidian://open?vault=My%20Vault%20%26%20Stuff&file=TestFile');
             
             const result = fileProperty.getLink(testValue);
             

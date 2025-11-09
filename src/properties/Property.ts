@@ -191,6 +191,7 @@ export class Property {
             this.vault.app.setIcon(icon, this.icon);
             iconContainer.appendChild(icon);
             if (!this.static) {
+                icon.style.cursor = "pointer";
                 icon.addEventListener("click", (event) => {
                     this.modifyField(event)});
             }

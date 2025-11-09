@@ -9,6 +9,8 @@ export interface PropertyConfig {
     defaultValue?: any;
     formula?: string; // Pour FormulaProperty
     display?: string; // Pour mode d'affichage (table, fold, etc.)
+    static?: boolean; // Pour rendre une propriété non-modifiable
+    unit?: string; // Pour NumberProperty - unité de mesure (€, kg, %, etc.)
 }
 
 export interface PropertyTableRow {

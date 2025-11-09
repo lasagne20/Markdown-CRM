@@ -30,6 +30,7 @@ export interface IApp {
     getName(): string;
     isFolder(file : IFile): boolean;
     isFile(file : IFile): boolean;
+    getUrl(path : string): string;
     
     // Metadata operations
     getMetadata(file: IFile): Promise<Record<string, any>>;
