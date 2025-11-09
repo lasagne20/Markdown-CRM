@@ -1,0 +1,542 @@
+75ba4011de0cc79a42bae0a23d012518
+"use strict";
+
+/* istanbul ignore next */
+function cov_1gu6w3v7ws() {
+  var path = "C:\\Users\\leodu\\Documents\\1 - Pro\\Test plugin obsidian\\.obsidian\\plugins\\obsidian-CRM\\dynamic-fields\\src\\Config\\DynamicClassFactory.ts";
+  var hash = "5037df3d3c3d2bc6f686becdf9a39baf4a403655";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "C:\\Users\\leodu\\Documents\\1 - Pro\\Test plugin obsidian\\.obsidian\\plugins\\obsidian-CRM\\dynamic-fields\\src\\Config\\DynamicClassFactory.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 2,
+          column: 0
+        },
+        end: {
+          line: 2,
+          column: 62
+        }
+      },
+      "1": {
+        start: {
+          line: 3,
+          column: 0
+        },
+        end: {
+          line: 3,
+          column: 37
+        }
+      },
+      "2": {
+        start: {
+          line: 4,
+          column: 29
+        },
+        end: {
+          line: 4,
+          column: 60
+        }
+      },
+      "3": {
+        start: {
+          line: 7,
+          column: 8
+        },
+        end: {
+          line: 7,
+          column: 39
+        }
+      },
+      "4": {
+        start: {
+          line: 8,
+          column: 8
+        },
+        end: {
+          line: 8,
+          column: 90
+        }
+      },
+      "5": {
+        start: {
+          line: 14,
+          column: 8
+        },
+        end: {
+          line: 16,
+          column: 9
+        }
+      },
+      "6": {
+        start: {
+          line: 15,
+          column: 12
+        },
+        end: {
+          line: 15,
+          column: 53
+        }
+      },
+      "7": {
+        start: {
+          line: 17,
+          column: 29
+        },
+        end: {
+          line: 17,
+          column: 84
+        }
+      },
+      "8": {
+        start: {
+          line: 18,
+          column: 8
+        },
+        end: {
+          line: 18,
+          column: 56
+        }
+      },
+      "9": {
+        start: {
+          line: 19,
+          column: 8
+        },
+        end: {
+          line: 19,
+          column: 28
+        }
+      },
+      "10": {
+        start: {
+          line: 25,
+          column: 33
+        },
+        end: {
+          line: 25,
+          column: 63
+        }
+      },
+      "11": {
+        start: {
+          line: 26,
+          column: 25
+        },
+        end: {
+          line: 26,
+          column: 58
+        }
+      },
+      "12": {
+        start: {
+          line: 28,
+          column: 8
+        },
+        end: {
+          line: 34,
+          column: 9
+        }
+      },
+      "13": {
+        start: {
+          line: 29,
+          column: 27
+        },
+        end: {
+          line: 29,
+          column: 77
+        }
+      },
+      "14": {
+        start: {
+          line: 30,
+          column: 12
+        },
+        end: {
+          line: 30,
+          column: 44
+        }
+      },
+      "15": {
+        start: {
+          line: 33,
+          column: 12
+        },
+        end: {
+          line: 33,
+          column: 83
+        }
+      },
+      "16": {
+        start: {
+          line: 35,
+          column: 8
+        },
+        end: {
+          line: 35,
+          column: 24
+        }
+      },
+      "17": {
+        start: {
+          line: 41,
+          column: 8
+        },
+        end: {
+          line: 41,
+          column: 62
+        }
+      },
+      "18": {
+        start: {
+          line: 47,
+          column: 8
+        },
+        end: {
+          line: 47,
+          column: 40
+        }
+      },
+      "19": {
+        start: {
+          line: 48,
+          column: 8
+        },
+        end: {
+          line: 48,
+          column: 35
+        }
+      },
+      "20": {
+        start: {
+          line: 51,
+          column: 0
+        },
+        end: {
+          line: 51,
+          column: 50
+        }
+      }
+    },
+    fnMap: {
+      "0": {
+        name: "(anonymous_0)",
+        decl: {
+          start: {
+            line: 6,
+            column: 4
+          },
+          end: {
+            line: 6,
+            column: 5
+          }
+        },
+        loc: {
+          start: {
+            line: 6,
+            column: 33
+          },
+          end: {
+            line: 9,
+            column: 5
+          }
+        },
+        line: 6
+      },
+      "1": {
+        name: "(anonymous_1)",
+        decl: {
+          start: {
+            line: 13,
+            column: 4
+          },
+          end: {
+            line: 13,
+            column: 5
+          }
+        },
+        loc: {
+          start: {
+            line: 13,
+            column: 30
+          },
+          end: {
+            line: 20,
+            column: 5
+          }
+        },
+        line: 13
+      },
+      "2": {
+        name: "(anonymous_2)",
+        decl: {
+          start: {
+            line: 24,
+            column: 4
+          },
+          end: {
+            line: 24,
+            column: 5
+          }
+        },
+        loc: {
+          start: {
+            line: 24,
+            column: 54
+          },
+          end: {
+            line: 36,
+            column: 5
+          }
+        },
+        line: 24
+      },
+      "3": {
+        name: "(anonymous_3)",
+        decl: {
+          start: {
+            line: 40,
+            column: 4
+          },
+          end: {
+            line: 40,
+            column: 5
+          }
+        },
+        loc: {
+          start: {
+            line: 40,
+            column: 32
+          },
+          end: {
+            line: 42,
+            column: 5
+          }
+        },
+        line: 40
+      },
+      "4": {
+        name: "(anonymous_4)",
+        decl: {
+          start: {
+            line: 46,
+            column: 4
+          },
+          end: {
+            line: 46,
+            column: 5
+          }
+        },
+        loc: {
+          start: {
+            line: 46,
+            column: 17
+          },
+          end: {
+            line: 49,
+            column: 5
+          }
+        },
+        line: 46
+      }
+    },
+    branchMap: {
+      "0": {
+        loc: {
+          start: {
+            line: 14,
+            column: 8
+          },
+          end: {
+            line: 16,
+            column: 9
+          }
+        },
+        type: "if",
+        locations: [{
+          start: {
+            line: 14,
+            column: 8
+          },
+          end: {
+            line: 16,
+            column: 9
+          }
+        }, {
+          start: {
+            line: undefined,
+            column: undefined
+          },
+          end: {
+            line: undefined,
+            column: undefined
+          }
+        }],
+        line: 14
+      }
+    },
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "10": 0,
+      "11": 0,
+      "12": 0,
+      "13": 0,
+      "14": 0,
+      "15": 0,
+      "16": 0,
+      "17": 0,
+      "18": 0,
+      "19": 0,
+      "20": 0
+    },
+    f: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0
+    },
+    b: {
+      "0": [0, 0]
+    },
+    inputSourceMap: {
+      file: "C:\\Users\\leodu\\Documents\\1 - Pro\\Test plugin obsidian\\.obsidian\\plugins\\obsidian-CRM\\dynamic-fields\\src\\Config\\DynamicClassFactory.ts",
+      mappings: ";;;AAEA,6DAA0D;AAE1D,MAAa,mBAAmB;IAI5B,YAAY,UAAkB,EAAE,GAAS;QAFjC,kBAAa,GAA+B,IAAI,GAAG,EAAE,CAAC;QAG1D,IAAI,CAAC,aAAa,GAAG,IAAI,uCAAkB,CAAC,UAAU,EAAE,GAAG,CAAC,CAAC;IACjE,CAAC;IAED;;OAEG;IACH,KAAK,CAAC,QAAQ,CAAC,SAAiB;QAC5B,IAAI,IAAI,CAAC,aAAa,CAAC,GAAG,CAAC,SAAS,CAAC,EAAE,CAAC;YACpC,OAAO,IAAI,CAAC,aAAa,CAAC,GAAG,CAAC,SAAS,CAAE,CAAC;QAC9C,CAAC;QAED,MAAM,YAAY,GAAG,MAAM,IAAI,CAAC,aAAa,CAAC,mBAAmB,CAAC,SAAS,CAAC,CAAC;QAC7E,IAAI,CAAC,aAAa,CAAC,GAAG,CAAC,SAAS,EAAE,YAAY,CAAC,CAAC;QAChD,OAAO,YAAY,CAAC;IACxB,CAAC;IAED;;OAEG;IACH,KAAK,CAAC,cAAc,CAAC,SAAiB,EAAE,GAAQ,EAAE,KAAY,EAAE,IAAS;QACrE,MAAM,gBAAgB,GAAG,MAAM,IAAI,CAAC,QAAQ,CAAC,SAAS,CAAC,CAAC;QACxD,MAAM,QAAQ,GAAG,IAAI,gBAAgB,CAAC,KAAK,EAAE,IAAI,CAAC,CAAC;QAEnD,qDAAqD;QACrD,IAAI,CAAC;YACD,MAAM,MAAM,GAAG,MAAM,IAAI,CAAC,aAAa,CAAC,cAAc,CAAC,SAAS,CAAC,CAAC;YAClE,QAAQ,CAAC,aAAa,GAAG,MAAM,CAAC;QACpC,CAAC;QAAC,OAAO,KAAK,EAAE,CAAC;YACb,OAAO,CAAC,IAAI,CAAC,qCAAqC,SAAS,GAAG,EAAE,KAAK,CAAC,CAAC;QAC3E,CAAC;QAED,OAAO,QAAQ,CAAC;IACpB,CAAC;IAED;;OAEG;IACH,KAAK,CAAC,mBAAmB;QACrB,OAAO,MAAM,IAAI,CAAC,aAAa,CAAC,mBAAmB,EAAE,CAAC;IAC1D,CAAC;IAED;;OAEG;IACH,UAAU;QACN,IAAI,CAAC,aAAa,CAAC,UAAU,EAAE,CAAC;QAChC,IAAI,CAAC,aAAa,CAAC,KAAK,EAAE,CAAC;IAC/B,CAAC;CAEJ;AAtDD,kDAsDC",
+      names: [],
+      sources: ["C:\\Users\\leodu\\Documents\\1 - Pro\\Test plugin obsidian\\.obsidian\\plugins\\obsidian-CRM\\dynamic-fields\\src\\Config\\DynamicClassFactory.ts"],
+      sourcesContent: ["import { Classe } from '../vault/Classe';\r\nimport { Vault } from '../vault/Vault';\r\nimport { ClassConfigManager } from './ClassConfigManager';\r\n\r\nexport class DynamicClassFactory {\r\n    private configManager: ClassConfigManager;\r\n    private classRegistry: Map<string, typeof Classe> = new Map();\r\n\r\n    constructor(configPath: string, app?: any) {\r\n        this.configManager = new ClassConfigManager(configPath, app);\r\n    }\r\n\r\n    /**\r\n     * Get or create a dynamic class by name\r\n     */\r\n    async getClass(className: string): Promise<typeof Classe> {\r\n        if (this.classRegistry.has(className)) {\r\n            return this.classRegistry.get(className)!;\r\n        }\r\n\r\n        const dynamicClass = await this.configManager.createDynamicClasse(className);\r\n        this.classRegistry.set(className, dynamicClass);\r\n        return dynamicClass;\r\n    }\r\n\r\n    /**\r\n     * Create an instance of a class from a file\r\n     */\r\n    async createInstance(className: string, app: any, vault: Vault, file: any): Promise<Classe> {\r\n        const ClassConstructor = await this.getClass(className);\r\n        const instance = new ClassConstructor(vault, file);\r\n        \r\n        // Attacher la configuration d'affichage \xE0 l'instance\r\n        try {\r\n            const config = await this.configManager.getClassConfig(className);\r\n            instance.displayConfig = config;\r\n        } catch (error) {\r\n            console.warn(`Could not load display config for ${className}:`, error);\r\n        }\r\n        \r\n        return instance;\r\n    }\r\n\r\n    /**\r\n     * Get all available class names\r\n     */\r\n    async getAvailableClasses(): Promise<string[]> {\r\n        return await this.configManager.getAvailableClasses();\r\n    }\r\n\r\n    /**\r\n     * Clear cache and reload configurations\r\n     */\r\n    clearCache(): void {\r\n        this.configManager.clearCache();\r\n        this.classRegistry.clear();\r\n    }\r\n\r\n}"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "5037df3d3c3d2bc6f686becdf9a39baf4a403655"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_1gu6w3v7ws = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_1gu6w3v7ws();
+cov_1gu6w3v7ws().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/* istanbul ignore next */
+cov_1gu6w3v7ws().s[1]++;
+exports.DynamicClassFactory = void 0;
+const ClassConfigManager_1 =
+/* istanbul ignore next */
+(cov_1gu6w3v7ws().s[2]++, require("./ClassConfigManager"));
+class DynamicClassFactory {
+  constructor(configPath, app) {
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().f[0]++;
+    cov_1gu6w3v7ws().s[3]++;
+    this.classRegistry = new Map();
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().s[4]++;
+    this.configManager = new ClassConfigManager_1.ClassConfigManager(configPath, app);
+  }
+  /**
+   * Get or create a dynamic class by name
+   */
+  async getClass(className) {
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().f[1]++;
+    cov_1gu6w3v7ws().s[5]++;
+    if (this.classRegistry.has(className)) {
+      /* istanbul ignore next */
+      cov_1gu6w3v7ws().b[0][0]++;
+      cov_1gu6w3v7ws().s[6]++;
+      return this.classRegistry.get(className);
+    } else
+    /* istanbul ignore next */
+    {
+      cov_1gu6w3v7ws().b[0][1]++;
+    }
+    const dynamicClass =
+    /* istanbul ignore next */
+    (cov_1gu6w3v7ws().s[7]++, await this.configManager.createDynamicClasse(className));
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().s[8]++;
+    this.classRegistry.set(className, dynamicClass);
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().s[9]++;
+    return dynamicClass;
+  }
+  /**
+   * Create an instance of a class from a file
+   */
+  async createInstance(className, app, vault, file) {
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().f[2]++;
+    const ClassConstructor =
+    /* istanbul ignore next */
+    (cov_1gu6w3v7ws().s[10]++, await this.getClass(className));
+    const instance =
+    /* istanbul ignore next */
+    (cov_1gu6w3v7ws().s[11]++, new ClassConstructor(vault, file));
+    // Attacher la configuration d'affichage à l'instance
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().s[12]++;
+    try {
+      const config =
+      /* istanbul ignore next */
+      (cov_1gu6w3v7ws().s[13]++, await this.configManager.getClassConfig(className));
+      /* istanbul ignore next */
+      cov_1gu6w3v7ws().s[14]++;
+      instance.displayConfig = config;
+    } catch (error) {
+      /* istanbul ignore next */
+      cov_1gu6w3v7ws().s[15]++;
+      console.warn(`Could not load display config for ${className}:`, error);
+    }
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().s[16]++;
+    return instance;
+  }
+  /**
+   * Get all available class names
+   */
+  async getAvailableClasses() {
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().f[3]++;
+    cov_1gu6w3v7ws().s[17]++;
+    return await this.configManager.getAvailableClasses();
+  }
+  /**
+   * Clear cache and reload configurations
+   */
+  clearCache() {
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().f[4]++;
+    cov_1gu6w3v7ws().s[18]++;
+    this.configManager.clearCache();
+    /* istanbul ignore next */
+    cov_1gu6w3v7ws().s[19]++;
+    this.classRegistry.clear();
+  }
+}
+/* istanbul ignore next */
+cov_1gu6w3v7ws().s[20]++;
+exports.DynamicClassFactory = DynamicClassFactory;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfMWd1Nnczdjd3cyIsImFjdHVhbENvdmVyYWdlIiwicyIsIkNsYXNzQ29uZmlnTWFuYWdlcl8xIiwicmVxdWlyZSIsIkR5bmFtaWNDbGFzc0ZhY3RvcnkiLCJjb25zdHJ1Y3RvciIsImNvbmZpZ1BhdGgiLCJhcHAiLCJmIiwiY2xhc3NSZWdpc3RyeSIsIk1hcCIsImNvbmZpZ01hbmFnZXIiLCJDbGFzc0NvbmZpZ01hbmFnZXIiLCJnZXRDbGFzcyIsImNsYXNzTmFtZSIsImhhcyIsImIiLCJnZXQiLCJkeW5hbWljQ2xhc3MiLCJjcmVhdGVEeW5hbWljQ2xhc3NlIiwic2V0IiwiY3JlYXRlSW5zdGFuY2UiLCJ2YXVsdCIsImZpbGUiLCJDbGFzc0NvbnN0cnVjdG9yIiwiaW5zdGFuY2UiLCJjb25maWciLCJnZXRDbGFzc0NvbmZpZyIsImRpc3BsYXlDb25maWciLCJlcnJvciIsImNvbnNvbGUiLCJ3YXJuIiwiZ2V0QXZhaWxhYmxlQ2xhc3NlcyIsImNsZWFyQ2FjaGUiLCJjbGVhciIsImV4cG9ydHMiXSwic291cmNlcyI6WyJDOlxcVXNlcnNcXGxlb2R1XFxEb2N1bWVudHNcXDEgLSBQcm9cXFRlc3QgcGx1Z2luIG9ic2lkaWFuXFwub2JzaWRpYW5cXHBsdWdpbnNcXG9ic2lkaWFuLUNSTVxcZHluYW1pYy1maWVsZHNcXHNyY1xcQ29uZmlnXFxEeW5hbWljQ2xhc3NGYWN0b3J5LnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IENsYXNzZSB9IGZyb20gJy4uL3ZhdWx0L0NsYXNzZSc7XHJcbmltcG9ydCB7IFZhdWx0IH0gZnJvbSAnLi4vdmF1bHQvVmF1bHQnO1xyXG5pbXBvcnQgeyBDbGFzc0NvbmZpZ01hbmFnZXIgfSBmcm9tICcuL0NsYXNzQ29uZmlnTWFuYWdlcic7XHJcblxyXG5leHBvcnQgY2xhc3MgRHluYW1pY0NsYXNzRmFjdG9yeSB7XHJcbiAgICBwcml2YXRlIGNvbmZpZ01hbmFnZXI6IENsYXNzQ29uZmlnTWFuYWdlcjtcclxuICAgIHByaXZhdGUgY2xhc3NSZWdpc3RyeTogTWFwPHN0cmluZywgdHlwZW9mIENsYXNzZT4gPSBuZXcgTWFwKCk7XHJcblxyXG4gICAgY29uc3RydWN0b3IoY29uZmlnUGF0aDogc3RyaW5nLCBhcHA/OiBhbnkpIHtcclxuICAgICAgICB0aGlzLmNvbmZpZ01hbmFnZXIgPSBuZXcgQ2xhc3NDb25maWdNYW5hZ2VyKGNvbmZpZ1BhdGgsIGFwcCk7XHJcbiAgICB9XHJcblxyXG4gICAgLyoqXHJcbiAgICAgKiBHZXQgb3IgY3JlYXRlIGEgZHluYW1pYyBjbGFzcyBieSBuYW1lXHJcbiAgICAgKi9cclxuICAgIGFzeW5jIGdldENsYXNzKGNsYXNzTmFtZTogc3RyaW5nKTogUHJvbWlzZTx0eXBlb2YgQ2xhc3NlPiB7XHJcbiAgICAgICAgaWYgKHRoaXMuY2xhc3NSZWdpc3RyeS5oYXMoY2xhc3NOYW1lKSkge1xyXG4gICAgICAgICAgICByZXR1cm4gdGhpcy5jbGFzc1JlZ2lzdHJ5LmdldChjbGFzc05hbWUpITtcclxuICAgICAgICB9XHJcblxyXG4gICAgICAgIGNvbnN0IGR5bmFtaWNDbGFzcyA9IGF3YWl0IHRoaXMuY29uZmlnTWFuYWdlci5jcmVhdGVEeW5hbWljQ2xhc3NlKGNsYXNzTmFtZSk7XHJcbiAgICAgICAgdGhpcy5jbGFzc1JlZ2lzdHJ5LnNldChjbGFzc05hbWUsIGR5bmFtaWNDbGFzcyk7XHJcbiAgICAgICAgcmV0dXJuIGR5bmFtaWNDbGFzcztcclxuICAgIH1cclxuXHJcbiAgICAvKipcclxuICAgICAqIENyZWF0ZSBhbiBpbnN0YW5jZSBvZiBhIGNsYXNzIGZyb20gYSBmaWxlXHJcbiAgICAgKi9cclxuICAgIGFzeW5jIGNyZWF0ZUluc3RhbmNlKGNsYXNzTmFtZTogc3RyaW5nLCBhcHA6IGFueSwgdmF1bHQ6IFZhdWx0LCBmaWxlOiBhbnkpOiBQcm9taXNlPENsYXNzZT4ge1xyXG4gICAgICAgIGNvbnN0IENsYXNzQ29uc3RydWN0b3IgPSBhd2FpdCB0aGlzLmdldENsYXNzKGNsYXNzTmFtZSk7XHJcbiAgICAgICAgY29uc3QgaW5zdGFuY2UgPSBuZXcgQ2xhc3NDb25zdHJ1Y3Rvcih2YXVsdCwgZmlsZSk7XHJcbiAgICAgICAgXHJcbiAgICAgICAgLy8gQXR0YWNoZXIgbGEgY29uZmlndXJhdGlvbiBkJ2FmZmljaGFnZSDDoCBsJ2luc3RhbmNlXHJcbiAgICAgICAgdHJ5IHtcclxuICAgICAgICAgICAgY29uc3QgY29uZmlnID0gYXdhaXQgdGhpcy5jb25maWdNYW5hZ2VyLmdldENsYXNzQ29uZmlnKGNsYXNzTmFtZSk7XHJcbiAgICAgICAgICAgIGluc3RhbmNlLmRpc3BsYXlDb25maWcgPSBjb25maWc7XHJcbiAgICAgICAgfSBjYXRjaCAoZXJyb3IpIHtcclxuICAgICAgICAgICAgY29uc29sZS53YXJuKGBDb3VsZCBub3QgbG9hZCBkaXNwbGF5IGNvbmZpZyBmb3IgJHtjbGFzc05hbWV9OmAsIGVycm9yKTtcclxuICAgICAgICB9XHJcbiAgICAgICAgXHJcbiAgICAgICAgcmV0dXJuIGluc3RhbmNlO1xyXG4gICAgfVxyXG5cclxuICAgIC8qKlxyXG4gICAgICogR2V0IGFsbCBhdmFpbGFibGUgY2xhc3MgbmFtZXNcclxuICAgICAqL1xyXG4gICAgYXN5bmMgZ2V0QXZhaWxhYmxlQ2xhc3NlcygpOiBQcm9taXNlPHN0cmluZ1tdPiB7XHJcbiAgICAgICAgcmV0dXJuIGF3YWl0IHRoaXMuY29uZmlnTWFuYWdlci5nZXRBdmFpbGFibGVDbGFzc2VzKCk7XHJcbiAgICB9XHJcblxyXG4gICAgLyoqXHJcbiAgICAgKiBDbGVhciBjYWNoZSBhbmQgcmVsb2FkIGNvbmZpZ3VyYXRpb25zXHJcbiAgICAgKi9cclxuICAgIGNsZWFyQ2FjaGUoKTogdm9pZCB7XHJcbiAgICAgICAgdGhpcy5jb25maWdNYW5hZ2VyLmNsZWFyQ2FjaGUoKTtcclxuICAgICAgICB0aGlzLmNsYXNzUmVnaXN0cnkuY2xlYXIoKTtcclxuICAgIH1cclxuXHJcbn0iXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7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

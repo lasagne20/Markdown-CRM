@@ -1,0 +1,283 @@
+import { IApp, IFile, IFolder } from "../interfaces/IApp";
+import { Vault } from "./Vault";
+import { waitForFileMetaDataUpdate, waitForMetaDataCacheUpdate } from "./Utils";
+import { dump, load as parseYaml } from 'js-yaml';
+
+export class Folder {
+
+}
+
+export class File implements IFile {
+    /*
+    Allow to quickly use files methods
+    */
+    public vault : Vault;
+    public file: any;
+    private lock : boolean;
+    public linkRegex = /^"?\[\[(.*?)\]\]"?$/;
+
+    public name : string;
+    public path : string;
+    public basename : string;
+    public extension : string;
+
+    constructor(vault : Vault, file: IFile) {
+      this.vault = vault;
+      this.file = file;
+      this.lock = false
+
+      this.name = file.name;
+      this.path = file.path;
+      this.basename = file.basename;
+      this.extension = file.extension;
+
+    }
+
+    getFolderPath(){
+      return this.file.path.substring(0, this.file.path.lastIndexOf("/"))
+    }
+
+    getFile(){
+      return this.file
+    }
+
+    isFolderFile(){
+      // Return true if the file is also a folder
+      return this.file.path.substring(0, this.file.path.lastIndexOf("/")).endsWith(this.getName().replace(".md", ""))
+    }
+
+    getFolderFilePath(){
+      // Return the folderFile path
+      let path = this.getFolderPath()
+      if (this.isFolderFile()){
+        return path
+      }
+      return path + "/" + this.getName(false)
+    }
+
+    getParentFolderPath(){
+      let path = this.getFolderPath()
+      if (this.isFolderFile()){
+        path = path.substring(0, path.lastIndexOf("/"))
+      }
+      return path
+    }
+
+    getName(md=true){
+      if (md){
+        return this.file.name
+      }
+      return this.file.name.replace(".md","")
+    }
+
+    async getID(): Promise<string> {
+      let id = (await this.getMetadata())?.Id
+      if (!id){
+        id = require("uuid").v4()
+        this.updateMetadata("Id", id)
+      }
+      return id
+    }
+
+    getPath(){
+      // Return the file path
+      return this.file.path
+    }
+
+    getLink(){
+      return `[[${this.getPath()}|${this.getName(false)}]]`
+    }
+
+    async move(targetFolderPath: string, targetFileName?: string) {
+      if (this.lock) {
+        while (this.lock) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          console.log("Waiting for lock")
+        }
+      };
+      this.lock = true;
+      if (!targetFileName){
+        targetFileName = this.getName();
+      }
+      try {
+        // Check if the folder of the target pathname exist
+        let subtargetPath = targetFolderPath + "/" + targetFileName
+        const folder = await this.vault.app.getFile(subtargetPath);
+        if (folder) {
+          targetFolderPath = subtargetPath;
+        }
+
+        // Check if we need to move the file or the folder
+        let moveFile : any = this.file
+        let newFilePath = `${targetFolderPath}/${targetFileName}`;
+        if (this.isFolderFile()){
+          let folder = await this.vault.app.getFile(this.getFolderPath())
+          if (folder){
+            moveFile = folder
+            newFilePath = newFilePath.replace(".md","")
+          }
+        }
+
+        // Vérification si le fichier cible existe déjà
+        const existingFile = await this.vault.app.getFile(newFilePath);
+        if (existingFile) {
+            console.log('Le fichier existe déjà, impossible de déplacer.');
+            this.lock = false;
+            return;
+        }
+    
+        try {
+            // Essayer de déplacer le fichier
+            if (moveFile) {
+                await this.vault.app.renameFile(moveFile, newFilePath);
+                console.log(`Fichier déplacé vers ${newFilePath}`);
+            }
+        } catch (error) {
+            console.error('Erreur lors du déplacement du fichier :', error);
+        }
+      }
+      finally {
+          this.lock = false;
+      }
+  }
+  getFromLink(name:  string) : any{
+    return this.vault.getFromLink(name)
+  }
+
+    async getMetadata() : Promise <Record<string, any>>{
+      let metadata = await this.vault.app.getMetadata(this.file);
+      return metadata
+    }
+
+    async getMetadataValue(key: string){
+      let metadata = await this.getMetadata();
+      return metadata ? metadata[key] : undefined;
+    }
+
+    getAllProperties(){
+      let metadata = this.getMetadata();
+      if (!metadata) return {};
+      // Return property objects that match the expected format
+      const properties: Record<string, any> = {};
+      for (const key in metadata) {
+        properties[key] = { name: key };
+      }
+      return properties;
+    }
+
+  
+    async updateMetadata(key: string, value: any) {
+      if (this.lock) {
+        while (this.lock) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          console.log("Waiting for lock")
+        }
+      };
+      this.lock = true;
+      
+      try {
+        console.log("Update metadata on " + this.getName() +" : " + key + " --> " + value)
+        const fileContent = await this.vault.app.readFile(this.file);
+        const { body } = this.extractFrontmatter(fileContent);
+      
+        const { existingFrontmatter } = this.extractFrontmatter(fileContent);
+
+        if (!existingFrontmatter) {this.lock = false; return;}
+
+        try {
+            let frontmatter = parseYaml(existingFrontmatter) as any;
+
+            if (!frontmatter) {this.lock = false; return;};
+            frontmatter[key] = value;
+            const newFrontmatter = dump(frontmatter);
+
+            const newContent = `---\n${newFrontmatter}\n---\n${body}`; //${extraText}
+            await this.vault.app.writeFile(this.file, newContent);
+            await this.vault.app.waitForFileMetaDataUpdate(this.getPath(), key, async () => { return; })
+            console.log("Metdata updated")
+
+        } catch (error) {
+            console.error("❌ Erreur lors du parsing du frontmatter:", error);
+        }
+      }
+      finally {
+          this.lock = false;
+      }
+    }
+
+    async removeMetadata(key: string) {
+      console.log("Remove metadata " + key)
+      const frontmatter = await this.getMetadata();
+      if (!frontmatter) return;
+      delete frontmatter[key]
+      await this.saveFrontmatter(frontmatter);
+    }
+    
+    async reorderMetadata(propertiesOrder: string[]) {
+        const frontmatter = this.getMetadata();
+        if (!frontmatter) return;
+
+        propertiesOrder.push("Id")
+
+        if (JSON.stringify(propertiesOrder) === JSON.stringify(Object.keys(frontmatter))) return;
+
+        console.log("Re-order metadata");
+        // Sort properties and extract extra ones
+        const { sortedFrontmatter, extraProperties } = this.sortFrontmatter(frontmatter, propertiesOrder);
+        await this.saveFrontmatter(sortedFrontmatter, extraProperties);
+    }
+    
+    async saveFrontmatter(frontmatter: Record<string, any>, extraProperties: string[] = []) {
+        const fileContent = await this.vault.app.readFile(this.file);
+        const { body } = this.extractFrontmatter(fileContent);
+    
+        // Reformater le frontmatter
+        const newFrontmatter = dump(frontmatter);
+        const filteredExtraProperties = extraProperties.filter(prop => prop && prop.trim() !== "");
+        //const extraText = filteredExtraProperties.length > 0 ? `\n${filteredExtraProperties.join("\n")}` : "";
+
+        
+        // Sauvegarde du fichier
+        const newContent = `---\n${newFrontmatter}\n---\n${body}`; //${extraText}
+        await this.vault.app.writeFile(this.file, newContent);
+        console.log("Updated file")
+    }
+
+    
+    // Extraire le frontmatter et le reste du contenu
+    extractFrontmatter(content: string) {
+        const frontmatterRegex = /^---\n([\s\S]+?)\n---\n/;
+        const match = content.match(frontmatterRegex);
+        return {
+            existingFrontmatter: match ? match[1] : "",
+            body: match ? content.replace(match[0], "") : content,
+        };
+    }
+    
+    // Trier les propriétés et identifier celles en surplus
+    // Méthode simple pour les tests
+    formatFrontmatter(frontmatter: Record<string, any>): string {
+        return dump(frontmatter);
+    }
+
+    sortFrontmatter(frontmatter: Record<string, any>, propertiesOrder: string[]) {
+        let sortedFrontmatter: Record<string, any> = {};
+        let extraProperties: string[] = [];
+        
+        propertiesOrder.forEach(prop => {
+            if (prop in frontmatter) {
+                sortedFrontmatter[prop] = frontmatter[prop];
+            } else {
+                sortedFrontmatter[prop] = null;
+            }
+        });
+        
+        Object.keys(frontmatter).forEach(prop => {
+            if (!propertiesOrder.includes(prop)) {
+                extraProperties.push(`${prop}: ${JSON.stringify(frontmatter[prop])}`);
+            }
+        });
+        
+        return { sortedFrontmatter, extraProperties };
+    }
+}

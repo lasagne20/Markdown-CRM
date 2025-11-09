@@ -1,0 +1,192 @@
+# Configuration de la classe Projet
+name: Projet
+icon: 📋
+description: Gestion des projets avec suivi complet
+template: Projet.md
+
+# Configuration des propriétés
+properties:
+  - name: nom
+    type: TextProperty
+    title: Nom du projet
+    icon: 📝
+    required: true
+    defaultValue: ""
+    
+  - name: description
+    type: TextProperty
+    title: Description du projet
+    icon: 📄
+    required: false
+    defaultValue: ""
+    multiline: true
+    
+  - name: statut
+    type: SelectProperty
+    title: Statut du projet
+    icon: 🔄
+    required: true
+    defaultValue: "En cours"
+    options:
+      - "Planifié"
+      - "En cours"
+      - "En pause"
+      - "Terminé"
+      - "Annulé"
+    
+  - name: priorite
+    type: RatingProperty
+    title: Priorité (1-5)
+    icon: ⭐
+    required: false
+    defaultValue: 3
+    min: 1
+    max: 5
+    
+  - name: dateDebut
+    type: RangeDateProperty
+    title: Date de début
+    icon: 🚀
+    required: false
+    defaultValue: ""
+    
+  - name: dateFinReelle
+    type: DateProperty
+    title: Date de fin réelle
+    icon: ✅
+    required: false
+    defaultValue: ""
+    
+  - name: responsable
+    type: FileProperty
+    title: Responsable du projet
+    icon: 👤
+    required: false
+    defaultValue: ""
+    linkClass: "Contact"
+    
+  - name: equipe
+    type: MultiFileProperty
+    title: Équipe projet
+    icon: 👥
+    required: false
+    defaultValue: []
+    linkClass: "Contact"
+    
+  - name: budget
+    type: NumberProperty
+    title: Budget alloué (€)
+    icon: 💰
+    required: false
+    defaultValue: 0
+    min: 0
+    
+  - name: budgetUtilise
+    type: NumberProperty
+    title: Budget utilisé (€)
+    icon: 💸
+    required: false
+    defaultValue: 0
+    min: 0
+    
+  - name: pourcentageCompletion
+    type: NumberProperty
+    title: Progression (%)
+    icon: 📊
+    required: false
+    defaultValue: 0
+    min: 0
+    max: 100
+    
+  - name: client
+    type: LinkProperty
+    title: Client
+    icon: 🏢
+    required: false
+    defaultValue: ""
+    linkClass: "Contact"
+    
+  - name: tags
+    type: MultiSelectProperty
+    title: Tags du projet
+    icon: 🏷️
+    required: false
+    defaultValue: []
+    options:
+      - "Web"
+      - "Mobile"
+      - "Desktop"
+      - "API"
+      - "Design"
+      - "Marketing"
+      - "Formation"
+    
+  - name: fichiers
+    type: MultiFileProperty
+    title: Fichiers du projet
+    icon: 📎
+    required: false
+    defaultValue: []
+
+# Configuration d'affichage
+display:
+  headerFormat: "{{nom}} ({{statut}})"
+  summaryFields:
+    - nom
+    - statut
+    - responsable
+    - dateDebut
+    - dateFin
+    - pourcentageCompletion
+  
+# Actions disponibles
+actions:
+  - name: demarrer
+    label: "Démarrer le projet"
+    icon: 🚀
+    condition: "statut == 'Planifié'"
+    
+  - name: mettrePause
+    label: "Mettre en pause"
+    icon: ⏸️
+    condition: "statut == 'En cours'"
+    
+  - name: reprendre
+    label: "Reprendre"
+    icon: ▶️
+    condition: "statut == 'En pause'"
+    
+  - name: terminer
+    label: "Terminer"
+    icon: ✅
+    condition: "statut == 'En cours'"
+    
+  - name: genererRapport
+    label: "Générer rapport"
+    icon: 📊
+
+# Relations avec autres classes
+relations:
+  - targetClass: Tache
+    relationName: "taches"
+    type: "one-to-many"
+    description: "Tâches liées à ce projet"
+    
+  - targetClass: Contact
+    relationName: "participants"
+    type: "many-to-many"
+    description: "Participants au projet"
+
+# Formules calculées
+formulas:
+  - name: budgetRestant
+    formula: "budget - budgetUtilise"
+    description: "Budget restant disponible"
+    
+  - name: dureeEnJours
+    formula: "dateFin - dateDebut"
+    description: "Durée prévue en jours"
+    
+  - name: retard
+    formula: "today() - dateFin"
+    description: "Nombre de jours de retard (si applicable)"

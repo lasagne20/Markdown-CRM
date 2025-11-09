@@ -1,0 +1,419 @@
+66db2cbebc07241169ec6ca22170cb93
+"use strict";
+
+/* istanbul ignore next */
+function cov_1gfdj5ax57() {
+  var path = "C:\\Users\\leodu\\Documents\\1 - Pro\\Test plugin obsidian\\.obsidian\\plugins\\obsidian-CRM\\dynamic-fields\\src\\properties\\ClasseProperty.ts";
+  var hash = "54ba2530c12eed91a1ad994ba0018e72c242a851";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "C:\\Users\\leodu\\Documents\\1 - Pro\\Test plugin obsidian\\.obsidian\\plugins\\obsidian-CRM\\dynamic-fields\\src\\properties\\ClasseProperty.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 2,
+          column: 0
+        },
+        end: {
+          line: 2,
+          column: 62
+        }
+      },
+      "1": {
+        start: {
+          line: 3,
+          column: 0
+        },
+        end: {
+          line: 3,
+          column: 32
+        }
+      },
+      "2": {
+        start: {
+          line: 4,
+          column: 19
+        },
+        end: {
+          line: 4,
+          column: 40
+        }
+      },
+      "3": {
+        start: {
+          line: 8,
+          column: 8
+        },
+        end: {
+          line: 8,
+          column: 43
+        }
+      },
+      "4": {
+        start: {
+          line: 9,
+          column: 8
+        },
+        end: {
+          line: 9,
+          column: 28
+        }
+      },
+      "5": {
+        start: {
+          line: 12,
+          column: 22
+        },
+        end: {
+          line: 12,
+          column: 51
+        }
+      },
+      "6": {
+        start: {
+          line: 13,
+          column: 8
+        },
+        end: {
+          line: 13,
+          column: 46
+        }
+      },
+      "7": {
+        start: {
+          line: 14,
+          column: 22
+        },
+        end: {
+          line: 14,
+          column: 53
+        }
+      },
+      "8": {
+        start: {
+          line: 15,
+          column: 8
+        },
+        end: {
+          line: 15,
+          column: 34
+        }
+      },
+      "9": {
+        start: {
+          line: 16,
+          column: 8
+        },
+        end: {
+          line: 21,
+          column: 9
+        }
+      },
+      "10": {
+        start: {
+          line: 17,
+          column: 25
+        },
+        end: {
+          line: 17,
+          column: 54
+        }
+      },
+      "11": {
+        start: {
+          line: 18,
+          column: 12
+        },
+        end: {
+          line: 18,
+          column: 49
+        }
+      },
+      "12": {
+        start: {
+          line: 19,
+          column: 12
+        },
+        end: {
+          line: 19,
+          column: 52
+        }
+      },
+      "13": {
+        start: {
+          line: 20,
+          column: 12
+        },
+        end: {
+          line: 20,
+          column: 36
+        }
+      },
+      "14": {
+        start: {
+          line: 22,
+          column: 8
+        },
+        end: {
+          line: 22,
+          column: 33
+        }
+      },
+      "15": {
+        start: {
+          line: 23,
+          column: 8
+        },
+        end: {
+          line: 23,
+          column: 21
+        }
+      },
+      "16": {
+        start: {
+          line: 26,
+          column: 0
+        },
+        end: {
+          line: 26,
+          column: 40
+        }
+      }
+    },
+    fnMap: {
+      "0": {
+        name: "(anonymous_0)",
+        decl: {
+          start: {
+            line: 7,
+            column: 4
+          },
+          end: {
+            line: 7,
+            column: 5
+          }
+        },
+        loc: {
+          start: {
+            line: 7,
+            column: 40
+          },
+          end: {
+            line: 10,
+            column: 5
+          }
+        },
+        line: 7
+      },
+      "1": {
+        name: "(anonymous_1)",
+        decl: {
+          start: {
+            line: 11,
+            column: 4
+          },
+          end: {
+            line: 11,
+            column: 5
+          }
+        },
+        loc: {
+          start: {
+            line: 11,
+            column: 31
+          },
+          end: {
+            line: 24,
+            column: 5
+          }
+        },
+        line: 11
+      }
+    },
+    branchMap: {
+      "0": {
+        loc: {
+          start: {
+            line: 7,
+            column: 29
+          },
+          end: {
+            line: 7,
+            column: 38
+          }
+        },
+        type: "default-arg",
+        locations: [{
+          start: {
+            line: 7,
+            column: 36
+          },
+          end: {
+            line: 7,
+            column: 38
+          }
+        }],
+        line: 7
+      },
+      "1": {
+        loc: {
+          start: {
+            line: 16,
+            column: 8
+          },
+          end: {
+            line: 21,
+            column: 9
+          }
+        },
+        type: "if",
+        locations: [{
+          start: {
+            line: 16,
+            column: 8
+          },
+          end: {
+            line: 21,
+            column: 9
+          }
+        }, {
+          start: {
+            line: undefined,
+            column: undefined
+          },
+          end: {
+            line: undefined,
+            column: undefined
+          }
+        }],
+        line: 16
+      }
+    },
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "10": 0,
+      "11": 0,
+      "12": 0,
+      "13": 0,
+      "14": 0,
+      "15": 0,
+      "16": 0
+    },
+    f: {
+      "0": 0,
+      "1": 0
+    },
+    b: {
+      "0": [0],
+      "1": [0, 0]
+    },
+    inputSourceMap: {
+      file: "C:\\Users\\leodu\\Documents\\1 - Pro\\Test plugin obsidian\\.obsidian\\plugins\\obsidian-CRM\\dynamic-fields\\src\\properties\\ClasseProperty.ts",
+      mappings: ";;;AACA,yCAAsC;AAKtC,MAAa,cAAe,SAAQ,mBAAQ;IAIxC,wCAAwC;IACxC,YAAY,IAAa,EAAE,KAAY,EAAE,OAAe,EAAE;QACxD,KAAK,CAAC,IAAI,EAAE,KAAK,EAAE,EAAC,IAAI,EAAE,IAAI,EAAC,CAAC,CAAC;QAJlB,SAAI,GAAY,OAAO,CAAC;IAKzC,CAAC;IAEQ,WAAW,CAAC,KAAU,EAAE,MAAqC;QAChE,MAAM,KAAK,GAAG,QAAQ,CAAC,aAAa,CAAC,KAAK,CAAC,CAAC;QAC5C,KAAK,CAAC,SAAS,CAAC,GAAG,CAAC,gBAAgB,CAAC,CAAC;QAEtC,MAAM,KAAK,GAAG,QAAQ,CAAC,aAAa,CAAC,OAAO,CAAC,CAAC;QAC9C,KAAK,CAAC,WAAW,GAAG,KAAK,CAAC;QAE1B,IAAI,IAAI,CAAC,IAAI,EAAC,CAAC;YACb,MAAM,IAAI,GAAG,QAAQ,CAAC,aAAa,CAAC,KAAK,CAAC,CAAC;YAC3C,IAAI,CAAC,SAAS,CAAC,GAAG,CAAC,gBAAgB,CAAC,CAAC;YACrC,IAAI,CAAC,KAAK,CAAC,GAAG,CAAC,OAAO,CAAC,IAAI,EAAE,IAAI,CAAC,IAAI,CAAC,CAAC;YACxC,KAAK,CAAC,WAAW,CAAC,IAAI,CAAC,CAAC;QAC1B,CAAC;QAED,KAAK,CAAC,WAAW,CAAC,KAAK,CAAC,CAAC;QACzB,OAAO,KAAK,CAAC;IACjB,CAAC;CAEN;AA3BD,wCA2BC",
+      names: [],
+      sources: ["C:\\Users\\leodu\\Documents\\1 - Pro\\Test plugin obsidian\\.obsidian\\plugins\\obsidian-CRM\\dynamic-fields\\src\\properties\\ClasseProperty.ts"],
+      sourcesContent: ["import { File } from \"../vault/File\";\r\nimport { Property } from \"./Property\";\r\nimport { Classe } from \"../vault/Classe\";\r\nimport { Vault } from \"../vault/Vault\";\r\n\r\n\r\nexport class ClasseProperty extends Property{\r\n\r\n     public override type : string = \"class\";\r\n\r\n    // Used for property hidden for the user\r\n    constructor(name : string, vault: Vault, icon: string = \"\") {\r\n      super(name, vault, {icon: icon});\r\n    }\r\n\r\n    override fillDisplay(value: any, update: (value: any) => Promise<void>)  {\r\n          const field = document.createElement(\"div\");\r\n          field.classList.add(\"metadata-field\");\r\n      \r\n          const label = document.createElement(\"label\");\r\n          label.textContent = value;\r\n\r\n          if (this.icon){\r\n            const icon = document.createElement(\"div\"); \r\n            icon.classList.add(\"icon-container\");\r\n            this.vault.app.setIcon(icon, this.icon);\r\n            field.appendChild(icon);\r\n          }\r\n          \r\n          field.appendChild(label);\r\n          return field;\r\n      }\r\n\r\n}"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "54ba2530c12eed91a1ad994ba0018e72c242a851"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_1gfdj5ax57 = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_1gfdj5ax57();
+cov_1gfdj5ax57().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/* istanbul ignore next */
+cov_1gfdj5ax57().s[1]++;
+exports.ClasseProperty = void 0;
+const Property_1 =
+/* istanbul ignore next */
+(cov_1gfdj5ax57().s[2]++, require("./Property"));
+class ClasseProperty extends
+/* istanbul ignore next */
+(Property_1.Property) {
+  // Used for property hidden for the user
+  constructor(name, vault, icon =
+  /* istanbul ignore next */
+  (cov_1gfdj5ax57().b[0][0]++, "")) {
+    /* istanbul ignore next */
+    cov_1gfdj5ax57().f[0]++;
+    cov_1gfdj5ax57().s[3]++;
+    super(name, vault, {
+      icon: icon
+    });
+    /* istanbul ignore next */
+    cov_1gfdj5ax57().s[4]++;
+    this.type = "class";
+  }
+  fillDisplay(value, update) {
+    /* istanbul ignore next */
+    cov_1gfdj5ax57().f[1]++;
+    const field =
+    /* istanbul ignore next */
+    (cov_1gfdj5ax57().s[5]++, document.createElement("div"));
+    /* istanbul ignore next */
+    cov_1gfdj5ax57().s[6]++;
+    field.classList.add("metadata-field");
+    const label =
+    /* istanbul ignore next */
+    (cov_1gfdj5ax57().s[7]++, document.createElement("label"));
+    /* istanbul ignore next */
+    cov_1gfdj5ax57().s[8]++;
+    label.textContent = value;
+    /* istanbul ignore next */
+    cov_1gfdj5ax57().s[9]++;
+    if (this.icon) {
+      /* istanbul ignore next */
+      cov_1gfdj5ax57().b[1][0]++;
+      const icon =
+      /* istanbul ignore next */
+      (cov_1gfdj5ax57().s[10]++, document.createElement("div"));
+      /* istanbul ignore next */
+      cov_1gfdj5ax57().s[11]++;
+      icon.classList.add("icon-container");
+      /* istanbul ignore next */
+      cov_1gfdj5ax57().s[12]++;
+      this.vault.app.setIcon(icon, this.icon);
+      /* istanbul ignore next */
+      cov_1gfdj5ax57().s[13]++;
+      field.appendChild(icon);
+    } else
+    /* istanbul ignore next */
+    {
+      cov_1gfdj5ax57().b[1][1]++;
+    }
+    cov_1gfdj5ax57().s[14]++;
+    field.appendChild(label);
+    /* istanbul ignore next */
+    cov_1gfdj5ax57().s[15]++;
+    return field;
+  }
+}
+/* istanbul ignore next */
+cov_1gfdj5ax57().s[16]++;
+exports.ClasseProperty = ClasseProperty;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfMWdmZGo1YXg1NyIsImFjdHVhbENvdmVyYWdlIiwicyIsIlByb3BlcnR5XzEiLCJyZXF1aXJlIiwiQ2xhc3NlUHJvcGVydHkiLCJQcm9wZXJ0eSIsImNvbnN0cnVjdG9yIiwibmFtZSIsInZhdWx0IiwiaWNvbiIsImIiLCJmIiwidHlwZSIsImZpbGxEaXNwbGF5IiwidmFsdWUiLCJ1cGRhdGUiLCJmaWVsZCIsImRvY3VtZW50IiwiY3JlYXRlRWxlbWVudCIsImNsYXNzTGlzdCIsImFkZCIsImxhYmVsIiwidGV4dENvbnRlbnQiLCJhcHAiLCJzZXRJY29uIiwiYXBwZW5kQ2hpbGQiLCJleHBvcnRzIl0sInNvdXJjZXMiOlsiQzpcXFVzZXJzXFxsZW9kdVxcRG9jdW1lbnRzXFwxIC0gUHJvXFxUZXN0IHBsdWdpbiBvYnNpZGlhblxcLm9ic2lkaWFuXFxwbHVnaW5zXFxvYnNpZGlhbi1DUk1cXGR5bmFtaWMtZmllbGRzXFxzcmNcXHByb3BlcnRpZXNcXENsYXNzZVByb3BlcnR5LnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IEZpbGUgfSBmcm9tIFwiLi4vdmF1bHQvRmlsZVwiO1xyXG5pbXBvcnQgeyBQcm9wZXJ0eSB9IGZyb20gXCIuL1Byb3BlcnR5XCI7XHJcbmltcG9ydCB7IENsYXNzZSB9IGZyb20gXCIuLi92YXVsdC9DbGFzc2VcIjtcclxuaW1wb3J0IHsgVmF1bHQgfSBmcm9tIFwiLi4vdmF1bHQvVmF1bHRcIjtcclxuXHJcblxyXG5leHBvcnQgY2xhc3MgQ2xhc3NlUHJvcGVydHkgZXh0ZW5kcyBQcm9wZXJ0eXtcclxuXHJcbiAgICAgcHVibGljIG92ZXJyaWRlIHR5cGUgOiBzdHJpbmcgPSBcImNsYXNzXCI7XHJcblxyXG4gICAgLy8gVXNlZCBmb3IgcHJvcGVydHkgaGlkZGVuIGZvciB0aGUgdXNlclxyXG4gICAgY29uc3RydWN0b3IobmFtZSA6IHN0cmluZywgdmF1bHQ6IFZhdWx0LCBpY29uOiBzdHJpbmcgPSBcIlwiKSB7XHJcbiAgICAgIHN1cGVyKG5hbWUsIHZhdWx0LCB7aWNvbjogaWNvbn0pO1xyXG4gICAgfVxyXG5cclxuICAgIG92ZXJyaWRlIGZpbGxEaXNwbGF5KHZhbHVlOiBhbnksIHVwZGF0ZTogKHZhbHVlOiBhbnkpID0+IFByb21pc2U8dm9pZD4pICB7XHJcbiAgICAgICAgICBjb25zdCBmaWVsZCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIik7XHJcbiAgICAgICAgICBmaWVsZC5jbGFzc0xpc3QuYWRkKFwibWV0YWRhdGEtZmllbGRcIik7XHJcbiAgICAgIFxyXG4gICAgICAgICAgY29uc3QgbGFiZWwgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KFwibGFiZWxcIik7XHJcbiAgICAgICAgICBsYWJlbC50ZXh0Q29udGVudCA9IHZhbHVlO1xyXG5cclxuICAgICAgICAgIGlmICh0aGlzLmljb24pe1xyXG4gICAgICAgICAgICBjb25zdCBpY29uID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcImRpdlwiKTsgXHJcbiAgICAgICAgICAgIGljb24uY2xhc3NMaXN0LmFkZChcImljb24tY29udGFpbmVyXCIpO1xyXG4gICAgICAgICAgICB0aGlzLnZhdWx0LmFwcC5zZXRJY29uKGljb24sIHRoaXMuaWNvbik7XHJcbiAgICAgICAgICAgIGZpZWxkLmFwcGVuZENoaWxkKGljb24pO1xyXG4gICAgICAgICAgfVxyXG4gICAgICAgICAgXHJcbiAgICAgICAgICBmaWVsZC5hcHBlbmRDaGlsZChsYWJlbCk7XHJcbiAgICAgICAgICByZXR1cm4gZmllbGQ7XHJcbiAgICAgIH1cclxuXHJcbn0iXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7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

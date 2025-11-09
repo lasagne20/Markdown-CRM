@@ -1,0 +1,60 @@
+ad74a0fb816a7fe265e85a9dfa49f27e
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.waitForMetaDataCacheUpdate = exports.waitForFileMetaDataUpdate = void 0;
+// Utility functions for file metadata operations
+const waitForFileMetaDataUpdate = async (app, filePath, key, callback) => {
+    // Attendre que les métadonnées du fichier soient mises à jour
+    // Dans un environnement réel, ceci surveillerait les changements de métadonnées
+    let attempts = 0;
+    const maxAttempts = 50;
+    try {
+        while (attempts < maxAttempts) {
+            try {
+                const file = await app.getFile(filePath);
+                if (file) {
+                    const metadata = await app.getMetadata(file);
+                    if (metadata && metadata[key] !== undefined) {
+                        try {
+                            await callback();
+                        }
+                        catch (error) {
+                            // Handle callback errors gracefully
+                            console.warn('Callback error in waitForFileMetaDataUpdate:', error);
+                        }
+                        return;
+                    }
+                }
+            }
+            catch (error) {
+                // Handle file access errors gracefully
+                console.warn('File access error in waitForFileMetaDataUpdate:', error);
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        // Si on n'arrive pas à détecter le changement, on exécute quand même le callback
+        try {
+            await callback();
+        }
+        catch (error) {
+            // Handle callback errors gracefully
+            console.warn('Callback error in waitForFileMetaDataUpdate:', error);
+        }
+    }
+    catch (error) {
+        // Handle any other errors gracefully
+        console.warn('Unexpected error in waitForFileMetaDataUpdate:', error);
+    }
+};
+exports.waitForFileMetaDataUpdate = waitForFileMetaDataUpdate;
+const waitForMetaDataCacheUpdate = async (app, callback) => {
+    // Attendre que le cache des métadonnées soit mis à jour
+    // Simulation d'une attente courte
+    await new Promise(resolve => setTimeout(resolve, 100));
+    // Let callback errors propagate to caller - don't catch them
+    await callback();
+};
+exports.waitForMetaDataCacheUpdate = waitForMetaDataCacheUpdate;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiQzpcXFVzZXJzXFxsZW9kdVxcRG9jdW1lbnRzXFwxIC0gUHJvXFxUZXN0IHBsdWdpbiBvYnNpZGlhblxcLm9ic2lkaWFuXFxwbHVnaW5zXFxvYnNpZGlhbi1DUk1cXGR5bmFtaWMtZmllbGRzXFxzcmNcXHZhdWx0XFxVdGlscy50cyIsIm1hcHBpbmdzIjoiOzs7QUFDQSxpREFBaUQ7QUFFMUMsTUFBTSx5QkFBeUIsR0FBRyxLQUFLLEVBQzFDLEdBQVMsRUFDVCxRQUFnQixFQUNoQixHQUFXLEVBQ1gsUUFBNkIsRUFDaEIsRUFBRTtJQUNmLDhEQUE4RDtJQUM5RCxnRkFBZ0Y7SUFDaEYsSUFBSSxRQUFRLEdBQUcsQ0FBQyxDQUFDO0lBQ2pCLE1BQU0sV0FBVyxHQUFHLEVBQUUsQ0FBQztJQUV2QixJQUFJLENBQUM7UUFDRCxPQUFPLFFBQVEsR0FBRyxXQUFXLEVBQUUsQ0FBQztZQUM1QixJQUFJLENBQUM7Z0JBQ0QsTUFBTSxJQUFJLEdBQUcsTUFBTSxHQUFHLENBQUMsT0FBTyxDQUFDLFFBQVEsQ0FBQyxDQUFDO2dCQUN6QyxJQUFJLElBQUksRUFBRSxDQUFDO29CQUNQLE1BQU0sUUFBUSxHQUFHLE1BQU0sR0FBRyxDQUFDLFdBQVcsQ0FBQyxJQUFJLENBQUMsQ0FBQztvQkFDN0MsSUFBSSxRQUFRLElBQUksUUFBUSxDQUFDLEdBQUcsQ0FBQyxLQUFLLFNBQVMsRUFBRSxDQUFDO3dCQUMxQyxJQUFJLENBQUM7NEJBQ0QsTUFBTSxRQUFRLEVBQUUsQ0FBQzt3QkFDckIsQ0FBQzt3QkFBQyxPQUFPLEtBQUssRUFBRSxDQUFDOzRCQUNiLG9DQUFvQzs0QkFDcEMsT0FBTyxDQUFDLElBQUksQ0FBQyw4Q0FBOEMsRUFBRSxLQUFLLENBQUMsQ0FBQzt3QkFDeEUsQ0FBQzt3QkFDRCxPQUFPO29CQUNYLENBQUM7Z0JBQ0wsQ0FBQztZQUNMLENBQUM7WUFBQyxPQUFPLEtBQUssRUFBRSxDQUFDO2dCQUNiLHVDQUF1QztnQkFDdkMsT0FBTyxDQUFDLElBQUksQ0FBQyxpREFBaUQsRUFBRSxLQUFLLENBQUMsQ0FBQztnQkFDdkUsTUFBTTtZQUNWLENBQUM7WUFFRCxNQUFNLElBQUksT0FBTyxDQUFDLE9BQU8sQ0FBQyxFQUFFLENBQUMsVUFBVSxDQUFDLE9BQU8sRUFBRSxHQUFHLENBQUMsQ0FBQyxDQUFDO1lBQ3ZELFFBQVEsRUFBRSxDQUFDO1FBQ2YsQ0FBQztRQUVELGlGQUFpRjtRQUNqRixJQUFJLENBQUM7WUFDRCxNQUFNLFFBQVEsRUFBRSxDQUFDO1FBQ3JCLENBQUM7UUFBQyxPQUFPLEtBQUssRUFBRSxDQUFDO1lBQ2Isb0NBQW9DO1lBQ3BDLE9BQU8sQ0FBQyxJQUFJLENBQUMsOENBQThDLEVBQUUsS0FBSyxDQUFDLENBQUM7UUFDeEUsQ0FBQztJQUNMLENBQUM7SUFBQyxPQUFPLEtBQUssRUFBRSxDQUFDO1FBQ2IscUNBQXFDO1FBQ3JDLE9BQU8sQ0FBQyxJQUFJLENBQUMsZ0RBQWdELEVBQUUsS0FBSyxDQUFDLENBQUM7SUFDMUUsQ0FBQztBQUNMLENBQUMsQ0FBQztBQWhEVyxRQUFBLHlCQUF5Qiw2QkFnRHBDO0FBRUssTUFBTSwwQkFBMEIsR0FBRyxLQUFLLEVBQzNDLEdBQVEsRUFDUixRQUE2QixFQUNoQixFQUFFO0lBQ2Ysd0RBQXdEO0lBQ3hELGtDQUFrQztJQUNsQyxNQUFNLElBQUksT0FBTyxDQUFDLE9BQU8sQ0FBQyxFQUFFLENBQUMsVUFBVSxDQUFDLE9BQU8sRUFBRSxHQUFHLENBQUMsQ0FBQyxDQUFDO0lBQ3ZELDZEQUE2RDtJQUM3RCxNQUFNLFFBQVEsRUFBRSxDQUFDO0FBQ3JCLENBQUMsQ0FBQztBQVRXLFFBQUEsMEJBQTBCLDhCQVNyQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyJDOlxcVXNlcnNcXGxlb2R1XFxEb2N1bWVudHNcXDEgLSBQcm9cXFRlc3QgcGx1Z2luIG9ic2lkaWFuXFwub2JzaWRpYW5cXHBsdWdpbnNcXG9ic2lkaWFuLUNSTVxcZHluYW1pYy1maWVsZHNcXHNyY1xcdmF1bHRcXFV0aWxzLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IElBcHAgfSBmcm9tIFwiLi4vaW50ZXJmYWNlcy9JQXBwXCI7XHJcbi8vIFV0aWxpdHkgZnVuY3Rpb25zIGZvciBmaWxlIG1ldGFkYXRhIG9wZXJhdGlvbnNcclxuXHJcbmV4cG9ydCBjb25zdCB3YWl0Rm9yRmlsZU1ldGFEYXRhVXBkYXRlID0gYXN5bmMgKFxyXG4gICAgYXBwOiBJQXBwLFxyXG4gICAgZmlsZVBhdGg6IHN0cmluZyxcclxuICAgIGtleTogc3RyaW5nLFxyXG4gICAgY2FsbGJhY2s6ICgpID0+IFByb21pc2U8dm9pZD5cclxuKTogUHJvbWlzZTx2b2lkPiA9PiB7XHJcbiAgICAvLyBBdHRlbmRyZSBxdWUgbGVzIG3DqXRhZG9ubsOpZXMgZHUgZmljaGllciBzb2llbnQgbWlzZXMgw6Agam91clxyXG4gICAgLy8gRGFucyB1biBlbnZpcm9ubmVtZW50IHLDqWVsLCBjZWNpIHN1cnZlaWxsZXJhaXQgbGVzIGNoYW5nZW1lbnRzIGRlIG3DqXRhZG9ubsOpZXNcclxuICAgIGxldCBhdHRlbXB0cyA9IDA7XHJcbiAgICBjb25zdCBtYXhBdHRlbXB0cyA9IDUwO1xyXG4gICAgXHJcbiAgICB0cnkge1xyXG4gICAgICAgIHdoaWxlIChhdHRlbXB0cyA8IG1heEF0dGVtcHRzKSB7XHJcbiAgICAgICAgICAgIHRyeSB7XHJcbiAgICAgICAgICAgICAgICBjb25zdCBmaWxlID0gYXdhaXQgYXBwLmdldEZpbGUoZmlsZVBhdGgpO1xyXG4gICAgICAgICAgICAgICAgaWYgKGZpbGUpIHtcclxuICAgICAgICAgICAgICAgICAgICBjb25zdCBtZXRhZGF0YSA9IGF3YWl0IGFwcC5nZXRNZXRhZGF0YShmaWxlKTtcclxuICAgICAgICAgICAgICAgICAgICBpZiAobWV0YWRhdGEgJiYgbWV0YWRhdGFba2V5XSAhPT0gdW5kZWZpbmVkKSB7XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIHRyeSB7XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBhd2FpdCBjYWxsYmFjaygpO1xyXG4gICAgICAgICAgICAgICAgICAgICAgICB9IGNhdGNoIChlcnJvcikge1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgLy8gSGFuZGxlIGNhbGxiYWNrIGVycm9ycyBncmFjZWZ1bGx5XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBjb25zb2xlLndhcm4oJ0NhbGxiYWNrIGVycm9yIGluIHdhaXRGb3JGaWxlTWV0YURhdGFVcGRhdGU6JywgZXJyb3IpO1xyXG4gICAgICAgICAgICAgICAgICAgICAgICB9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIHJldHVybjtcclxuICAgICAgICAgICAgICAgICAgICB9XHJcbiAgICAgICAgICAgICAgICB9XHJcbiAgICAgICAgICAgIH0gY2F0Y2ggKGVycm9yKSB7XHJcbiAgICAgICAgICAgICAgICAvLyBIYW5kbGUgZmlsZSBhY2Nlc3MgZXJyb3JzIGdyYWNlZnVsbHlcclxuICAgICAgICAgICAgICAgIGNvbnNvbGUud2FybignRmlsZSBhY2Nlc3MgZXJyb3IgaW4gd2FpdEZvckZpbGVNZXRhRGF0YVVwZGF0ZTonLCBlcnJvcik7XHJcbiAgICAgICAgICAgICAgICBicmVhaztcclxuICAgICAgICAgICAgfVxyXG4gICAgICAgICAgICBcclxuICAgICAgICAgICAgYXdhaXQgbmV3IFByb21pc2UocmVzb2x2ZSA9PiBzZXRUaW1lb3V0KHJlc29sdmUsIDEwMCkpO1xyXG4gICAgICAgICAgICBhdHRlbXB0cysrO1xyXG4gICAgICAgIH1cclxuICAgICAgICBcclxuICAgICAgICAvLyBTaSBvbiBuJ2Fycml2ZSBwYXMgw6AgZMOpdGVjdGVyIGxlIGNoYW5nZW1lbnQsIG9uIGV4w6ljdXRlIHF1YW5kIG3Dqm1lIGxlIGNhbGxiYWNrXHJcbiAgICAgICAgdHJ5IHtcclxuICAgICAgICAgICAgYXdhaXQgY2FsbGJhY2soKTtcclxuICAgICAgICB9IGNhdGNoIChlcnJvcikge1xyXG4gICAgICAgICAgICAvLyBIYW5kbGUgY2FsbGJhY2sgZXJyb3JzIGdyYWNlZnVsbHlcclxuICAgICAgICAgICAgY29uc29sZS53YXJuKCdDYWxsYmFjayBlcnJvciBpbiB3YWl0Rm9yRmlsZU1ldGFEYXRhVXBkYXRlOicsIGVycm9yKTtcclxuICAgICAgICB9XHJcbiAgICB9IGNhdGNoIChlcnJvcikge1xyXG4gICAgICAgIC8vIEhhbmRsZSBhbnkgb3RoZXIgZXJyb3JzIGdyYWNlZnVsbHlcclxuICAgICAgICBjb25zb2xlLndhcm4oJ1VuZXhwZWN0ZWQgZXJyb3IgaW4gd2FpdEZvckZpbGVNZXRhRGF0YVVwZGF0ZTonLCBlcnJvcik7XHJcbiAgICB9XHJcbn07XHJcblxyXG5leHBvcnQgY29uc3Qgd2FpdEZvck1ldGFEYXRhQ2FjaGVVcGRhdGUgPSBhc3luYyAoXHJcbiAgICBhcHA6IGFueSxcclxuICAgIGNhbGxiYWNrOiAoKSA9PiBQcm9taXNlPHZvaWQ+XHJcbik6IFByb21pc2U8dm9pZD4gPT4ge1xyXG4gICAgLy8gQXR0ZW5kcmUgcXVlIGxlIGNhY2hlIGRlcyBtw6l0YWRvbm7DqWVzIHNvaXQgbWlzIMOgIGpvdXJcclxuICAgIC8vIFNpbXVsYXRpb24gZCd1bmUgYXR0ZW50ZSBjb3VydGVcclxuICAgIGF3YWl0IG5ldyBQcm9taXNlKHJlc29sdmUgPT4gc2V0VGltZW91dChyZXNvbHZlLCAxMDApKTtcclxuICAgIC8vIExldCBjYWxsYmFjayBlcnJvcnMgcHJvcGFnYXRlIHRvIGNhbGxlciAtIGRvbid0IGNhdGNoIHRoZW1cclxuICAgIGF3YWl0IGNhbGxiYWNrKCk7XHJcbn07XHJcbiJdLCJ2ZXJzaW9uIjozfQ==

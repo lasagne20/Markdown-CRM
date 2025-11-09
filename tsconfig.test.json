@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-test",
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "types": ["jest", "node", "@types/jest"],
+    // Performance optimizations for tests
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./.jest-cache/tsconfig.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*",
+    "**/__tests__/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    ".jest-cache"
+  ]
+}
