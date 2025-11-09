@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-crm-dynamic-fields",
+  "name": "markdown-crm",
   "version": "1.0.0",
-  "description": "Dynamic fields for Obsidian CRM plugin",
+  "description": "A Robust, Offline-First, Fully Customizable CRM Alternative Built on Plain Text",
   "main": "src/index.ts",
   "scripts": {
     "test": "jest",
@@ -15,10 +15,12 @@
     "admin": "node __tests__/integration/visual-interface/admin-server.js"
   },
   "keywords": [
-    "obsidian",
     "crm",
-    "dynamic-fields",
-    "typescript"
+    "markdown",
+    "database",
+    "offline-first",
+    "typescript",
+    "obsidian"
   ],
   "author": "",
   "license": "MIT",
