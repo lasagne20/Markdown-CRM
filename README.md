@@ -189,20 +189,22 @@ Met at Tech Conference 2024. Very interested in our services.
 
 ## 📚 Documentation
 
-### Core Concepts
+**Comprehensive documentation is available in the [docs](docs/) folder:**
 
-- **[Property Types](docs/properties.md)** - All available field types
-- **[Class Configuration](docs/classes.md)** - Define your data models
-- **[Dynamic Factory](docs/factory.md)** - How classes are generated
-- **[File System](docs/filesystem.md)** - Data organization patterns
-- **[Links & References](docs/links.md)** - Connecting records
+### 📖 Getting Started
 
-### Advanced Topics
+- **[📘 Home](docs/Home.md)** - Complete guide to Markdown CRM, architecture, and philosophy
+- **[🚀 Installation](docs/Installation.md)** - Setup instructions and getting started
+- **[🎯 Why Markdown CRM?](docs/Why-Markdown-CRM.md)** - Vision, philosophy, and comparison with traditional CRMs
 
-- **[Custom Properties](docs/custom-properties.md)** - Build your own field types
-- **[Validation](docs/validation.md)** - Data integrity rules
-- **[Formulas](docs/formulas.md)** - Calculated fields
-- **[API Reference](docs/api.md)** - Complete API documentation
+### 🔧 Technical Documentation
+
+- **[🏗️ Architecture](docs/Architecture.md)** - System architecture, components, and design patterns
+- **[🎨 Property Types](docs/Property-Types.md)** - Complete reference for all 20+ property types
+
+### 📚 Full Documentation
+
+> **[View Full Documentation](docs/Home.md)** - Start here for the complete guide
 
 ## 🛠️ Development
 
