@@ -3,14 +3,15 @@ Classe: Contact
 nom: Marie Martin
 email: marie.martin@startup.io
 telephone: +33 6 98 76 54 32
-entreprise: InnoStart
-poste: CEO
 priorite: Normale
 actif: true
 adresse: []
 dateRencontre: []
 notes: []
-infosEntreprise: 
+infosEntreprise:
+  - entreprise: dfhgfh
+    poste: hfhd
+poste: []
 ---
 
 # Marie Martin

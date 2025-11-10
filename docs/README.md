@@ -38,6 +38,12 @@ Welcome to the comprehensive documentation for **Markdown CRM** - a robust, offl
    - Validation rules
    - Best practices
 
+6. **[📐 Display Configuration](Display-Configuration.md)** - UI Layout system
+   - Container types (Line, Column, Tabs, Fold)
+   - Layout organization
+   - Complete examples
+   - Styling and customization
+
 ## 🚀 Quick Links
 
 - **[Back to Main README](../README.md)** - Project overview
@@ -87,16 +93,26 @@ Complete property reference:
 - Usage patterns
 - Best practices
 
+### [Display-Configuration.md](Display-Configuration.md)
+UI Layout and display system:
+- Container types (Line, Column, Tabs, Fold)
+- Organizing properties visually
+- Interactive components (tabs, accordions)
+- CSS customization
+- Complete configuration examples
+
 ## 🎯 Use Cases by Role
 
 ### For Developers
 - [Architecture](Architecture.md) - Understand the system design
 - [Property Types](Property-Types.md) - Learn all available data types
+- [Display Configuration](Display-Configuration.md) - Master UI layouts
 - [Home](Home.md#configuration-system) - Configuration system details
 
 ### For Business Users
 - [Why Markdown CRM](Why-Markdown-CRM.md) - Understand the benefits
 - [Installation](Installation.md) - Get started quickly
+- [Display Configuration](Display-Configuration.md) - Customize your interface
 - [Home](Home.md#quick-start) - Quick start guide
 
 ### For Decision Makers
@@ -113,6 +129,7 @@ Complete property reference:
 
 2. **Ready to Build?**
    - Learn about [Property Types](Property-Types.md)
+   - Configure your [Display Layout](Display-Configuration.md)
    - Understand the [Architecture](Architecture.md)
    - Create your first configuration
 

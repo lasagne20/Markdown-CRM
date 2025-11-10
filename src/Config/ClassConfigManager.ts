@@ -57,7 +57,7 @@ export class ClassConfigManager {
                 // Default implementation - can be overridden in config if needed
             }
 
-            async getTopDisplayContent(): Promise<any> {
+            override async getDisplay(): Promise<any> {
                 const container = document.createElement("div");
                 
                 if (config.display && config.display.containers) {
@@ -69,7 +69,9 @@ export class ClassConfigManager {
                     // Default display: show all properties
                     const properties = document.createElement("div");
                     for (let property of this.getProperties()) {
-                        properties.appendChild(await property.getDisplay(this));
+                        if (this.file) {
+                            properties.appendChild(await property.getDisplay(this.file));
+                        }
                     }
                     container.appendChild(properties);
                 }
@@ -78,40 +80,136 @@ export class ClassConfigManager {
             }
 
             private async createDisplayContainer(containerConfig: DisplayContainer): Promise<HTMLElement> {
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("display-container-wrapper");
+                
+                // Add title above the container
+                if (containerConfig.title) {
+                    const title = document.createElement("h3");
+                    title.textContent = containerConfig.title;
+                    title.classList.add("container-section-title");
+                    wrapper.appendChild(title);
+                }
+                
                 const container = document.createElement("div");
                 
                 if (containerConfig.className) {
                     container.classList.add(containerConfig.className);
                 }
                 
-                // Add CSS class based on container type
+                // Handle different container types
                 switch (containerConfig.type) {
                     case 'line':
                         container.classList.add("metadata-line");
+                        await this.addPropertiesToContainer(container, containerConfig.properties);
                         break;
+                        
                     case 'column':
                         container.classList.add("metadata-column");
+                        await this.addPropertiesToContainer(container, containerConfig.properties);
+                        break;
+                        
+                    case 'tabs':
+                        await this.createTabsContainer(container, containerConfig);
+                        break;
+                        
+                    case 'fold':
+                        await this.createFoldContainer(container, containerConfig);
+                        break;
+                        
+                    default:
+                        await this.addPropertiesToContainer(container, containerConfig.properties);
                         break;
                 }
                 
-                if (containerConfig.title) {
-                    const title = document.createElement("div");
-                    title.textContent = containerConfig.title;
-                    title.classList.add("metadata-title");
-                    container.appendChild(title);
-                }
-                
-                // Add properties to container
-                if (containerConfig.properties) {
-                    for (const propName of containerConfig.properties) {
+                wrapper.appendChild(container);
+                return wrapper;
+            }
+            
+            private async addPropertiesToContainer(container: HTMLElement, propertyNames?: string[]): Promise<void> {
+                if (propertyNames) {
+                    for (const propName of propertyNames) {
                         const property = this.getProperty(propName);
-                        if (property) {
-                            container.appendChild(await property.getDisplay(this));
+                        if (property && this.file) {
+                            container.appendChild(await property.getDisplay(this.file));
                         }
                     }
                 }
+            }
+            
+            private async createTabsContainer(container: HTMLElement, containerConfig: DisplayContainer): Promise<void> {
+                if (!containerConfig.tabs || containerConfig.tabs.length === 0) return;
                 
-                return container;
+                container.classList.add("metadata-tabs-container");
+                
+                // Create tab headers
+                const tabHeaders = document.createElement("div");
+                tabHeaders.classList.add("tab-headers");
+                container.appendChild(tabHeaders);
+                
+                // Create tab contents
+                const tabContents = document.createElement("div");
+                tabContents.classList.add("tab-contents");
+                container.appendChild(tabContents);
+                
+                // Create each tab
+                for (let i = 0; i < containerConfig.tabs.length; i++) {
+                    const tabConfig = containerConfig.tabs[i];
+                    
+                    // Create tab header
+                    const tabHeader = document.createElement("button");
+                    tabHeader.textContent = tabConfig.name;
+                    tabHeader.classList.add("tab-header");
+                    if (i === 0) tabHeader.classList.add("active");
+                    tabHeader.dataset.tabIndex = i.toString();
+                    tabHeaders.appendChild(tabHeader);
+                    
+                    // Create tab content
+                    const tabContent = document.createElement("div");
+                    tabContent.classList.add("tab-content");
+                    if (i === 0) tabContent.classList.add("active");
+                    tabContent.dataset.tabIndex = i.toString();
+                    
+                    // Add properties to tab
+                    await this.addPropertiesToContainer(tabContent, tabConfig.properties);
+                    tabContents.appendChild(tabContent);
+                    
+                    // Add click handler
+                    tabHeader.addEventListener("click", () => {
+                        // Remove active from all tabs
+                        tabHeaders.querySelectorAll(".tab-header").forEach(h => h.classList.remove("active"));
+                        tabContents.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+                        
+                        // Add active to clicked tab
+                        tabHeader.classList.add("active");
+                        tabContent.classList.add("active");
+                    });
+                }
+            }
+            
+            private async createFoldContainer(container: HTMLElement, containerConfig: DisplayContainer): Promise<void> {
+                container.classList.add("metadata-fold-container");
+                
+                // Create fold header (clickable)
+                const foldHeader = document.createElement("button");
+                foldHeader.textContent = containerConfig.foldTitle || "Afficher plus";
+                foldHeader.classList.add("fold-header");
+                container.appendChild(foldHeader);
+                
+                // Create fold content (collapsible)
+                const foldContent = document.createElement("div");
+                foldContent.classList.add("fold-content");
+                foldContent.classList.add("collapsed"); // Start collapsed
+                
+                // Add properties to fold
+                await this.addPropertiesToContainer(foldContent, containerConfig.properties);
+                container.appendChild(foldContent);
+                
+                // Add click handler to toggle
+                foldHeader.addEventListener("click", () => {
+                    foldContent.classList.toggle("collapsed");
+                    foldHeader.classList.toggle("expanded");
+                });
             }
         }
 

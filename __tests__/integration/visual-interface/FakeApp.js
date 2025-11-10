@@ -295,14 +295,36 @@ export class FakeApp {
                         // Format multi-line array
                         yamlContent += `${key}:\n`;
                         for (const item of value) {
-                            const formattedItem = this.formatYamlValue(item);
-                            // Quote the item if it's not already quoted
-                            if (typeof item === 'string' && (item.includes('[[') || item.includes(']]') || item.includes(':'))) {
-                                yamlContent += `  - "${item}"\n`;
-                            } else if (formattedItem.startsWith('"')) {
-                                yamlContent += `  - ${formattedItem}\n`;
+                            // Check if item is an object
+                            if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+                                // Format object properties - put first property on same line as dash
+                                const entries = Object.entries(item);
+                                if (entries.length > 0) {
+                                    // First property on same line as dash
+                                    const [firstKey, firstValue] = entries[0];
+                                    const formattedFirstValue = this.formatYamlValue(firstValue);
+                                    yamlContent += `  - ${firstKey}: ${formattedFirstValue}\n`;
+                                    
+                                    // Remaining properties indented
+                                    for (let i = 1; i < entries.length; i++) {
+                                        const [subKey, subValue] = entries[i];
+                                        const formattedSubValue = this.formatYamlValue(subValue);
+                                        yamlContent += `    ${subKey}: ${formattedSubValue}\n`;
+                                    }
+                                } else {
+                                    // Empty object
+                                    yamlContent += `  - {}\n`;
+                                }
                             } else {
-                                yamlContent += `  - ${formattedItem}\n`;
+                                const formattedItem = this.formatYamlValue(item);
+                                // Quote the item if it's not already quoted
+                                if (typeof item === 'string' && (item.includes('[[') || item.includes(']]') || item.includes(':'))) {
+                                    yamlContent += `  - "${item}"\n`;
+                                } else if (formattedItem && formattedItem.startsWith('"')) {
+                                    yamlContent += `  - ${formattedItem}\n`;
+                                } else {
+                                    yamlContent += `  - ${formattedItem}\n`;
+                                }
                             }
                         }
                     }

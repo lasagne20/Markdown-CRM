@@ -3,15 +3,15 @@ Classe: Contact
 nom: Jean Dupont
 email: jean.dupont@entreprise.com
 telephone: +33 1 23 45 67 89
-entreprise: Tech Solutions
-poste: Directeur Technique
-priorite: Basse
-actif: false
+entreprise: sdfsfsdffsf
+poste: []
+priorite: Normale
+actif: true
 notes: sdfgdfhdh
 adresse: sdfgdfhfjk
-dateRencontre: 2025-11-20
+dateRencontre: 2025-11-07
 infosEntreprise:
-  - [object Object]
+  - {}
 ---
 
 # Jean Dupontsdfsdgsdgsdg

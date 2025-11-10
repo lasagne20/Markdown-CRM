@@ -71,43 +71,6 @@ export class Classe {
         return true;
     }
     
-    
-    // Content generation helpers
-    protected async generateFrontMatter(): Promise<string> {
-        const metadata = await this.getMetadata();
-        const lines = ['---'];
-        
-        // Add class-specific metadata
-        if (this.name) metadata.type = this.name;
-        if (this.icon) metadata.icon = this.icon;
-        
-        // Add property values
-        for (const property of this.properties) {
-            const value = await this.getPropertyValue(property.name);
-            if (value !== undefined && value !== '') {
-                metadata[property.name] = value;
-            }
-        }
-        
-        // Convert to YAML
-        for (const [key, value] of Object.entries(metadata)) {
-            if (Array.isArray(value)) {
-                lines.push(`${key}:`);
-                value.forEach(item => lines.push(`  - ${item}`));
-            } else if (typeof value === 'object' && value !== null) {
-                lines.push(`${key}:`);
-                for (const [subKey, subValue] of Object.entries(value)) {
-                    lines.push(`  ${subKey}: ${subValue}`);
-                }
-            } else {
-                lines.push(`${key}: ${value}`);
-            }
-        }
-        
-        lines.push('---\n');
-        return lines.join('\n');
-    }
-    
     protected async generateTemplateContent(): Promise<string> {
         if (!this.template) return '';
         
@@ -160,9 +123,10 @@ export class Classe {
         }
     }
     
-    // Display methods
+    // Default Display methods
     async getDisplay(): Promise<HTMLElement> {
         const container = this.vault.app.createDiv('classe-display');
+        console.log('Displaying class: ' + this.getName());
         
         // Add class header
         const header = this.vault.app.createDiv('classe-header');

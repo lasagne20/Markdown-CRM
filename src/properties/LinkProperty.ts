@@ -41,7 +41,7 @@ export class LinkProperty extends Property{
 
 
     override getPretty(value: string) {
-      if (!value) return value;
+      if (!value || typeof value !== 'string') return value;
       try {
         const urlObj = new URL(value);
         // Garde le domaine, puis les premiers segments du chemin si trop long

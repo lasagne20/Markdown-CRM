@@ -1141,7 +1141,79 @@ class AdminInterface {
         // Les propriétés appellent déjà updateMetadata qui sauvegarde automatiquement
         // On ajoute juste des écouteurs pour mettre à jour l'éditeur markdown après les changements
         
-        // Ajouter des écouteurs sur les inputs, selects, etc.
+        // Utiliser la délégation d'événements pour capturer les clics sur tous les boutons
+        // y compris ceux créés dynamiquement par ObjectProperty
+        propertiesDisplay.addEventListener('click', async (event) => {
+            const target = event.target;
+            
+            // Vérifier si c'est un bouton ou un élément interactif
+            if (target.tagName === 'BUTTON' || target.classList.contains('star') || 
+                target.closest('button') || target.closest('.metadata-add-button') || 
+                target.closest('.metadata-delete-button')) {
+                
+                console.log('🔄 Clic sur élément détecté:', target.className);
+                const saveIndicator = document.getElementById('saveIndicator');
+                if (saveIndicator) {
+                    saveIndicator.textContent = '💾 Sauvegarde en cours...';
+                    saveIndicator.style.color = '#007bff';
+                }
+                
+                // Attendre que updateMetadata soit terminé
+                setTimeout(async () => {
+                    const editor = document.getElementById('markdownEditor');
+                    if (editor) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        const updatedContent = await file.getContent();
+                        console.log('📥 Contenu mis à jour récupéré, longueur:', updatedContent.length);
+                        editor.value = updatedContent;
+                        
+                        if (saveIndicator) {
+                            saveIndicator.textContent = '✅ Sauvegardé automatiquement';
+                            saveIndicator.style.color = '#28a745';
+                            setTimeout(() => {
+                                saveIndicator.textContent = '';
+                            }, 3000);
+                        }
+                    }
+                }, 500);
+            }
+        });
+        
+        // Utiliser la délégation d'événements pour capturer les inputs/textarea
+        let inputTimeout;
+        propertiesDisplay.addEventListener('input', async (event) => {
+            const target = event.target;
+            
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+                console.log('✏️ Modification détectée:', target.tagName);
+                const saveIndicator = document.getElementById('saveIndicator');
+                if (saveIndicator) {
+                    saveIndicator.textContent = '✏️ Modification en cours...';
+                    saveIndicator.style.color = '#ffc107';
+                }
+                
+                clearTimeout(inputTimeout);
+                inputTimeout = setTimeout(async () => {
+                    const editor = document.getElementById('markdownEditor');
+                    if (editor) {
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        const updatedContent = await file.getContent();
+                        console.log('📥 Contenu mis à jour récupéré, longueur:', updatedContent.length);
+                        editor.value = updatedContent;
+                        
+                        if (saveIndicator) {
+                            saveIndicator.textContent = '✅ Sauvegardé automatiquement';
+                            saveIndicator.style.color = '#28a745';
+                            setTimeout(() => {
+                                saveIndicator.textContent = '';
+                            }, 3000);
+                        }
+                    }
+                }, 1000);
+            }
+        });
+        
+        // Ajouter des écouteurs sur les inputs, selects, etc. (pour compatibilité avec ancien code)
         setTimeout(() => {
             const inputs = propertiesDisplay.querySelectorAll('input, select, textarea, button');
             inputs.forEach(input => {

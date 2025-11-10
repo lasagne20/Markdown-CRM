@@ -92,10 +92,32 @@ properties:
 
 # Configuration d'affichage
 display:
-  headerFormat: "{{nom}} - {{entreprise}}"
-  summaryFields:
-    - nom
-    - email
-    - telephone
-    - entreprise
+  containers:
+    - type: line
+      title: "Informations personnelles"
+      className: "contact-info-section"
+      properties:
+        - nom
+        - email
+        - telephone
+    
+    - type: tabs
+      title: "Détails du contact"
+      className: "contact-details-tabs"
+      tabs:
+        - name: "Entreprise"
+          properties:
+            - infosEntreprise
+            - adresse
+        - name: "Suivi"
+          properties:
+            - dateRencontre
+            - priorite
+            - actif
+    
+    - type: fold
+      foldTitle: "Notes supplémentaires"
+      className: "contact-notes-fold"
+      properties:
+        - notes
   

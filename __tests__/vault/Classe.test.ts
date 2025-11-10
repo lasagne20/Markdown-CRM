@@ -276,49 +276,6 @@ describe('Classe', () => {
             classe.icon = 'test-icon';
         });
 
-        it('should generate frontmatter with class info', async () => {
-            mockApp.getMetadata.mockResolvedValue({});
-            
-            const frontmatter = await classe['generateFrontMatter']();
-            
-            expect(frontmatter).toContain('---');
-            expect(frontmatter).toContain('type: TestClass');
-            expect(frontmatter).toContain('icon: test-icon');
-        });
-
-        it('should generate frontmatter with property values', async () => {
-            const property = new MockProperty('testProp', mockVault);
-            classe.addProperty(property);
-            
-            mockApp.getMetadata.mockResolvedValue({
-                testProp: 'testValue'
-            });
-            
-            const frontmatter = await classe['generateFrontMatter']();
-            expect(frontmatter).toContain('testProp: testValue');
-        });
-
-        it('should generate frontmatter with array values', async () => {
-            mockApp.getMetadata.mockResolvedValue({
-                arrayProp: ['item1', 'item2']
-            });
-            
-            const frontmatter = await classe['generateFrontMatter']();
-            expect(frontmatter).toContain('arrayProp:');
-            expect(frontmatter).toContain('  - item1');
-            expect(frontmatter).toContain('  - item2');
-        });
-
-        it('should generate frontmatter with object values', async () => {
-            mockApp.getMetadata.mockResolvedValue({
-                objectProp: { key1: 'value1', key2: 'value2' }
-            });
-            
-            const frontmatter = await classe['generateFrontMatter']();
-            expect(frontmatter).toContain('objectProp:');
-            expect(frontmatter).toContain('  key1: value1');
-            expect(frontmatter).toContain('  key2: value2');
-        });
 
         it('should generate template content', async () => {
             classe.template = 'test-template';

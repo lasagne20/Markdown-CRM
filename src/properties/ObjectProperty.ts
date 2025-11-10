@@ -209,6 +209,12 @@ export class ObjectProperty extends Property{
       createObjects(values: any, update : (value: any) => Promise<void>,  container: HTMLDivElement) {
           if (!values){return}
           values.forEach((objects: any, index: number) => {
+              // Vérifier que l'objet est valide (pas une string "[object Object]")
+              if (typeof objects !== 'object' || objects === null) {
+                  console.warn(`Invalid object at index ${index}:`, objects);
+                  values[index] = {}; // Remplacer par un objet vide
+                  objects = values[index];
+              }
               const row = this.createObjectRow(values, update, objects, index, container);
               container.appendChild(row);
           });
@@ -402,6 +408,11 @@ export class ObjectProperty extends Property{
       async updateObject(values : any, update : (value: any) => Promise<void>, index: number, property: Property, value: string) {
         console.log("Update index : ", index)
           if (values){
+            // S'assurer que values[index] est un objet
+            if (typeof values[index] !== 'object' || values[index] === null) {
+                console.warn(`values[${index}] is not an object:`, values[index]);
+                values[index] = {};
+            }
             values[index][property.name] = value;
           }
           else {
