@@ -13,8 +13,37 @@ export class PhoneProperty extends LinkProperty{
     // Used for property hidden for the user
     constructor(name : string, vault: Vault, args : {icon?: string, defaultFormat?: "national" | "international", countryCode?: string} = {}) {
       super(name, vault, {icon: "phone", ...args});
-      this.useInternationalFormat = args.defaultFormat === "international";
-      this.countryCode = args.countryCode || "+33";
+      
+      // Get format from global settings
+      const settings = this.vault.app.getSettings();
+      const phoneFormat = settings.phoneFormat || 'FR';
+      
+      // Override with args if provided, otherwise use settings
+      if (args.defaultFormat) {
+        this.useInternationalFormat = args.defaultFormat === "international";
+      } else {
+        this.useInternationalFormat = phoneFormat === 'INTL';
+      }
+      
+      // Map country format to country code
+      if (args.countryCode) {
+        this.countryCode = args.countryCode;
+      } else {
+        this.countryCode = this.getCountryCode(phoneFormat);
+      }
+    }
+    
+    private getCountryCode(format: string): string {
+      const countryCodeMap: { [key: string]: string } = {
+        'FR': '+33',
+        'US': '+1',
+        'UK': '+44',
+        'DE': '+49',
+        'ES': '+34',
+        'IT': '+39',
+        'INTL': '+33' // Default to FR for international
+      };
+      return countryCodeMap[format] || '+33';
     }
 
     override validate(phoneNumber: string) {
@@ -87,47 +116,8 @@ export class PhoneProperty extends LinkProperty{
       
       if (!this.static) {
         iconContainer.style.cursor = "pointer";
-        iconContainer.style.position = "relative";
-        
-        // Add format toggle button
-        const toggleButton = document.createElement("button");
-        toggleButton.className = "phone-format-toggle";
-        toggleButton.textContent = this.useInternationalFormat ? "🌍" : "🇫🇷";
-        toggleButton.title = this.useInternationalFormat ? "Format international" : "Format national";
-        
-        toggleButton.addEventListener("click", async (event) => {
-          event.stopPropagation();
-          event.preventDefault();
-          
-          // Toggle format
-          this.useInternationalFormat = !this.useInternationalFormat;
-          toggleButton.textContent = this.useInternationalFormat ? "🌍" : "🇫🇷";
-          toggleButton.title = this.useInternationalFormat ? "Format international" : "Format national";
-          
-          // Reformat the current value
-          const metadataField = iconContainer.closest('.metadata-field');
-          if (metadataField) {
-            const link = metadataField.querySelector('.field-link') as HTMLElement;
-            const input = metadataField.querySelector('.field-input') as HTMLInputElement;
-            
-            if (link && input && input.value) {
-              const reformatted = this.validate(input.value);
-              if (reformatted) {
-                link.textContent = reformatted;
-                input.value = reformatted;
-                await update(reformatted);
-              }
-            }
-          }
-        });
-        
-        iconContainer.appendChild(toggleButton);
-        
-        // Add click handler for edit mode
         iconContainer.addEventListener("click", (event) => {
-          if (event.target !== toggleButton) {
-            this.modifyField(event);
-          }
+          this.modifyField(event);
         });
       }
     }

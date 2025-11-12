@@ -1257,6 +1257,20 @@ export class FakeApp {
         return '';
     }
 
+    // Settings management
+    getSettings() {
+        // Return a settings object
+        return {
+            phoneFormat: this.settings.get('phoneFormat') || 'FR',
+            phoneCustomFormat: this.settings.get('phoneCustomFormat'),
+            dateFormat: this.settings.get('dateFormat') || 'DD/MM/YYYY',
+            timeFormat: this.settings.get('timeFormat') || '24h',
+            timezone: this.settings.get('timezone') || 'Europe/Paris',
+            numberLocale: this.settings.get('numberLocale') || 'fr-FR',
+            currencySymbol: this.settings.get('currencySymbol') || '€'
+        };
+    }
+    
     getSetting(key) {
         return this.settings.get(key);
     }

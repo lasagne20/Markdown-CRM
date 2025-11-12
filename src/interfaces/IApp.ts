@@ -11,8 +11,29 @@ export interface IFolder {
     children: IFile[] | IFolder[];
 }
 
+export interface ISettings {
+    // Phone number formatting
+    phoneFormat?: 'FR' | 'US' | 'INTL' | 'UK' | 'DE' | 'ES' | 'IT' | 'custom';
+    phoneCustomFormat?: string; // Custom format pattern
+    
+    // Date/Time formatting
+    dateFormat?: string;
+    timeFormat?: '12h' | '24h';
+    timezone?: string;
+    
+    // Number formatting
+    numberLocale?: string;
+    currencySymbol?: string;
+    
+    // Other settings can be added here
+    [key: string]: any; // Allow custom settings
+}
+
 
 export interface IApp {
+    // Settings
+    getSettings(): ISettings;
+    
     // File operations
     readFile(file: IFile): Promise<string>;
     writeFile(file: IFile, content: string): Promise<void>;

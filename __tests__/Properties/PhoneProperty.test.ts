@@ -36,7 +36,15 @@ describe('PhoneProperty', () => {
                     element.setAttribute('data-icon', iconName);
                     element.textContent = `[${iconName}]`;
                 }),
-                sendNotice: jest.fn()
+                sendNotice: jest.fn(),
+                getSettings: jest.fn(() => ({
+                    phoneFormat: 'FR',
+                    dateFormat: 'DD/MM/YYYY',
+                    timeFormat: '24h',
+                    timezone: 'Europe/Paris',
+                    numberLocale: 'fr-FR',
+                    currencySymbol: '€'
+                }))
             }
         };
 

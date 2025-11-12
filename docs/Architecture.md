@@ -1111,7 +1111,130 @@ data.commitBatch(); // Single file write
 
 ---
 
-## 📚 Further Reading
+## � Global Settings System
+
+### ISettings Interface
+
+Markdown CRM provides a centralized settings system through the `ISettings` interface. This allows global configuration of formats, locales, and other application-wide preferences.
+
+#### Settings Structure
+
+```typescript
+interface ISettings {
+    // Phone number formatting
+    phoneFormat?: 'FR' | 'US' | 'INTL' | 'UK' | 'DE' | 'ES' | 'IT' | 'custom';
+    phoneCustomFormat?: string;
+    
+    // Date/Time formatting
+    dateFormat?: string;
+    timeFormat?: '12h' | '24h';
+    timezone?: string;
+    
+    // Number formatting
+    numberLocale?: string;
+    currencySymbol?: string;
+    
+    // Extensible for custom settings
+    [key: string]: any;
+}
+```
+
+#### Accessing Settings
+
+Properties and classes can access global settings via the `IApp` interface:
+
+```typescript
+class PhoneProperty extends LinkProperty {
+    constructor(name: string, vault: Vault, args: any = {}) {
+        super(name, vault, args);
+        
+        // Get global settings
+        const settings = this.vault.app.getSettings();
+        
+        // Use phoneFormat from settings
+        const phoneFormat = settings.phoneFormat || 'FR';
+        this.useInternationalFormat = phoneFormat === 'INTL';
+        this.countryCode = this.getCountryCode(phoneFormat);
+    }
+    
+    private getCountryCode(format: string): string {
+        const map = {
+            'FR': '+33',
+            'US': '+1',
+            'UK': '+44',
+            'DE': '+49',
+            'ES': '+34',
+            'IT': '+39'
+        };
+        return map[format] || '+33';
+    }
+}
+```
+
+#### Configuration in FakeApp
+
+The browser-based admin interface implements settings through `FakeApp`:
+
+```javascript
+class FakeApp {
+    constructor(vaultPath, vaultName) {
+        this.settings = new Map();
+    }
+    
+    getSettings() {
+        return {
+            phoneFormat: this.settings.get('phoneFormat') || 'FR',
+            dateFormat: this.settings.get('dateFormat') || 'DD/MM/YYYY',
+            timeFormat: this.settings.get('timeFormat') || '24h',
+            timezone: this.settings.get('timezone') || 'Europe/Paris',
+            numberLocale: this.settings.get('numberLocale') || 'fr-FR',
+            currencySymbol: this.settings.get('currencySymbol') || '€'
+        };
+    }
+}
+```
+
+#### Benefits of Centralized Settings
+
+1. **Consistency**: All properties use the same format preferences
+2. **User Preferences**: Settings can be stored per-user or per-vault
+3. **Extensibility**: Easy to add new settings without modifying individual properties
+4. **Testability**: Mock settings easily in unit tests
+5. **Type Safety**: TypeScript interface ensures correct usage
+
+#### Testing with Settings
+
+The test utilities provide a convenient `mockApp()` function with settings support:
+
+```typescript
+import { mockApp } from '../utils/mocks';
+
+// Default settings (FR format)
+const app = mockApp();
+
+// Custom settings for tests
+const usApp = mockApp({
+    phoneFormat: 'US',
+    timezone: 'America/New_York'
+});
+
+const phoneProperty = new PhoneProperty('phone', vault);
+// Automatically uses settings from app
+```
+
+#### Future Enhancements
+
+The `ISettings` system is designed to be extensible:
+
+- **Theme preferences**: Light/dark mode, custom colors
+- **Display options**: Compact/expanded views, column widths
+- **Localization**: Language preferences, translation keys
+- **Validation rules**: Custom regex patterns, business rules
+- **Integration settings**: API keys, webhook URLs
+
+---
+
+## �📚 Further Reading
 
 - **[Property Types](Property-Types.md)** - Complete property reference
 - **[API Reference](API-Reference.md)** - Full API documentation
