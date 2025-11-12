@@ -4,30 +4,34 @@ titre: Design de la maquette
 description: Création des wireframes et maquettes haute fidélité
 statut: En cours
 priorite: Haute
-assignee: [[Marie Martin]]
-projet: [[Site Web Entreprise]]
-dateEcheance: 2025-11-10
+assignee:
+  - - Marie Martin
+projet: >-
+  [[/Institutions/Université Paris Tech/Sophie Bernard/Sophie Bernard.md|Sophie
+  Bernard]]
+dateEcheance: 2025-11-10T00:00:00.000Z
 tempsEstime: 16
 tempsPasse: 8
 avancement: 50
-dateCreation: 
-dateCompletion: 
-difficulte: 
-tags: 
-dependances: 
-checklist: 
-fichiers: 
-commentaires: 
-commencer: 
-mettrePause: 
-reprendre: 
-terminer: 
-dupliquer: 
-chronometrer: 
-tempsRestant: 
-enRetard: 
-efficacite: 
-joursRestants: 
+dateCreation: []
+dateCompletion: []
+difficulte: []
+tags: []
+dependances: []
+checklist: []
+fichiers: []
+commentaires: []
+commencer: []
+mettrePause: []
+reprendre: []
+terminer: []
+dupliquer: []
+chronometrer: []
+tempsRestant: []
+enRetard: []
+efficacite: []
+joursRestants: []
+
 ---
 
 # Design de la maquette

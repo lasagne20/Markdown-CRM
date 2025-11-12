@@ -17,6 +17,7 @@ describe('Property', () => {
     let property: Property;
     let mockVault: any;
     let mockFile: any;
+    let mockClasse: any;
 
     beforeEach(() => {
         // Reset DOM
@@ -37,6 +38,14 @@ describe('Property', () => {
             getMetadata: jest.fn(() => ({ testProp: 'test value' })),
             getMetadataValue: jest.fn((key: string) => key === 'testProp' ? 'test value' : undefined),
             updateMetadata: jest.fn(),
+            vault: mockVault
+        };
+
+        // Mock classe
+        mockClasse = {
+            getFile: jest.fn(() => mockFile),
+            getPropertyValue: jest.fn((key: string) => key === 'testProp' ? 'test value' : undefined),
+            updatePropertyValue: jest.fn(),
             vault: mockVault
         };
 
@@ -99,34 +108,29 @@ describe('Property', () => {
     });
 
     describe('read', () => {
-        it('should read from file with readProperty method', async () => {
-            const fileWithReadProperty = {
-                ...mockFile,
-                readProperty: true,
-                getMetadataValue: jest.fn().mockResolvedValue('property value')
-            };
+        it('should read from classe with getPropertyValue method', async () => {
+            mockClasse.getPropertyValue = jest.fn().mockResolvedValue('property value');
             
-            const result = await property.read(fileWithReadProperty);
+            const result = await property.read(mockClasse);
             
             expect(result).toBe('property value');
-            expect(fileWithReadProperty.getMetadataValue).toHaveBeenCalledWith('testProp');
+            expect(mockClasse.getPropertyValue).toHaveBeenCalledWith('testProp');
         });
 
-        it('should read from file metadata', async () => {
-            const result = await property.read(mockFile);
+        it('should read from classe metadata', async () => {
+            const result = await property.read(mockClasse);
             
             expect(result).toBe('test value');
-            expect(mockFile.getMetadataValue).toHaveBeenCalledWith('testProp');
+            expect(mockClasse.getPropertyValue).toHaveBeenCalledWith('testProp');
         });
 
-        it('should handle file without metadata', async () => {
-            const fileWithoutMetadata = {
-                ...mockFile,
-                getMetadata: jest.fn(() => null),
-                getMetadataValue: jest.fn().mockResolvedValue(undefined)
+        it('should handle classe without metadata', async () => {
+            const classeWithoutMetadata = {
+                ...mockClasse,
+                getPropertyValue: jest.fn().mockResolvedValue(undefined)
             };
             
-            const result = await property.read(fileWithoutMetadata);
+            const result = await property.read(classeWithoutMetadata);
             
             expect(result).toBeUndefined();
         });
@@ -440,11 +444,11 @@ describe('Property', () => {
                 return div;
             });
             
-            const result = await property.getDisplay(mockFile, { staticMode: true, title: 'Test Title' });
+            const result = await property.getDisplay(mockClasse, { staticMode: true, title: 'Test Title' });
             
             expect(property.static).toBe(true);
             expect(property.title).toBe('Test Title');
-            expect(property.read).toHaveBeenCalledWith(mockFile);
+            expect(property.read).toHaveBeenCalledWith(mockClasse);
             expect(property.fillDisplay).toHaveBeenCalledWith(
                 'test value',
                 expect.any(Function),

@@ -4,17 +4,19 @@ nom: Site Web Entreprise
 description: Refonte complète du site web corporate avec nouveau design moderne
 statut: En cours
 priorite: +++
-dateDebut: 2025-10-01
-dateFin: 2025-12-15
-responsable: [[Jean Dupont]]
+dateDebut: 2025-10-01T00:00:00.000Z
+dateFin: 2025-12-15T00:00:00.000Z
+responsable: >-
+  [[/Institutions/TechCorp Solutions/Thomas Martin/Thomas Martin.md|Thomas
+  Martin]]
 budget: 25000 €
 budgetUtilise: 12000 €
 pourcentageCompletion: 45
-client: "https://exemple.com/client/marie-martin"
+client: https://exemple.com/client/marie-martin
 dateFinReelle: []
 equipe:
-  - "[[/Clients/Entreprises/Jean Dupont.md|Jean Dupont]]"
-  - "[[/Clients/Startups/Marie Martin.md|Marie Martin]]"
+  - '[[/Clients/Entreprises/Jean Dupont.md|Jean Dupont]]'
+  - '[[/Clients/Startups/Marie Martin.md|Marie Martin]]'
 tags:
   - Web
   - Design
@@ -27,6 +29,7 @@ genererRapport: []
 budgetRestant: []
 dureeEnJours: []
 retard: []
+
 ---
 
 # Site Web Entreprise

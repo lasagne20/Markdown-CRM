@@ -4,6 +4,8 @@ icon: 📋
 description: Gestion des projets avec suivi complet
 template: Projet.md
 
+parentProperty: responsable
+
 # Configuration des propriétés
 properties:
   - name: nom

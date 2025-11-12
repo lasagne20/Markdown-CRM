@@ -4,6 +4,8 @@ icon: ✅
 description: Gestion des tâches individuelles avec suivi détaillé
 template: Tache.md
 
+parentProperty: projet
+
 # Configuration des propriétés
 properties:
   - name: titre
@@ -55,7 +57,7 @@ properties:
     linkClass: "Contact"
     
   - name: projet
-    type: LinkProperty
+    type: FileProperty
     title: Projet parent
     icon: 📋
     required: false
@@ -178,78 +180,3 @@ display:
     - dateEcheance
     - avancement
   
-# Actions disponibles
-actions:
-  - name: commencer
-    label: "Commencer"
-    icon: ▶️
-    condition: "statut == 'À faire'"
-    
-  - name: mettrePause
-    label: "Mettre en pause"
-    icon: ⏸️
-    condition: "statut == 'En cours'"
-    
-  - name: reprendre
-    label: "Reprendre"
-    icon: ▶️
-    condition: "statut == 'En attente'"
-    
-  - name: terminer
-    label: "Terminer"
-    icon: ✅
-    condition: "statut != 'Terminée'"
-    
-  - name: dupliquer
-    label: "Dupliquer"
-    icon: 📋
-    
-  - name: chronometrer
-    label: "Démarrer chrono"
-    icon: ⏱️
-
-# Relations avec autres classes
-relations:
-  - targetClass: Projet
-    relationName: "projet"
-    type: "many-to-one"
-    description: "Projet auquel appartient cette tâche"
-    
-  - targetClass: Contact
-    relationName: "assignee"
-    type: "many-to-one"
-    description: "Personne assignée à cette tâche"
-    
-  - targetClass: Tache
-    relationName: "sousTaches"
-    type: "one-to-many"
-    description: "Sous-tâches de cette tâche"
-
-# Formules calculées
-formulas:
-  - name: tempsRestant
-    formula: "tempsEstime - tempsPasse"
-    description: "Temps restant estimé"
-    
-  - name: enRetard
-    formula: "dateEcheance < today() && statut != 'Terminée'"
-    description: "Indique si la tâche est en retard"
-    
-  - name: efficacite
-    formula: "(avancement / 100) / (tempsPasse / tempsEstime)"
-    description: "Ratio d'efficacité basé sur le temps"
-    
-  - name: joursRestants
-    formula: "dateEcheance - today()"
-    description: "Nombre de jours avant l'échéance"
-
-# Configuration des notifications
-notifications:
-  - trigger: "dateEcheance - 1day"
-    message: "Échéance demain pour: {{titre}}"
-    
-  - trigger: "dateEcheance"
-    message: "Échéance aujourd'hui pour: {{titre}}"
-    
-  - trigger: "statut == 'Terminée'"
-    message: "Tâche terminée: {{titre}}"

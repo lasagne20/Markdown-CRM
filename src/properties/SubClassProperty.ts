@@ -21,8 +21,8 @@ export class SubClassProperty extends SelectProperty {
         return this.subClasses.find(subClass => subClass.getsubClassName() === name)?.getConstructor()
     }
 
-    public getSubClass(file: any) : SubClass | undefined { // TODO: Fix type - should be File or Classe
-        let value = this.read(file)
+    public getSubClass(classe: any) : SubClass | undefined {
+        let value = this.read(classe)
         return this.subClasses.find(subClass => subClass.getsubClassName() === value);
     }
 
@@ -30,8 +30,8 @@ export class SubClassProperty extends SelectProperty {
         return this.subClasses;
     }
 
-    public getSubClassProperty(file: File) : Property[] {
-        let properties = this.getSubClass(file)?.getProperties();
+    public getSubClassProperty(classe: any) : Property[] {
+        let properties = this.getSubClass(classe)?.getProperties();
         if (properties){
             return Object.values(properties);
         }

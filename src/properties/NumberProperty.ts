@@ -54,8 +54,8 @@ export class NumberProperty extends Property {
         return numberValue.toString();
     }
 
-    override async read(file: any): Promise<string> {
-        const value = await super.read(file);
+    override async read(classe: any): Promise<string> {
+        const value = await super.read(classe);
         // Retirer l'unité si elle est présente dans la valeur lue
         if (value && this.unit) {
             const stringValue = String(value).trim();
@@ -66,25 +66,16 @@ export class NumberProperty extends Property {
         return value;
     }
 
-    override async getDisplay(file: any, args : {staticMode? : boolean, title?: string} = {staticMode : false, title:""}) {
+    override async getDisplay(classe: any, args : {staticMode? : boolean, title?: string} = {staticMode : false, title:""}) {
         this.static = args.staticMode ? true : this.static;
         this.title = args.title ? args.title : "";
-        let value = await this.read(file);
+        
+        let value = await this.read(classe);
         if (!value && this.formulaProperty) {
-            value = await this.formulaProperty.read(file);
+            value = await this.formulaProperty.read(classe);
         }
-        // Wrapper l'update pour ajouter l'unité avant d'écrire
-        const wrappedUpdate = async (value: any) => {
-            if (value && this.unit) {
-                const numValue = this.validate(value);
-                if (numValue) {
-                    await file.updateMetadata(this.name, `${numValue} ${this.unit}`);
-                    return;
-                }
-            }
-            await file.updateMetadata(this.name, value);
-        };
-        return this.fillDisplay(value, wrappedUpdate);
+
+        return this.fillDisplay(value, async (value: any) => await classe.updatePropertyValue(this.name, value));
     } 
 
     override fillDisplay(value: any, update: (value: any) => Promise<void>) {

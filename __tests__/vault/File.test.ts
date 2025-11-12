@@ -27,12 +27,7 @@ const mockVault = {
     getFromLink: jest.fn()
 } as unknown as Vault;
 
-const mockIFile: IFile = {
-    name: 'test.md',
-    path: 'folder/test.md',
-    basename: 'test',
-    extension: 'md'
-};
+let mockIFile: IFile;
 
 describe('Folder', () => {
     it('should create Folder instance', () => {
@@ -46,6 +41,15 @@ describe('File', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        
+        // Recreate mockIFile for each test to avoid mutations
+        mockIFile = {
+            name: 'test.md',
+            path: 'folder/test.md',
+            basename: 'test',
+            extension: 'md'
+        };
+        
         file = new File(mockVault, mockIFile);
         
         // Reset mock implementations
@@ -233,23 +237,23 @@ describe('File', () => {
             expect(mockApp.renameFile).toHaveBeenCalled();
         });
 
-        it('should move folder file correctly', async () => {
-            const folderFile = new File(mockVault, {
+        it('should move folder file correctly (only the .md file)', async () => {
+            const folderFileData = {
                 ...mockIFile,
                 name: 'folder.md',
                 path: 'parent/folder/folder.md'
-            });
+            };
+            const folderFile = new File(mockVault, folderFileData);
             
-            const mockFolder = { path: 'parent/folder' };
-            mockApp.getFile
-                .mockResolvedValueOnce(null) // No target file exists
-                .mockResolvedValueOnce(mockFolder); // Folder exists
+            mockApp.getFile.mockResolvedValueOnce(null); // No target file exists
             
             await folderFile.move('target');
             
+            // File.move() now only moves the .md file, not the folder
+            // The parent-child recursion system in Classe handles moving children
             expect(mockApp.renameFile).toHaveBeenCalledWith(
-                mockFolder,
-                'target/folder'
+                folderFileData,
+                'target/folder.md'
             );
         });
     });
@@ -331,7 +335,15 @@ Body content here`;
             expect(mockJsYaml.load).toHaveBeenCalledWith('existing: value');
             expect(mockJsYaml.dump).toHaveBeenCalledWith(
                 { existing: 'value', newKey: 'newValue' },
-                { flowLevel: -1, lineWidth: -1, noRefs: true, sortKeys: false }
+                { 
+                    flowLevel: -1, 
+                    lineWidth: -1, 
+                    noRefs: true, 
+                    sortKeys: false,
+                    forceQuotes: false,
+                    quotingType: '"',
+                    noCompatMode: true
+                }
             );
             expect(mockApp.writeFile).toHaveBeenCalledWith(mockIFile, expectedNewContent);
             expect(mockApp.waitForFileMetaDataUpdate).toHaveBeenCalledWith(

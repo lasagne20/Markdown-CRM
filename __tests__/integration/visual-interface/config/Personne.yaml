@@ -1,0 +1,132 @@
+# Configuration de la classe Personne
+name: Personne
+icon: 👤
+description: Gestion des personnes liées à des institutions
+template: Personne.md
+
+# Propriété parent pour organisation automatique des fichiers
+parentProperty: institution
+
+# Configuration des propriétés
+properties:
+  - name: nom
+    type: Property
+    title: Nom complet
+    icon: 📝
+    required: true
+    defaultValue: ""
+    
+  - name: prenom
+    type: TextProperty
+    title: Prénom
+    icon: 👤
+    required: false
+    defaultValue: ""
+    
+  - name: institution
+    type: FileProperty
+    title: Institution
+    icon: 🏢
+    required: false
+    defaultValue: ""
+    classes:
+      - Institution
+    
+  - name: poste
+    type: TextProperty
+    title: Poste/Fonction
+    icon: 💼
+    required: false
+    defaultValue: ""
+    
+  - name: email
+    type: EmailProperty
+    title: Email professionnel
+    icon: 📧
+    required: false
+    defaultValue: ""
+    validation:
+      pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+      message: "Veuillez entrer une adresse e-mail valide"
+    
+  - name: telephone
+    type: PhoneProperty
+    title: Téléphone
+    icon: 📞
+    required: false
+    defaultValue: ""
+    
+  - name: dateEntree
+    type: DateProperty
+    title: Date d'entrée
+    icon: 📅
+    required: false
+    defaultValue: ""
+    
+  - name: statut
+    type: SelectProperty
+    title: Statut
+    icon: 🏷️
+    required: false
+    defaultValue: "Actif"
+    options:
+      - "Actif"
+      - "Inactif"
+      - "En congé"
+      - "Parti"
+    
+  - name: competences
+    type: MultiSelectProperty
+    title: Compétences
+    icon: 🎯
+    required: false
+    defaultValue: []
+    options:
+      - "Management"
+      - "Technique"
+      - "Communication"
+      - "Vente"
+      - "Marketing"
+      - "Finance"
+      - "RH"
+      - "Juridique"
+    
+  - name: notes
+    type: TextProperty
+    title: Notes
+    icon: 📋
+    required: false
+    defaultValue: ""
+    multiline: true
+
+# Configuration d'affichage
+display:
+  containers:
+    - type: line
+      title: "Identité"
+      className: "personne-identity-section"
+      properties:
+        - nom
+        - prenom
+        - institution
+    
+    - type: tabs
+      title: "Informations"
+      className: "personne-info-tabs"
+      tabs:
+        - name: "Professionnel"
+          properties:
+            - poste
+            - dateEntree
+            - statut
+            - competences
+        - name: "Contact"
+          properties:
+            - email
+            - telephone
+    
+    - type: fold
+      foldTitle: "Notes supplémentaires"
+      className: "personne-notes-fold"
+      properties:
+        - notes

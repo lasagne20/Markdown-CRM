@@ -335,13 +335,28 @@ describe('MediaProperty', () => {
     });
 
     describe('getDisplay advanced functionality', () => {
+        let mockFile: any;
+        let mockClasse: any;
+
         beforeEach(() => {
             mediaProperty.vault = mockVault;
             mediaProperty.createOption = 'freecad';
+            
+            mockFile = { 
+                updateMetadata: jest.fn(), 
+                check: jest.fn(),
+                vault: mockVault
+            };
+            
+            mockClasse = {
+                getFile: jest.fn(() => mockFile),
+                getPropertyValue: jest.fn(),
+                updatePropertyValue: jest.fn(),
+                vault: mockVault
+            };
         });
 
         it('should create file creation container when no file and createOption set', async () => {
-            const mockFile = { updateMetadata: jest.fn(), check: jest.fn() };
             mediaProperty.read = jest.fn().mockReturnValue(null);
             
             const createFunction = jest.fn().mockResolvedValue('newfile.fcstd');
@@ -352,7 +367,7 @@ describe('MediaProperty', () => {
                 }
             };
             
-            const result = await mediaProperty.getDisplay(mockFile, args);
+            const result = await mediaProperty.getDisplay(mockClasse, args);
             
             expect(result.classList.contains('create-freecad-container')).toBe(true);
             const button = result.querySelector('button');
@@ -361,7 +376,6 @@ describe('MediaProperty', () => {
         });
 
         it('should handle file creation button click', async () => {
-            const mockFile = { updateMetadata: jest.fn(), check: jest.fn() };
             mediaProperty.read = jest.fn().mockReturnValue(null);
             
             const createFunction = jest.fn().mockResolvedValue('newfile.fcstd');
@@ -374,21 +388,20 @@ describe('MediaProperty', () => {
                 }
             };
             
-            const result = await mediaProperty.getDisplay(mockFile, args);
+            const result = await mediaProperty.getDisplay(mockClasse, args);
             const button = result.querySelector('button') as HTMLButtonElement;
             
             // Simulate button click
             await button.click();
             
             expect(createFunction).toHaveBeenCalled();
-            expect(mockFile.updateMetadata).toHaveBeenCalledWith(
+            expect(mockClasse.updatePropertyValue).toHaveBeenCalledWith(
                 mediaProperty.name,
                 '[[newfile.fcstd|newfile.fcstd]]'
             );
         });
 
         it('should add update button when updateOptions provided', async () => {
-            const mockFile = { updateMetadata: jest.fn() };
             mediaProperty.read = jest.fn().mockReturnValue('[[existing.jpg]]');
             mediaProperty.fillDisplay = jest.fn().mockReturnValue(document.createElement('div'));
             
@@ -400,7 +413,7 @@ describe('MediaProperty', () => {
                 }
             };
             
-            const result = await mediaProperty.getDisplay(mockFile, args);
+            const result = await mediaProperty.getDisplay(mockClasse, args);
             const button = result.querySelector('button');
             
             expect(button).toBeTruthy();
@@ -408,7 +421,6 @@ describe('MediaProperty', () => {
         });
 
         it('should handle update button click', async () => {
-            const mockFile = { updateMetadata: jest.fn() };
             mediaProperty.read = jest.fn().mockReturnValue('[[existing.jpg]]');
             mediaProperty.fillDisplay = jest.fn().mockReturnValue(document.createElement('div'));
             
@@ -420,34 +432,32 @@ describe('MediaProperty', () => {
                 }
             };
             
-            const result = await mediaProperty.getDisplay(mockFile, args);
+            const result = await mediaProperty.getDisplay(mockClasse, args);
             const button = result.querySelector('button') as HTMLButtonElement;
             
             await button.click();
             
             expect(updateFunction).toHaveBeenCalled();
-            expect(mockFile.updateMetadata).toHaveBeenCalledWith(
+            expect(mockClasse.updatePropertyValue).toHaveBeenCalledWith(
                 mediaProperty.name,
                 '[[updated.jpg|updated.jpg]]'
             );
         });
 
         it('should use default display name when no args provided', () => {
-            const mockFile = { updateMetadata: jest.fn() };
             mediaProperty.read = jest.fn().mockReturnValue('[[test.jpg]]');
             mediaProperty.fillDisplay = jest.fn().mockReturnValue(document.createElement('div'));
             
-            mediaProperty.getDisplay(mockFile);
+            mediaProperty.getDisplay(mockClasse);
             
             expect(mediaProperty.display).toBe('name');
         });
 
         it('should set custom display from args', () => {
-            const mockFile = { updateMetadata: jest.fn() };
             mediaProperty.read = jest.fn().mockReturnValue('[[test.jpg]]');
             mediaProperty.fillDisplay = jest.fn().mockReturnValue(document.createElement('div'));
             
-            mediaProperty.getDisplay(mockFile, { display: 'embed' });
+            mediaProperty.getDisplay(mockClasse, { display: 'embed' });
             
             expect(mediaProperty.display).toBe('embed');
         });

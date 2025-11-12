@@ -70,18 +70,13 @@ export class Property {
     }
 
     /**
-     * Reads the property value from the file's metadata.
-     * Supports two file types: those with a getMetadataValue method
-     * and those with a direct metadata object.
+     * Reads the property value from the classe's metadata.
      * 
-     * @param file - Obsidian file from which to read the property
+     * @param classe - Classe from which to read the property
      * @returns The property value or undefined if it doesn't exist
      */
-    async read(file: File): Promise<any> {
-        if (file && typeof file === 'object' && 'readProperty' in file) {
-            return await file.getMetadataValue(this.name);
-        }
-        return await file.getMetadataValue(this.name);
+    async read(classe: any): Promise<any> {
+        return await classe.getPropertyValue(this.name);
     }
 
     /**
@@ -119,21 +114,23 @@ export class Property {
     }
 
     /**
-     * Generates the complete display of the property for a given file.
+     * Generates the complete display of the property for a given classe.
      * Configures the display mode (static or editable) and title,
      * then delegates DOM creation to fillDisplay.
      * 
-     * @param file - File for which to generate the display
+     * @param classe - Classe for which to generate the display
      * @param args - Display options
      * @param args.staticMode - If true, displays the property in read-only mode
      * @param args.title - Custom title for the property
      * @returns The DOM element representing the property
      */
-    async getDisplay(file: any, args : {staticMode? : boolean, title?: string} = {staticMode : false, title:""}) {
+    async getDisplay(classe: any, args : {staticMode? : boolean, title?: string} = {staticMode : false, title:""}) {
         this.static = args.staticMode ? true : this.static;
         this.title = args.title ? args.title : "";
-        let value = await this.read(file);
-        return this.fillDisplay(value, async (value: any) => await file.updateMetadata(this.name, value), args);
+        
+        let value = await this.read(classe);
+        
+        return this.fillDisplay(value, async (value: any) => await classe.updatePropertyValue(this.name, value), args);
     }
 
     /**
@@ -332,15 +329,15 @@ export class Property {
     }
 
     /**
-     * Reloads the dynamic content of the property field from the file.
-     * Updates both the display link and input field with the current file value.
+     * Reloads the dynamic content of the property field from the classe.
+     * Updates both the display link and input field with the current classe value.
      * 
-     * @param file - File from which to reload the property value
+     * @param classe - Classe from which to reload the property value
      */
-    async reloadDynamicContent(file: File) {
+    async reloadDynamicContent(classe: any) {
         const field = document.querySelector('.metadata-field');
         if (field) {
-            const newValue = await this.read(file);
+            const newValue = await this.read(classe);
             const link = field.querySelector('.field-link') as HTMLElement;
             const input = field.querySelector('.field-input') as HTMLInputElement;
             if (link && input) {

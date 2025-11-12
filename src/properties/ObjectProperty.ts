@@ -99,9 +99,9 @@ export class ObjectProperty extends Property{
         return [newObject]
     }
 
-    override async getDisplay(file: any, args?: { staticMode?: boolean; title?: string; display? : string}): Promise<HTMLDivElement> {
+    override async getDisplay(classe: any, args?: { staticMode?: boolean; title?: string; display? : string}): Promise<HTMLDivElement> {
         this.display = args?.display || this.display;
-        return super.getDisplay(file, args);
+        return super.getDisplay(classe, args);
     }
 
      // Méthode principale pour obtenir l'affichage

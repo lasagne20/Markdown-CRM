@@ -449,6 +449,358 @@ company: [[Acme Corp]]
 
 ---
 
+### 4. Parent-Child Hierarchy System
+
+#### Overview
+**Purpose:** Automatically organize files in a hierarchical folder structure based on FileProperty relationships.
+
+When a file has a parent relationship (via FileProperty), the system:
+1. Creates a dedicated folder for the parent
+2. Moves the parent file into its folder
+3. Moves child files into the parent's folder
+4. Recursively organizes grandchildren into sub-folders
+
+**Key Concept:** Files with children get their own dedicated folder; files without children stay in their parent's folder.
+
+---
+
+#### Folder Structure Rules
+
+```
+vault/
+├── Institutions/
+│   ├── TechCorp Solutions/              ← Parent has children
+│   │   ├── TechCorp Solutions.md       ← Parent file
+│   │   ├── Thomas Martin/              ← Child with grandchildren
+│   │   │   ├── Thomas Martin.md        ← Child file
+│   │   │   ├── Site Web Entreprise/    ← Grandchild with great-grandchildren
+│   │   │   │   ├── Site Web Entreprise.md
+│   │   │   │   ├── Design.md          ← Great-grandchild (no children)
+│   │   │   │   └── Dev Backend/        ← Great-grandchild with children
+│   │   │   │       ├── Dev Backend.md
+│   │   │   │       └── Tests.md        ← Great-great-grandchild
+│   │   │   └── Project Alpha.md        ← Grandchild (no children)
+│   │   └── Sophie Bernard.md           ← Child (no children)
+│   └── Université Paris Tech/
+│       └── Université Paris Tech.md    ← Parent (no children)
+```
+
+**Rule:** A file gets a dedicated folder **only if** it has at least one child.
+
+---
+
+#### How findChildren() Works
+
+The system detects children using **two complementary methods**:
+
+**Method 1: Folder-Based Detection** (Primary)
+- Check if file is located in parent's dedicated folder
+- Fast and reliable for organized vaults
+- Works even for files without classe definitions
+
+**Method 2: FileProperty Detection** (Fallback)
+- Check if file has a FileProperty pointing to parent
+- Catches children not yet moved to correct folder
+- Ensures only FileProperty relationships count (not TextProperty links)
+
+**Algorithm:**
+```typescript
+protected async findChildren(): Promise<Classe[]> {
+  for (const file of allFiles) {
+    const isInDedicatedFolder = fileFolder.startsWith(dedicatedFolderPath);
+    
+    if (isInDedicatedFolder) {
+      // File is in our folder - verify it's a FileProperty relationship
+      if (hasFilePropertyPointingToUs || classeCreationFailed) {
+        isChild = true; // Trust folder structure
+      }
+    } else {
+      // File is elsewhere - check if it SHOULD be here
+      if (hasFilePropertyPointingToUs) {
+        isChild = true; // Child needs to be moved
+      }
+    }
+  }
+}
+```
+
+**Why Two Methods?**
+- **Folder detection** handles files without classe definitions (e.g., images, documents)
+- **FileProperty detection** finds children before they're moved to correct location
+- Combined approach ensures complete hierarchy preservation
+
+---
+
+#### updateParentFolder() Workflow
+
+When a file's parent changes (or is set for the first time):
+
+```
+1. Get parent file via getParentFile()
+   ↓
+2. Check if parent has dedicated folder
+   - If NO: Create folder, move parent into it
+   - If YES: Use existing folder
+   ↓
+3. Find this file's children via findChildren()
+   ↓
+4. Determine target location for this file:
+   - Has children? → Create dedicated folder: parent/thisFile/
+   - No children? → Put directly in: parent/
+   ↓
+5. Move this file to target location
+   ↓
+6. Call moveChildrenToFolder(targetLocation)
+   ↓
+7. For each child:
+   - Find child's children (grandchildren)
+   - If has grandchildren: Create child/grandchild/
+   - If no grandchildren: Put in child/
+   - Recursively call moveChildrenToFolder()
+```
+
+**Example:**
+
+```
+Initial state:
+/vault/Thomas Martin.md (parent: TechCorp)
+/vault/Site Web.md (parent: Thomas Martin)
+/vault/Design.md (parent: Site Web)
+
+After updateParentFolder() on Thomas Martin:
+/vault/TechCorp/TechCorp.md
+/vault/TechCorp/Thomas Martin/Thomas Martin.md
+/vault/TechCorp/Thomas Martin/Site Web/Site Web.md
+/vault/TechCorp/Thomas Martin/Site Web/Design.md
+```
+
+---
+
+#### Key Methods
+
+**getParentProperty()**
+```typescript
+protected getParentProperty(): Property | undefined
+```
+Returns the FileProperty configured as parent for this class.
+
+**getParentFile()**
+```typescript
+protected async getParentFile(): Promise<File | undefined>
+```
+Resolves the parent file from the parent property value.
+- Handles FileProperty, MultiFileProperty, and ObjectProperty
+- Returns undefined if no parent configured
+
+**findChildren()**
+```typescript
+protected async findChildren(): Promise<Classe[]>
+```
+Finds all children of this file using dual detection:
+1. Files in dedicated folder (fast)
+2. Files with FileProperty pointing here (complete)
+
+Returns array of child Classe instances.
+
+**moveChildrenToFolder()**
+```typescript
+protected async moveChildrenToFolder(targetFolderPath: string): Promise<void>
+```
+Recursively moves children to target folder:
+- Creates dedicated sub-folders for children with grandchildren
+- Moves childless files directly into target
+- Handles unlimited nesting depth
+
+**updateParentFolder()**
+```typescript
+protected async updateParentFolder(): Promise<void>
+```
+Main orchestrator - called when parent property changes:
+- Ensures parent has dedicated folder
+- Moves this file to correct location
+- Recursively organizes all descendants
+
+---
+
+#### Automatic Triggers
+
+The hierarchy system updates automatically when:
+
+1. **Parent property is set/changed**
+   ```typescript
+   await classe.updatePropertyValue('parent', '[[New Parent]]');
+   // → Triggers updateParentFolder()
+   ```
+
+2. **Metadata is updated with new parent**
+   ```typescript
+   await classe.updateMetadata({ parent: '[[New Parent]]' });
+   // → Detects parent change, triggers updateParentFolder()
+   ```
+
+3. **Property value changes via setPropertyValue()**
+   ```typescript
+   await classe.setPropertyValue('parent', '[[New Parent]]');
+   // → Triggers updateParentFolder()
+   ```
+
+**Note:** `setFile()` does **not** trigger `updateParentFolder()` to avoid recursive issues. Only explicit property changes trigger reorganization.
+
+---
+
+#### Edge Cases Handled
+
+**Circular References**
+```typescript
+// File A → parent: File B
+// File B → parent: File A
+// Result: No infinite loop, both files stay in place
+```
+
+**Files Without Classe Definitions**
+```typescript
+// Images, PDFs, etc. in dedicated folders
+// Detected via folder location, not FileProperty
+// Preserved during hierarchy updates
+```
+
+**Multi-Level Moves**
+```typescript
+// Moving parent automatically moves all descendants
+// Grandchildren, great-grandchildren, etc. all follow
+// Folder structure maintained recursively
+```
+
+**Partial Hierarchies**
+```typescript
+// Child exists but parent doesn't
+// getParentFile() returns undefined
+// updateParentFolder() does nothing (graceful)
+```
+
+**Mixed Property Types**
+```typescript
+// Only FileProperty counts as parent
+// TextProperty with [[links]] ignored
+// Prevents false positives from descriptions/notes
+```
+
+---
+
+#### Performance Considerations
+
+**Lazy Child Detection**
+- `findChildren()` only called when needed
+- Results not cached (files may move)
+- O(n) where n = total files in vault
+
+**Batch Moves**
+- Multiple children moved in sequence
+- Each child triggers own recursive move
+- Could optimize with move queue (future)
+
+**File System Calls**
+- Each move = fs.rename() operation
+- Atomic at OS level
+- No risk of partial moves
+
+**Metadata Reads**
+- One getMetadata() call per file
+- Required to check FileProperty values
+- Could cache if performance issue
+
+---
+
+#### Testing
+
+**Test Coverage:**
+- 30 dedicated parent-child tests
+- All edge cases covered
+- Integration tests with real file moves
+
+**Key Test Scenarios:**
+```typescript
+// Basic parent-child
+it('should move child to parent folder', async () => {
+  await child.updateParentFolder();
+  expect(childFile.path).toBe('/vault/parent/child.md');
+});
+
+// Multi-level hierarchy
+it('should handle 3+ generations', async () => {
+  // parent → child → grandchild → greatgrandchild
+  await child.updateParentFolder();
+  expect(grandchildFile.path).toBe('/vault/parent/child/grandchild/grandchild.md');
+  expect(greatGrandchildFile.path).toBe('/vault/parent/child/grandchild/greatgrandchild.md');
+});
+
+// FileProperty-only detection
+it('should only consider FileProperty as parent', async () => {
+  const children = await parent.findChildren();
+  // File with FileProperty → included
+  // File with TextProperty link → excluded
+  expect(children.length).toBe(1);
+});
+
+// Folder-based detection
+it('should detect children in dedicated folder', async () => {
+  // File without classe definition but in folder
+  const children = await parent.findChildren();
+  expect(children).toContainFile('image.png');
+});
+```
+
+---
+
+#### Configuration
+
+**Enable parent-child for a class:**
+```typescript
+// In Classe subclass
+export class Projet extends Classe {
+  static parentPropertyName = 'institution'; // Name of parent FileProperty
+}
+```
+
+**In YAML config:**
+```yaml
+# config/Projet.yaml
+name: Projet
+parent_property: institution  # Maps to parentPropertyName
+properties:
+  - name: institution
+    type: FileProperty
+    classes: [Institution]
+```
+
+---
+
+#### Future Enhancements
+
+**Potential Improvements:**
+- Batch move queue for better performance
+- Configurable folder naming patterns
+- Option to keep flat structure (disable hierarchy)
+- Visual folder tree in admin UI
+- Drag-and-drop folder reorganization
+
+**API Extensions:**
+```typescript
+// Get full hierarchy path
+getHierarchyPath(): string[]
+  → ['Institution', 'Person', 'Project']
+
+// Get all descendants (not just children)
+getAllDescendants(): Classe[]
+  → [child1, child2, grandchild1, grandchild2, ...]
+
+// Move entire hierarchy
+moveHierarchy(newParent: File): void
+  → Moves this file and all descendants
+```
+
+---
+
 ## 🔄 Data Flow Examples
 
 ### Creating a New Record

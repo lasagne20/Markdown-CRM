@@ -69,9 +69,7 @@ export class ClassConfigManager {
                     // Default display: show all properties
                     const properties = document.createElement("div");
                     for (let property of this.getProperties()) {
-                        if (this.file) {
-                            properties.appendChild(await property.getDisplay(this.file));
-                        }
+                        properties.appendChild(await property.getDisplay(this));
                     }
                     container.appendChild(properties);
                 }
@@ -130,8 +128,8 @@ export class ClassConfigManager {
                 if (propertyNames) {
                     for (const propName of propertyNames) {
                         const property = this.getProperty(propName);
-                        if (property && this.file) {
-                            container.appendChild(await property.getDisplay(this.file));
+                        if (property) {
+                            container.appendChild(await property.getDisplay(this));
                         }
                     }
                 }
@@ -215,10 +213,10 @@ export class ClassConfigManager {
 
         // Initialize static properties
         if (config.parentProperty) {
-            DynamicClasse.parentProperty = this.configLoader.createProperty(config.parentProperty) as FileProperty | MultiFileProperty | ObjectProperty;
+            DynamicClasse.parentPropertyName = config.parentProperty;
         }
 
-        console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasse.parentProperty);
+        console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasse.parentPropertyName);
         console.log("Propriétés : ", config.properties);
 
         // Initialize all properties

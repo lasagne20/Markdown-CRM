@@ -90,6 +90,18 @@ class AdminServer {
             this.handleWriteFile(req, res);
             return;
         }
+        
+        // Handle POST request for moving/renaming files
+        if (req.method === 'POST' && pathname === '/move-file') {
+            this.handleMoveFile(req, res);
+            return;
+        }
+        
+        // Handle directory listing request
+        if (pathname.endsWith('/__list__')) {
+            this.handleDirectoryListing(req, res, pathname);
+            return;
+        }
 
         // Route mapping
         switch (pathname) {
@@ -205,6 +217,117 @@ class AdminServer {
                 }));
             }
         });
+    }
+
+    handleDirectoryListing(req, res, pathname) {
+        // Retirer le /__list__ de la fin
+        const dirPath = pathname.substring(0, pathname.length - 9);
+        
+        // Construire le chemin complet du dossier
+        let fullDirPath;
+        if (dirPath.startsWith('/vault/')) {
+            fullDirPath = path.join(this.interfaceDir, dirPath.substring(1));
+        } else if (dirPath === '/vault' || dirPath === '') {
+            fullDirPath = path.join(this.interfaceDir, 'vault');
+        } else {
+            fullDirPath = path.join(this.interfaceDir, dirPath.substring(1));
+        }
+        
+        console.log(`📋 Liste du dossier: ${fullDirPath}`);
+        
+        // Vérifier que le dossier existe
+        if (!fs.existsSync(fullDirPath)) {
+            this.sendJsonResponse(res, 404, { error: 'Dossier non trouvé' });
+            return;
+        }
+        
+        // Vérifier que c'est bien un dossier
+        const stats = fs.statSync(fullDirPath);
+        if (!stats.isDirectory()) {
+            this.sendJsonResponse(res, 400, { error: 'Le chemin ne pointe pas vers un dossier' });
+            return;
+        }
+        
+        // Lister le contenu du dossier
+        try {
+            const entries = fs.readdirSync(fullDirPath, { withFileTypes: true });
+            const result = entries.map(entry => ({
+                name: entry.name,
+                type: entry.isDirectory() ? 'directory' : 'file'
+            }));
+            
+            this.sendJsonResponse(res, 200, result);
+            console.log(`✅ Liste retournée: ${result.length} entrées`);
+        } catch (error) {
+            console.error(`❌ Erreur lors de la liste:`, error);
+            this.sendJsonResponse(res, 500, { error: error.message });
+        }
+    }
+
+    handleMoveFile(req, res) {
+        let body = '';
+        
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        
+        req.on('end', () => {
+            try {
+                const { oldPath, newPath } = JSON.parse(body);
+                
+                console.log(`🔄 Déplacement de fichier: ${oldPath} → ${newPath}`);
+                
+                // Construire les chemins complets
+                const fullOldPath = path.join(this.interfaceDir, oldPath.startsWith('/') ? oldPath.substring(1) : oldPath);
+                const fullNewPath = path.join(this.interfaceDir, newPath.startsWith('/') ? newPath.substring(1) : newPath);
+                
+                // Vérifier que le fichier source existe
+                if (!fs.existsSync(fullOldPath)) {
+                    throw new Error(`Fichier source non trouvé: ${fullOldPath}`);
+                }
+                
+                // Créer le dossier de destination si nécessaire
+                const newDir = path.dirname(fullNewPath);
+                if (!fs.existsSync(newDir)) {
+                    fs.mkdirSync(newDir, { recursive: true });
+                }
+                
+                // Déplacer le fichier
+                fs.renameSync(fullOldPath, fullNewPath);
+                
+                res.writeHead(200, { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    message: `Fichier déplacé avec succès: ${oldPath} → ${newPath}` 
+                }));
+                
+                console.log(`✅ Fichier déplacé avec succès: ${oldPath} → ${newPath}`);
+                
+            } catch (error) {
+                console.error(`❌ Erreur lors du déplacement:`, error);
+                res.writeHead(500, { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                res.end(JSON.stringify({ 
+                    success: false, 
+                    error: error.message 
+                }));
+            }
+        });
+    }
+    
+    sendJsonResponse(res, statusCode, data) {
+        res.writeHead(statusCode, { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        });
+        res.end(JSON.stringify(data));
     }
 
     getContentType(ext) {

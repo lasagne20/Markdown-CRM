@@ -20,11 +20,46 @@ class AdminInterface {
             console.log('✅ Environnement fake initialisé');
             await this.loadInterface();
             
+            // Écouter les événements de déplacement de fichiers
+            window.addEventListener('file-moved', (event) => {
+                console.log('🔄 Fichier déplacé détecté, rafraîchissement de l\'arborescence...');
+                this.handleFileMoved(event.detail);
+            });
+            
             // Vérifier s'il y a un paramètre de fichier dans l'URL
             await this.handleUrlParameters();
         } catch (error) {
             console.error('❌ Erreur lors de l\'initialisation:', error);
             this.showError('Erreur lors de l\'initialisation de l\'environnement: ' + error.message);
+        }
+    }
+    
+    async handleFileMoved(detail) {
+        try {
+            const { oldPath, newPath } = detail;
+            console.log(`📦 Traitement du déplacement: ${oldPath} → ${newPath}`);
+            
+            // Rafraîchir l'arborescence
+            await this.buildFileTree();
+            
+            // Si le fichier déplacé est actuellement sélectionné, le rouvrir au nouveau chemin
+            if (this.selectedFile && this.selectedFile.path === oldPath) {
+                console.log('🔄 Réouverture du fichier déplacé...');
+                
+                // Attendre un court instant que l'arborescence soit reconstruite
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                // Chercher le fichier à son nouveau chemin
+                const movedFile = this.fakeEnvironment.app.getAllFiles().find(f => f.path === newPath);
+                if (movedFile) {
+                    await this.loadFileContent(movedFile);
+                    this.highlightFileInTree(newPath);
+                }
+            }
+            
+            this.showSuccess('Arborescence mise à jour');
+        } catch (error) {
+            console.error('❌ Erreur lors du traitement du déplacement:', error);
         }
     }
     
@@ -341,10 +376,14 @@ class AdminInterface {
             let classDisplay = null;
             
             if (dynamicFactory) {
-                const ClassConstructor = await dynamicFactory.getClass(className);
-                const classInstance = new ClassConstructor(this.fakeEnvironment.vault, file);
-                classDisplay = await classInstance.getDisplay();
-                console.log('✅ Affichage réel généré via DynamicFactory');
+                // Utiliser createClasse pour créer correctement l'instance avec File wrappé
+                const classInstance = await this.fakeEnvironment.vault.createClasse(file);
+                if (classInstance) {
+                    classDisplay = await classInstance.getDisplay();
+                    console.log('✅ Affichage réel généré via DynamicFactory');
+                } else {
+                    console.log('⚠️ Impossible de créer l\'instance de classe');
+                }
             } else {
                 // Fallback : créer un affichage simple à partir des métadonnées
                 console.log('⚠️ DynamicFactory non disponible, utilisation du fallback');
@@ -528,31 +567,6 @@ class AdminInterface {
         document.getElementById('createFileModal').classList.remove('active');
     }
 
-    async createNewFile() {
-        const className = document.getElementById('newFileClass').value;
-        const fileName = document.getElementById('newFileName').value.trim();
-
-        if (!className || !fileName) {
-            this.showError('Veuillez remplir tous les champs');
-            return;
-        }
-
-        try {
-            await this.fakeEnvironment.createClassInstance(className, fileName);
-            this.hideCreateFileModal();
-            this.showSuccess(`Fichier "${fileName}" créé avec succès`);
-            
-            // Refresh the current view
-            if (this.selectedClass === className) {
-                await this.loadFiles(className);
-            }
-            await this.updateHeaderStats();
-        } catch (error) {
-            console.error('Erreur lors de la création du fichier:', error);
-            this.showError('Erreur lors de la création: ' + error.message);
-        }
-    }
-
     showStatsModal() {
         const modal = document.getElementById('statsModal');
         modal.classList.add('active');
@@ -701,35 +715,6 @@ class AdminInterface {
             this.showError('Erreur lors de la lecture du fichier: ' + error.message);
         }
     }
-
-    async duplicateFile(filePath) {
-        try {
-            const fileData = this.filesData.get(filePath);
-            if (fileData) {
-                const originalName = fileData.file.name.replace('.md', '');
-                const newName = `${originalName} - Copie`;
-                
-                await this.fakeEnvironment.createClassInstance(fileData.className, newName);
-                
-                // Copy metadata
-                const newFile = await this.fakeEnvironment.app.getFile(`/${newName}.md`);
-                if (newFile) {
-                    await this.fakeEnvironment.app.updateMetadata(newFile, fileData.metadata);
-                }
-                
-                this.showSuccess(`Fichier dupliqué: ${newName}`);
-                
-                if (this.selectedClass === fileData.className) {
-                    await this.loadFiles(fileData.className);
-                }
-                await this.updateHeaderStats();
-            }
-        } catch (error) {
-            console.error('Erreur lors de la duplication:', error);
-            this.showError('Erreur lors de la duplication: ' + error.message);
-        }
-    }
-
     async deleteFile(filePath) {
         const fileData = this.filesData.get(filePath);
         if (!fileData) return;
@@ -994,10 +979,14 @@ class AdminInterface {
             const dynamicFactory = this.fakeEnvironment.vault.getDynamicClassFactory();
             if (dynamicFactory && className !== 'Unknown') {
                 try {
-                    const ClassConstructor = await dynamicFactory.getClass(className);
-                    const classInstance = new ClassConstructor(this.fakeEnvironment.vault, file);
-                    const classDisplay = await classInstance.getDisplay();
-                    propertiesDisplay.appendChild(classDisplay);
+                    // Utiliser createClasse pour créer correctement l'instance avec File wrappé
+                    const classInstance = await this.fakeEnvironment.vault.createClasse(file);
+                    if (classInstance) {
+                        const classDisplay = await classInstance.getDisplay();
+                        propertiesDisplay.appendChild(classDisplay);
+                    } else {
+                        propertiesDisplay.innerHTML = '<div class="error">Impossible de créer l\'instance de classe</div>';
+                    }
                 } catch (error) {
                     console.error('Erreur lors de la génération des propriétés:', error);
                     propertiesDisplay.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
@@ -1483,10 +1472,6 @@ function showCreateFileModal(preSelectedClass = '') {
 
 function hideCreateFileModal() {
     adminInterface.hideCreateFileModal();
-}
-
-function createNewFile() {
-    adminInterface.createNewFile();
 }
 
 function showEnvironmentStats() {

@@ -100,23 +100,10 @@ export class File implements IFile {
         targetFileName = this.getName();
       }
       try {
-        // Check if the folder of the target pathname exist
-        let subtargetPath = targetFolderPath + "/" + targetFileName
-        const folder = await this.vault.app.getFile(subtargetPath);
-        if (folder) {
-          targetFolderPath = subtargetPath;
-        }
-
-        // Check if we need to move the file or the folder
-        let moveFile : any = this.file
+        // Ne pas créer de sous-dossier automatiquement - déplacer directement
+        // Always move only the .md file, never the folder
+        // The parent-child recursion system will handle moving children
         let newFilePath = `${targetFolderPath}/${targetFileName}`;
-        if (this.isFolderFile()){
-          let folder = await this.vault.app.getFile(this.getFolderPath())
-          if (folder){
-            moveFile = folder
-            newFilePath = newFilePath.replace(".md","")
-          }
-        }
 
         // Vérification si le fichier cible existe déjà
         const existingFile = await this.vault.app.getFile(newFilePath);
@@ -127,10 +114,16 @@ export class File implements IFile {
         }
     
         try {
-            // Essayer de déplacer le fichier
-            if (moveFile) {
-                await this.vault.app.renameFile(moveFile, newFilePath);
-                console.log(`Fichier déplacé vers ${newFilePath}`);
+            // Déplacer uniquement le fichier .md
+            await this.vault.app.renameFile(this.file, newFilePath);
+            console.log(`Fichier déplacé vers ${newFilePath}`);
+            
+            // Update internal file object with new path
+            this.file.path = newFilePath;
+            this.path = newFilePath;
+            if (targetFileName) {
+                this.file.name = targetFileName;
+                this.file.basename = targetFileName.replace('.md', '');
             }
         } catch (error) {
             console.error('Erreur lors du déplacement du fichier :', error);
@@ -176,32 +169,41 @@ export class File implements IFile {
       this.lock = true;
       
       try {
-        console.log("Update metadata on " + this.getName() +" : " + key + " --> " + value)
         const fileContent = await this.vault.app.readFile(this.file);
         const { body } = this.extractFrontmatter(fileContent);
-      
         const { existingFrontmatter } = this.extractFrontmatter(fileContent);
 
-        if (!existingFrontmatter) {this.lock = false; return;}
+        if (!existingFrontmatter) {
+            this.lock = false; 
+            return;
+        }
 
         try {
             let frontmatter = parseYaml(existingFrontmatter) as any;
 
-            if (!frontmatter) {this.lock = false; return;};
+            if (!frontmatter) {
+                this.lock = false; 
+                return;
+            }
+            
             frontmatter[key] = value;
             
             // Options pour dump : utiliser le format YAML multi-ligne pour les tableaux
-            const newFrontmatter = dump(frontmatter, {
-                flowLevel: -1,  // Force le format multi-ligne pour les tableaux
-                lineWidth: -1,  // Pas de limite de largeur de ligne
-                noRefs: true,   // Pas de références YAML
-                sortKeys: false // Garder l'ordre des clés
+            let newFrontmatter = dump(frontmatter, {
+                flowLevel: -1,     // Force le format multi-ligne pour les tableaux
+                lineWidth: -1,     // Pas de limite de largeur de ligne (empêche le folding)
+                noRefs: true,      // Pas de références YAML
+                sortKeys: false,   // Garder l'ordre des clés
+                forceQuotes: false,// Ne pas forcer les guillemets
+                quotingType: '"',  // Utiliser des guillemets doubles si nécessaire
+                noCompatMode: true // Mode moderne (pas de wrap automatique)
             });
 
-            const newContent = `---\n${newFrontmatter}\n---\n${body}`; //${extraText}
+            const newContent = `---\n${newFrontmatter}\n---\n${body}`;
+            
             await this.vault.app.writeFile(this.file, newContent);
-            await this.vault.app.waitForFileMetaDataUpdate(this.getPath(), key, async () => { return; })
-            console.log("Metdata updated")
+            
+            await this.vault.app.waitForFileMetaDataUpdate(this.getPath(), key, async () => { return; });
 
         } catch (error) {
             console.error("❌ Erreur lors du parsing du frontmatter:", error);
@@ -258,7 +260,8 @@ export class File implements IFile {
     
     // Extraire le frontmatter et le reste du contenu
     extractFrontmatter(content: string) {
-        const frontmatterRegex = /^---\n([\s\S]+?)\n---\n/;
+        // Support both \n (Unix) and \r\n (Windows) line endings
+        const frontmatterRegex = /^---\r?\n([\s\S]+?)\r?\n---\r?\n/;
         const match = content.match(frontmatterRegex);
         return {
             existingFrontmatter: match ? match[1] : "",

@@ -91,7 +91,7 @@ describe('Classe', () => {
 
         it('should create a Classe instance with file', () => {
             const newClasse = new TestableClasse(mockVault, mockFile);
-            expect(newClasse.getFile()).toBe(mockFile);
+            expect(newClasse.getFile()?.['file']).toBe(mockFile); // Compare inner file
         });
 
         it('should create a Classe instance with data', () => {
@@ -101,7 +101,7 @@ describe('Classe', () => {
 
         it('should create a Classe instance with both file and data', () => {
             const newClasse = new TestableClasse(mockVault, mockFile, mockData);
-            expect(newClasse.getFile()).toBe(mockFile);
+            expect(newClasse.getFile()?.['file']).toBe(mockFile); // Compare inner file
             expect(newClasse.data).toBe(mockData);
         });
     });
@@ -154,7 +154,7 @@ describe('Classe', () => {
     describe('File operations', () => {
         it('should set file', () => {
             classe.setFile(mockFile);
-            expect(classe.getFile()).toBe(mockFile);
+            expect(classe.getFile()?.['file']).toBe(mockFile); // Compare inner file
         });
 
         it('should get file path', () => {
@@ -178,7 +178,9 @@ describe('Classe', () => {
 
             const metadata = await classe.getMetadata();
             expect(metadata).toBe(expectedMetadata);
-            expect(mockApp.getMetadata).toHaveBeenCalledWith(mockFile);
+            // Should be called with the File wrapper
+            const callArg = mockApp.getMetadata.mock.calls[0][0];
+            expect(callArg?.['file']).toBe(mockFile);
         });
 
         it('should return empty object when no file set', async () => {
@@ -189,12 +191,13 @@ describe('Classe', () => {
 
         it('should update metadata', async () => {
             const newMetadata = { key: 'newValue' };
-            
-            await classe.updateMetadata(newMetadata);
-            expect(mockApp.updateMetadata).toHaveBeenCalledWith(mockFile, newMetadata);
-        });
 
-        it('should not update metadata when no file set', async () => {
+            await classe.updateMetadata(newMetadata);
+            // Should be called with the File wrapper
+            const callArg = mockApp.updateMetadata.mock.calls[0][0];
+            expect(callArg?.['file']).toBe(mockFile);
+            expect(mockApp.updateMetadata).toHaveBeenCalledWith(expect.anything(), newMetadata);
+        });        it('should not update metadata when no file set', async () => {
             const classeWithoutFile = new TestableClasse(mockVault);
             await classeWithoutFile.updateMetadata({ key: 'value' });
             expect(mockApp.updateMetadata).not.toHaveBeenCalled();
@@ -214,11 +217,14 @@ describe('Classe', () => {
 
             await classe.setPropertyValue('testProperty', 'newValue');
             
-            const expectedMetadata = { 
+            const expectedMetadata = {
                 existingProperty: 'existingValue',
-                testProperty: 'newValue' 
+                testProperty: 'newValue'
             };
-            expect(mockApp.updateMetadata).toHaveBeenCalledWith(mockFile, expectedMetadata);
+            // Should be called with the File wrapper
+            const callArg = mockApp.updateMetadata.mock.calls[0][0];
+            expect(callArg?.['file']).toBe(mockFile);
+            expect(mockApp.updateMetadata).toHaveBeenCalledWith(expect.anything(), expectedMetadata);
         });
     });
 
@@ -334,7 +340,7 @@ describe('Classe', () => {
 
             const display = await classe.getDisplay();
             
-            expect(mockProperty.getDisplay).toHaveBeenCalledWith(mockFile);
+            expect(mockProperty.getDisplay).toHaveBeenCalledWith(classe);
         });
 
         it('should not include properties in display when no file is set', async () => {
@@ -350,7 +356,8 @@ describe('Classe', () => {
 
             const display = await classe.getDisplay();
             
-            expect(mockProperty.getDisplay).not.toHaveBeenCalled();
+            // Even without file, properties should still be displayed (they get the classe)
+            expect(mockProperty.getDisplay).toHaveBeenCalledWith(classe);
         });
     });
 
@@ -437,7 +444,10 @@ describe('Classe', () => {
                 prop2: 'originalValue2'
             };
             
-            expect(mockApp.updateMetadata).toHaveBeenCalledWith(mockFile, expectedMetadata);
+            // Should be called with the File wrapper
+            const callArg = mockApp.updateMetadata.mock.calls[0][0];
+            expect(callArg?.['file']).toBe(mockFile);
+            expect(mockApp.updateMetadata).toHaveBeenCalledWith(expect.anything(), expectedMetadata);
         });
 
         it('should not update metadata when no changes detected', async () => {

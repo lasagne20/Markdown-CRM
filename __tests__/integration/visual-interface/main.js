@@ -130,30 +130,42 @@ export class FakeEnvironment {
         console.log('Scan du dossier:', basePath);
         const files = [];
         
-        // Liste des fichiers connus dans vault - encoder les URL
-        const vaultStructure = [
-            'Clients/Entreprises/Jean Dupont.md',
-            'Clients/Startups/Marie Martin.md',
-            'Clients/Freelance/Pierre Durand.md',
-            'Projets/En cours/Site Web Entreprise.md',
-            'Projets/En cours/Application Mobile CRM.md',
-            'Taches/Terminees/Analyse des besoins client.md',
-            'Taches/En cours/Design de la maquette.md',
-            'Taches/En cours/Developpement Backend.md',
-            'Taches/A faire/Tests utilisateurs.md'
-        ];
-        
-        for (const relativePath of vaultStructure) {
-            // Encoder l'URL pour gérer les espaces et caractères spéciaux
-            const encodedPath = relativePath.split('/').map(encodeURIComponent).join('/');
-            files.push({
-                path: '/' + relativePath,
-                url: basePath + '/' + encodedPath
-            });
-        }
+        // Scanner récursivement tous les dossiers du vault
+        await this.scanDirectory(basePath, '', files);
         
         console.log('  Trouve', files.length, 'fichiers');
         return files;
+    }
+    
+    async scanDirectory(basePath, relativePath, files) {
+        const fullPath = basePath + (relativePath ? '/' + relativePath : '');
+        
+        try {
+            // Essayer de lire le contenu du dossier via l'API du serveur
+            const response = await fetch(fullPath + '/__list__');
+            
+            if (response.ok) {
+                const entries = await response.json();
+                
+                for (const entry of entries) {
+                    const entryRelativePath = relativePath ? relativePath + '/' + entry.name : entry.name;
+                    
+                    if (entry.type === 'directory') {
+                        // Scanner récursivement les sous-dossiers
+                        await this.scanDirectory(basePath, entryRelativePath, files);
+                    } else if (entry.type === 'file' && entry.name.endsWith('.md')) {
+                        // Ajouter le fichier markdown à la liste
+                        const encodedPath = entryRelativePath.split('/').map(encodeURIComponent).join('/');
+                        files.push({
+                            path: '/' + entryRelativePath,
+                            url: basePath + '/' + encodedPath
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Impossible de scanner:', fullPath, error.message);
+        }
     }
     
 
@@ -188,71 +200,6 @@ export class FakeEnvironment {
         return ['Contact', 'Projet', 'Tache'];
     }
     
-    async createClassInstance(className, fileName) {
-        // Generate sample data based on class type
-        const sampleData = this.generateSampleData(className, fileName);
-        
-        // Create file with rich metadata template
-        let template = '---\nClasse: ' + className + '\n';
-        for (const [key, value] of Object.entries(sampleData)) {
-            template += key + ': "' + value + '"\n';
-        }
-        template += '---\n\n# ' + fileName + '\n\nNouveau fichier de classe ' + className + ' avec donnees d\'exemple.\n';
-
-        const file = await this.app.createFile('/' + fileName + '.md', template);
-        await this.app.updateMetadata(file, { Classe: className, ...sampleData });
-        
-        return file;
-    }
-
-    generateSampleData(className, fileName) {
-        const sampleData = {};
-        
-        switch (className) {
-            case 'Projet':
-                sampleData.titre = fileName;
-                sampleData.description = 'Description detaillee du projet';
-                sampleData.statut = 'En cours';
-                sampleData.priorite = 'Moyenne';
-                sampleData.date_debut = '2024-01-15';
-                sampleData.date_fin = '2024-06-30';
-                sampleData.budget = '25000';
-                sampleData.responsable = 'Jean Dupont';
-                sampleData.email_responsable = 'jean.dupont@email.com';
-                sampleData.telephone_responsable = '+33 1 23 45 67 89';
-                break;
-                
-            case 'Contact':
-                sampleData.nom = fileName;
-                sampleData.prenom = 'John';
-                sampleData.entreprise = 'TechCorp SARL';
-                sampleData.email = 'john@techcorp.com';
-                sampleData.telephone = '+33 1 23 45 67 89';
-                sampleData.adresse = '123 Rue de la Paix, 75001 Paris, France';
-                sampleData.poste = 'Developpeur Senior';
-                sampleData.note = '5';
-                sampleData.linkedin = 'https://linkedin.com/in/john';
-                break;
-                
-            case 'Tache':
-                sampleData.titre = fileName;
-                sampleData.description = 'Description detaillee de la tache a accomplir';
-                sampleData.statut = 'A faire';
-                sampleData.priorite = 'Haute';
-                sampleData.date_echeance = '2024-02-15';
-                sampleData.assignee = 'Marie Martin';
-                sampleData.temps_estime = '4';
-                sampleData.projet_lie = 'Projet Principal';
-                break;
-                
-            default:
-                sampleData.titre = fileName;
-                sampleData.description = 'Description par defaut';
-                sampleData.statut = 'Nouveau';
-        }
-        
-        return sampleData;
-    }
     
     async getStats() {
         let allFiles = this.app.getAllFiles();

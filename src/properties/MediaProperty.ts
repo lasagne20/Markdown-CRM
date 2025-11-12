@@ -16,12 +16,14 @@ export class MediaProperty extends FileProperty{
       this.display = args.display;
     }
 
-    override async getDisplay(file: any, args: {staticMode? : boolean, title?: string, display?: string;
+    override async getDisplay(classe: any, args: {staticMode? : boolean, title?: string, display?: string;
           createOptions? : {createFunction? : () => Promise<string>, title?: string}
           updateOptions? : {icon: string, updateFunction? : () => Promise<string>}} = 
           {staticMode : false, title:"", display: "name"}): Promise<HTMLDivElement> {
         this.display = args.display || "name";
-        if (!(await this.read(file)) && this.createOption){
+
+        
+        if (!(await this.read(classe)) && this.createOption){
           // If the file is not set, we return a container with a button to create a new file
           const container = document.createElement("div");
           container.classList.add("create-freecad-container");
@@ -33,26 +35,29 @@ export class MediaProperty extends FileProperty{
               button.addEventListener("click", async () => {
                   if (args.createOptions && typeof args.createOptions.createFunction === "function") {
                     let path = await args.createOptions.createFunction();
-                     await file.updateMetadata(this.name, `[[${path}|${path.split("/").pop()}]]`);
+                     await classe.updatePropertyValue(this.name, `[[${path}|${path.split("/").pop()}]]`);
                     setTimeout(() => {
                       // On attend 2 secondes pour que le fichier soit créé et déplacer dans le bon dossier avant de l'ouvrir
-                      path = file.vault.getMediaFromLink(path)?.path || path;
-                      const vaultPath = file.vault.app.vault.adapter.basePath || file.vault.adapter.getBasePath?.();
-                      const absoluteMediaPath = vaultPath ? require('path').join(vaultPath, path) : path;
-                      this.vault.app.open(absoluteMediaPath);
+                      const fileInstance = classe.getFile();
+                      if (fileInstance) {
+                        path = fileInstance.vault.getMediaFromLink(path)?.path || path;
+                        const vaultPath = fileInstance.vault.app.vault.adapter.basePath || fileInstance.vault.adapter.getBasePath?.();
+                        const absoluteMediaPath = vaultPath ? require('path').join(vaultPath, path) : path;
+                        this.vault.app.open(absoluteMediaPath);
+                        fileInstance.check();
+                      }
                     }, 1000);
-                    await file.check();
                   }
               }); 
               container.appendChild(button);
               return container;
           }
           // Return the container even if no createOptions provided
-          return container;
         }
 
-        let value = await this.read(file);
-        let container = this.fillDisplay(value, async (value: any) => await file.updateMetadata(this.name, value), file);
+        let value = await this.read(classe);
+        const file = classe.getFile();
+        let container = this.fillDisplay(value, async (value: any) => await classe.updatePropertyValue(this.name, value), file);
         if (args.updateOptions && args.updateOptions.updateFunction) {
           const refreshButton = document.createElement("button");
           refreshButton.classList.add("mod-cta");
@@ -60,7 +65,7 @@ export class MediaProperty extends FileProperty{
           refreshButton.addEventListener("click", async () => {
             if (args.updateOptions && typeof args.updateOptions.updateFunction === "function") {
               let path = await args.updateOptions.updateFunction();
-              await file.updateMetadata(this.name, `[[${path}|${path.split("/").pop()}]]`);
+              await classe.updatePropertyValue(this.name, `[[${path}|${path.split("/").pop()}]]`);
             }
           });
           container.appendChild(refreshButton);

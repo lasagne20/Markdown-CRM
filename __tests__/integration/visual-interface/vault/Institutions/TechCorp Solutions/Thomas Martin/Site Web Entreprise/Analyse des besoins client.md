@@ -1,7 +1,7 @@
 ---
 Classe: Tache
-titre: "\\\\\\\\\\\"Analyse des besoins clientdfxgsdfgsdf"
-description: "\\\\\\\\\\"- Réunion avec le client pour définir les spécifications détaillées"
+titre: "\\\\\\\\\\\\\\\\\\"Analyse des besoins clientdfxgsdfgsdf"
+description: "\\\\\\\\\\\\\\\\\"- Réunion avec le client pour définir les spécifications détaillées"
 statut: En attente
 priorite: Haute
 assignee: [[Jean Dupont]]

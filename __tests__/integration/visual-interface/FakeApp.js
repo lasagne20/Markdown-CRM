@@ -21,10 +21,28 @@ export class FakeApp {
         const lines = frontmatterText.split('\n');
         let currentKey = null;
         let currentArray = null;
+        let currentFoldedScalar = null; // Pour gérer les >- et |-
+        let foldedLines = [];
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmedLine = line.trim();
+            
+            // Si on est dans un folded scalar, continuer à collecter les lignes indentées
+            if (currentFoldedScalar !== null) {
+                // Si la ligne est indentée, c'est la continuation du scalar
+                if (line.startsWith('  ') && trimmedLine !== '') {
+                    foldedLines.push(trimmedLine);
+                    continue;
+                } else {
+                    // Fin du folded scalar - joindre les lignes
+                    const foldedValue = foldedLines.join(' ');
+                    metadata[currentFoldedScalar] = foldedValue;
+                    currentFoldedScalar = null;
+                    foldedLines = [];
+                    // Ne pas continuer, traiter cette ligne normalement
+                }
+            }
             
             if (!trimmedLine) continue;
             
@@ -51,6 +69,13 @@ export class FakeApp {
             
             const key = trimmedLine.substring(0, colonIndex).trim();
             let value = trimmedLine.substring(colonIndex + 1).trim();
+            
+            // Check for folded scalar (>- or |-)
+            if (value === '>-' || value === '|-' || value === '>' || value === '|') {
+                currentFoldedScalar = key;
+                foldedLines = [];
+                continue;
+            }
             
             // If value is empty, this might be the start of an array
             if (value === '' || value === '[]') {
@@ -79,6 +104,11 @@ export class FakeApp {
             }
             
             metadata[key] = value;
+        }
+        
+        // Si on termine avec un folded scalar en cours
+        if (currentFoldedScalar !== null && foldedLines.length > 0) {
+            metadata[currentFoldedScalar] = foldedLines.join(' ');
         }
         
         return metadata;
@@ -1136,11 +1166,51 @@ export class FakeApp {
 
     // Additional IApp interface methods
     async renameFile(file, newPath) {
-        if (this.fileSystem.has(file.path)) {
-            const data = this.fileSystem.get(file.path);
-            this.fileSystem.delete(file.path);
-            this.fileSystem.set(newPath, data);
-            console.log(`✏️ Fichier renommé: ${file.path} → ${newPath}`);
+        // Nettoyer les chemins
+        const oldPath = file.path;
+        const cleanNewPath = newPath.startsWith('/') ? newPath : '/' + newPath;
+        
+        if (this.fileSystem.has(oldPath)) {
+            const data = this.fileSystem.get(oldPath);
+            this.fileSystem.delete(oldPath);
+            this.fileSystem.set(cleanNewPath, data);
+            
+            // Mettre à jour l'objet file pour refléter le nouveau chemin
+            file.path = cleanNewPath;
+            file.name = cleanNewPath.split('/').pop();
+            file.basename = file.name.replace(/\.[^/.]+$/, '');
+            
+            console.log(`✏️ Fichier renommé: ${oldPath} → ${cleanNewPath}`);
+            
+            // Persister le changement sur le serveur
+            try {
+                const response = await fetch('/move-file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        oldPath: oldPath.startsWith('/vault/') ? oldPath : '/vault' + oldPath,
+                        newPath: cleanNewPath.startsWith('/vault/') ? cleanNewPath : '/vault' + cleanNewPath
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log(`✅ Fichier déplacé sur le serveur:`, result.message);
+                    
+                    // Déclencher un événement personnalisé pour notifier l'interface
+                    window.dispatchEvent(new CustomEvent('file-moved', {
+                        detail: { oldPath, newPath: cleanNewPath }
+                    }));
+                } else {
+                    console.warn(`⚠️ Erreur serveur lors du déplacement (${response.status})`);
+                }
+            } catch (error) {
+                console.warn(`⚠️ Impossible de persister le déplacement sur le serveur:`, error);
+            }
+        } else {
+            console.warn(`⚠️ Fichier source non trouvé dans fileSystem: ${oldPath}`);
         }
     }
 

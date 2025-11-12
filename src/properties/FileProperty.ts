@@ -23,12 +23,12 @@ export class FileProperty extends LinkProperty{
       return this.vault.readLinkFile(value)
     }
 
-    async getClasse(file : File): Promise<Classe | undefined>{
-      let link = await this.read(file);
+    async getClasse(classe: any): Promise<Classe | undefined>{
+      let link = await this.read(classe);
       if (link) {
-        let classe = await this.vault.getFromLink(link);
-        if (classe) {
-          return classe;
+        let classeResult = await this.vault.getFromLink(link);
+        if (classeResult) {
+          return classeResult;
         }
       }
       return undefined;

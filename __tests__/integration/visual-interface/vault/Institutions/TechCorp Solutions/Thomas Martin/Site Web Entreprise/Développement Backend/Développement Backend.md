@@ -4,12 +4,34 @@ titre: Développement Backend
 description: Mise en place de l'API REST et de la base de données
 statut: En cours
 priorite: Haute
-assignee: "[[Pierre Durand]]"
-projet: "[[Site Web Entreprise]]"
-dateEcheance: "2025-11-20"
+assignee:
+  - - Pierre Durand
+projet: >-
+  [[/Institutions/Université Paris Tech/Sophie Bernard/Site Web Entreprise/Site
+  Web Entreprise.md|Site Web Entreprise]]
+dateEcheance: 2025-11-20T00:00:00.000Z
 tempsEstime: 24
 tempsPasse: 10
 avancement: 40
+dateCreation: null
+dateCompletion: null
+difficulte: null
+tags: null
+dependances: null
+checklist: null
+fichiers: null
+commentaires: null
+commencer: null
+mettrePause: null
+reprendre: null
+terminer: null
+dupliquer: null
+chronometrer: null
+tempsRestant: null
+enRetard: null
+efficacite: null
+joursRestants: null
+
 ---
 
 # Développement Backend

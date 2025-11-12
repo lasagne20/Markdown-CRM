@@ -1,0 +1,113 @@
+# Configuration de la classe Institution
+name: Institution
+icon: 🏢
+description: Gestion des institutions et organisations
+template: Institution.md
+
+# Configuration des propriétés
+properties:
+  - name: nom
+    type: Property
+    title: Nom de l'institution
+    icon: 🏢
+    required: true
+    defaultValue: ""
+    
+  - name: type
+    type: SelectProperty
+    title: Type d'institution
+    icon: 🏷️
+    required: false
+    defaultValue: "Entreprise"
+    options:
+      - "Entreprise"
+      - "Association"
+      - "Administration"
+      - "École/Université"
+      - "Autre"
+    
+  - name: secteur
+    type: TextProperty
+    title: Secteur d'activité
+    icon: 💼
+    required: false
+    defaultValue: ""
+    
+  - name: siteWeb
+    type: LinkProperty
+    title: Site web
+    icon: 🌐
+    required: false
+    defaultValue: ""
+    
+  - name: adresse
+    type: AdressProperty
+    title: Adresse
+    icon: 📍
+    required: false
+    defaultValue: ""
+    
+  - name: telephonePrincipal
+    type: PhoneProperty
+    title: Téléphone principal
+    icon: 📞
+    required: false
+    defaultValue: ""
+    
+  - name: email
+    type: EmailProperty
+    title: Email principal
+    icon: 📧
+    required: false
+    defaultValue: ""
+    
+  - name: dateCreation
+    type: DateProperty
+    title: Date de création
+    icon: 📅
+    required: false
+    defaultValue: ""
+    
+  - name: nombreEmployes
+    type: NumberProperty
+    title: Nombre d'employés
+    icon: 👥
+    required: false
+    defaultValue: 0
+    validation:
+      min: 0
+    
+  - name: description
+    type: TextProperty
+    title: Description
+    icon: 📋
+    required: false
+    defaultValue: ""
+    multiline: true
+
+# Configuration d'affichage
+display:
+  containers:
+    - type: line
+      title: "Informations principales"
+      className: "institution-info-section"
+      properties:
+        - nom
+        - type
+        - secteur
+    
+    - type: tabs
+      title: "Détails"
+      className: "institution-details-tabs"
+      tabs:
+        - name: "Contact"
+          properties:
+            - siteWeb
+            - email
+            - telephonePrincipal
+            - adresse
+        - name: "Informations"
+          properties:
+            - dateCreation
+            - nombreEmployes
+            - description
