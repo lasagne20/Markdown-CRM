@@ -190,57 +190,6 @@ describe('ObjectProperty', () => {
         });
     });
 
-    // Note: getParentValue is deprecated - use getParentFile instead
-    describe.skip('getParentValue (deprecated)', () => {
-        beforeEach(() => {
-            objectProperty = new ObjectProperty('testObject', mockVault, properties);
-        });
-
-        test('should return parent value from FileProperty', () => {
-            const values = [{ file: 'test-file.md', title: 'Test' }];
-            const expectedFile = { path: 'test-file.md' };
-            
-            // mockFileProperty.getParentValue.mockReturnValue(expectedFile as any);
-
-            const result = objectProperty.getParentValue(values);
-
-            expect(result).toBe(expectedFile);
-            // expect(mockFileProperty.getParentValue).toHaveBeenCalledWith('test-file.md');
-        });
-
-        test('should return parent value from MultiFileProperty', () => {
-            const propertiesWithMultiFile = { multiFile: mockMultiFileProperty };
-            objectProperty = new ObjectProperty('testObject', mockVault, propertiesWithMultiFile);
-            
-            const values = [{ multiFile: ['file1.md', 'file2.md'] }];
-            const expectedFile = { path: 'file1.md' };
-            
-            // mockMultiFileProperty.getParentValue.mockReturnValue(expectedFile as any);
-
-            const result = objectProperty.getParentValue(values);
-
-            expect(result).toBe(expectedFile);
-            // expect(mockMultiFileProperty.getParentValue).toHaveBeenCalledWith(['file1.md', 'file2.md']);
-        });
-
-        test('should return undefined when no values', () => {
-            const result = objectProperty.getParentValue(null);
-            expect(result).toBeUndefined();
-
-            const result2 = objectProperty.getParentValue([]);
-            expect(result2).toBeUndefined();
-        });
-
-        test('should return undefined when no parent property found', () => {
-            const propertiesWithoutParent = { title: mockTextProperty };
-            objectProperty = new ObjectProperty('testObject', mockVault, propertiesWithoutParent);
-            
-            const values = [{ title: 'Test' }];
-
-            const result = objectProperty.getParentValue(values);
-            expect(result).toBeUndefined();
-        });
-    });
 
     describe('findValue', () => {
         beforeEach(() => {

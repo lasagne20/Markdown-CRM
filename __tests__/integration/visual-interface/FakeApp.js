@@ -573,13 +573,34 @@ export class FakeApp {
     async getFile(filePath) {
         console.log("Getting file at path: ", filePath);
         
-        // Check if the file exists in the local file system first
+        // Check if the file/folder exists in the local file system first
         if (this.fileSystem.has(filePath)) {
-            const fileName = filePath.split('/').pop();
-            const baseName = fileName.replace(/\.[^/.]+$/, '');
-            const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
+            const data = this.fileSystem.get(filePath);
             
-            return this.createFileObject(filePath, fileName, baseName, extension);
+            if (data.isFolder) {
+                // Return folder object
+                return this.createFolderObject(filePath);
+            } else {
+                // Return file object
+                const fileName = filePath.split('/').pop();
+                const baseName = fileName.replace(/\.[^/.]+$/, '');
+                const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
+                
+                return this.createFileObject(filePath, fileName, baseName, extension);
+            }
+        }
+        
+        // Check if this path is a folder (contains files)
+        const isFolder = this.isFolderPath(filePath);
+        if (isFolder) {
+            // Auto-create folder object
+            this.fileSystem.set(filePath, {
+                content: '',
+                metadata: {},
+                isFolder: true
+            });
+            console.log(`📂 Dossier détecté automatiquement: ${filePath}`);
+            return this.createFolderObject(filePath);
         }
         
         // If not found locally, try to read from file system or fetch from interface
@@ -675,6 +696,66 @@ export class FakeApp {
         }
         
         return null;
+    }
+    
+    /**
+     * Check if a path represents a folder (contains files)
+     */
+    isFolderPath(folderPath) {
+        for (const path of this.fileSystem.keys()) {
+            if (path.startsWith(folderPath + '/')) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Create a folder object with IFolder interface
+     */
+    createFolderObject(folderPath) {
+        const folderName = folderPath.split('/').pop();
+        const children = [];
+        
+        // Collect immediate children (files and folders)
+        const childPaths = new Set();
+        for (const path of this.fileSystem.keys()) {
+            if (path.startsWith(folderPath + '/')) {
+                const relativePath = path.substring(folderPath.length + 1);
+                const firstSegment = relativePath.split('/')[0];
+                childPaths.add(`${folderPath}/${firstSegment}`);
+            }
+        }
+        
+        // Create child objects
+        for (const childPath of childPaths) {
+            if (this.fileSystem.has(childPath)) {
+                const data = this.fileSystem.get(childPath);
+                if (data.isFolder) {
+                    children.push({
+                        path: childPath,
+                        name: childPath.split('/').pop(),
+                        children: []
+                    });
+                } else {
+                    const fileName = childPath.split('/').pop();
+                    const baseName = fileName.replace(/\.[^/.]+$/, '');
+                    const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
+                    children.push({
+                        path: childPath,
+                        name: fileName,
+                        basename: baseName,
+                        extension: extension
+                    });
+                }
+            }
+        }
+        
+        return {
+            path: folderPath,
+            name: folderName,
+            children: children
+        };
     }
 
     async isFile(file) {
@@ -1165,52 +1246,93 @@ export class FakeApp {
     }
 
     // Additional IApp interface methods
-    async renameFile(file, newPath) {
+    /**
+     * Move a file or folder to a new path
+     * Handles both files and folders (with all their contents)
+     */
+    async move(fileOrFolder, newPath) {
         // Nettoyer les chemins
-        const oldPath = file.path;
+        const oldPath = fileOrFolder.path;
         const cleanNewPath = newPath.startsWith('/') ? newPath : '/' + newPath;
         
-        if (this.fileSystem.has(oldPath)) {
+        // Check if this is a folder (has children property)
+        const isFolder = 'children' in fileOrFolder && Array.isArray(fileOrFolder.children);
+        
+        if (isFolder) {
+            // Moving a folder: need to move all files inside it
+            const filesToMove = [];
+            
+            // Collect all files in the folder (including nested)
+            for (const [path, data] of this.fileSystem.entries()) {
+                if (path.startsWith(oldPath + '/')) {
+                    filesToMove.push({ oldPath: path, data });
+                }
+            }
+            
+            // Move the folder itself if it exists in fileSystem
+            if (this.fileSystem.has(oldPath)) {
+                const folderData = this.fileSystem.get(oldPath);
+                this.fileSystem.delete(oldPath);
+                this.fileSystem.set(cleanNewPath, folderData);
+            }
+            
+            // Move all files inside the folder
+            for (const { oldPath: filePath, data } of filesToMove) {
+                const relativePath = filePath.substring(oldPath.length);
+                const newFilePath = cleanNewPath + relativePath;
+                this.fileSystem.delete(filePath);
+                this.fileSystem.set(newFilePath, data);
+            }
+            
+            console.log(`📁 Dossier déplacé: ${oldPath} → ${cleanNewPath} (${filesToMove.length} fichiers)`);
+            
+            // Update fileOrFolder object
+            fileOrFolder.path = cleanNewPath;
+            fileOrFolder.name = cleanNewPath.split('/').pop();
+            
+        } else if (this.fileSystem.has(oldPath)) {
+            // Moving a single file
             const data = this.fileSystem.get(oldPath);
             this.fileSystem.delete(oldPath);
             this.fileSystem.set(cleanNewPath, data);
             
             // Mettre à jour l'objet file pour refléter le nouveau chemin
-            file.path = cleanNewPath;
-            file.name = cleanNewPath.split('/').pop();
-            file.basename = file.name.replace(/\.[^/.]+$/, '');
+            fileOrFolder.path = cleanNewPath;
+            fileOrFolder.name = cleanNewPath.split('/').pop();
+            fileOrFolder.basename = fileOrFolder.name.replace(/\.[^/.]+$/, '');
             
-            console.log(`✏️ Fichier renommé: ${oldPath} → ${cleanNewPath}`);
-            
-            // Persister le changement sur le serveur
-            try {
-                const response = await fetch('/move-file', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        oldPath: oldPath.startsWith('/vault/') ? oldPath : '/vault' + oldPath,
-                        newPath: cleanNewPath.startsWith('/vault/') ? cleanNewPath : '/vault' + cleanNewPath
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log(`✅ Fichier déplacé sur le serveur:`, result.message);
-                    
-                    // Déclencher un événement personnalisé pour notifier l'interface
-                    window.dispatchEvent(new CustomEvent('file-moved', {
-                        detail: { oldPath, newPath: cleanNewPath }
-                    }));
-                } else {
-                    console.warn(`⚠️ Erreur serveur lors du déplacement (${response.status})`);
-                }
-            } catch (error) {
-                console.warn(`⚠️ Impossible de persister le déplacement sur le serveur:`, error);
-            }
+            console.log(`✏️ Fichier déplacé: ${oldPath} → ${cleanNewPath}`);
         } else {
-            console.warn(`⚠️ Fichier source non trouvé dans fileSystem: ${oldPath}`);
+            console.warn(`⚠️ Fichier/dossier source non trouvé dans fileSystem: ${oldPath}`);
+            return;
+        }
+        
+        // Persister le changement sur le serveur
+        try {
+            const response = await fetch('/move-file', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    oldPath: oldPath.startsWith('/vault/') ? oldPath : '/vault' + oldPath,
+                    newPath: cleanNewPath.startsWith('/vault/') ? cleanNewPath : '/vault' + cleanNewPath
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log(`✅ ${isFolder ? 'Dossier' : 'Fichier'} déplacé sur le serveur:`, result.message);
+                
+                // Déclencher un événement personnalisé pour notifier l'interface
+                window.dispatchEvent(new CustomEvent('file-moved', {
+                    detail: { oldPath, newPath: cleanNewPath }
+                }));
+            } else {
+                console.warn(`⚠️ Erreur serveur lors du déplacement (${response.status})`);
+            }
+        } catch (error) {
+            console.warn(`⚠️ Impossible de persister le déplacement sur le serveur:`, error);
         }
     }
 

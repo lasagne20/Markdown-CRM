@@ -211,12 +211,17 @@ export class ClassConfigManager {
             }
         }
 
-        // Initialize static properties
-        if (config.parentProperty) {
-            DynamicClasse.parentPropertyName = config.parentProperty;
+        // Initialize static properties from parent configuration
+        if (config.parent?.property) {
+            DynamicClasse.parentPropertyName = config.parent.property;
+        }
+        
+        if (config.parent?.folder) {
+            DynamicClasse.parentFolderName = config.parent.folder;
         }
 
         console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasse.parentPropertyName);
+        console.log(`📁 Dossier parent pour ${className}:`, DynamicClasse.parentFolderName);
         console.log("Propriétés : ", config.properties);
 
         // Initialize all properties

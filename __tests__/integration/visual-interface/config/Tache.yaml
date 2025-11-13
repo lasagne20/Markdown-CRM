@@ -4,7 +4,9 @@ icon: ✅
 description: Gestion des tâches individuelles avec suivi détaillé
 template: Tache.md
 
-parentProperty: projet
+parent:
+    property: projet
+    folder: Taches
 
 # Configuration des propriétés
 properties:
@@ -113,6 +115,13 @@ properties:
     min: 0
     max: 100
     
+  - name: efficacite
+    type: FormulaProperty
+    title: Efficacité
+    icon: 🎯
+    required: false
+    formula: "tempsPasse > 0 ? (avancement / tempsPasse).toFixed(2) : 0"
+    
   - name: difficulte
     type: RatingProperty
     title: Difficulté (1-5)
@@ -145,6 +154,8 @@ properties:
     required: false
     defaultValue: []
     linkClass: "Tache"
+
+  
     
   - name: checklist
     type: TextProperty

@@ -92,7 +92,7 @@ const mockApp = {
     fileExists: jest.fn(),
     getAbstractFileByPath: jest.fn(),
     getFile: jest.fn(),
-    renameFile: jest.fn((file, newPath) => {
+    move: jest.fn((file, newPath) => {
         // Update the file path when renamed
         if (file && typeof file === 'object' && 'path' in file) {
             file.path = newPath;
@@ -309,10 +309,10 @@ describe('Classe - Parent-Child Relationships', () => {
             // Parent should stay in place
             expect(parentFile.path).toBe(originalParentPath);
 
-            // Check that renameFile was called
-            expect(mockApp.renameFile).toHaveBeenCalledWith(childFile, '/vault/parent/child.md');
+            // Check that move was called
+            expect(mockApp.move).toHaveBeenCalledWith(childFile, '/vault/parent/child.md');
             
-            // Check childFile was actually updated by renameFile mock
+            // Check childFile was actually updated by move mock
             expect(childFile.path).toBe('/vault/parent/child.md');
 
             // Should move child file into parent folder (check internal file)
@@ -978,8 +978,8 @@ describe('Classe - Parent-Child Relationships', () => {
 
             await childClasse.testUpdateParentFolder();
 
-            // renameFile should not be called since everything is already in place
-            expect(mockApp.renameFile).not.toHaveBeenCalled();
+            // move should not be called since everything is already in place
+            expect(mockApp.move).not.toHaveBeenCalled();
         });
 
         it('should move folder file and its children when parent changes', async () => {
@@ -1074,7 +1074,15 @@ describe('Classe - Parent-Child Relationships', () => {
                 if (path === siteWebFile.path) return siteWebFile;
                 // TechCorp already has its folder
                 if (path === '/vault/Institutions/TechCorp Solutions') {
-                    return { path: '/vault/Institutions/TechCorp Solutions' };
+                    return { path: '/vault/Institutions/TechCorp Solutions', children: [] };
+                }
+                // Thomas Martin folder (for folder movement detection)
+                if (path === '/vault/Institutions/Université Paris Tech/Thomas Martin') {
+                    return { 
+                        path: '/vault/Institutions/Université Paris Tech/Thomas Martin',
+                        name: 'Thomas Martin',
+                        children: [thomasMartinFile, siteWebFile]
+                    };
                 }
                 // For folder existence checks, return null
                 return null;
@@ -1093,19 +1101,16 @@ describe('Classe - Parent-Child Relationships', () => {
             // Trigger parent folder update
             await thomasClasse.testUpdateParentFolder();
 
-            // Verify Thomas Martin.md was moved to TechCorp Solutions/Thomas Martin/
-            const thomasMoveCalls = (mockApp.renameFile as jest.Mock).mock.calls.filter(
-                call => call[0].path === thomasMartinFile.path
+            // With the new folder-based movement, the entire Thomas Martin folder is moved
+            // Check that move was called (could be folder or file depending on children)
+            expect(mockApp.move).toHaveBeenCalled();
+            
+            // Verify the destination path includes TechCorp Solutions
+            const moveCalls = (mockApp.move as jest.Mock).mock.calls;
+            const hasCorrectDestination = moveCalls.some(
+                call => call[1].includes('/vault/Institutions/TechCorp Solutions/Thomas Martin')
             );
-            expect(thomasMoveCalls.length).toBeGreaterThan(0);
-            expect(thomasMoveCalls[0][1]).toBe('/vault/Institutions/TechCorp Solutions/Thomas Martin/Thomas Martin.md');
-
-            // Verify Site Web.md was also moved to TechCorp Solutions/Thomas Martin/
-            const siteWebMoveCalls = (mockApp.renameFile as jest.Mock).mock.calls.filter(
-                call => call[0].path === siteWebFile.path
-            );
-            expect(siteWebMoveCalls.length).toBeGreaterThan(0);
-            expect(siteWebMoveCalls[0][1]).toBe('/vault/Institutions/TechCorp Solutions/Thomas Martin/Site Web.md');
+            expect(hasCorrectDestination).toBe(true);
         });
 
         it('should only consider FileProperty types as parent references, not other link properties', async () => {

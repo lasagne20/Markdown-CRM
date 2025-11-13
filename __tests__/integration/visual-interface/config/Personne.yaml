@@ -5,7 +5,9 @@ description: Gestion des personnes liées à des institutions
 template: Personne.md
 
 # Propriété parent pour organisation automatique des fichiers
-parentProperty: institution
+parent:
+    property: institution
+    folder: Personnes
 
 # Configuration des propriétés
 properties:

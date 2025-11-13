@@ -295,13 +295,14 @@ export class Vault {
         
         const metadata = await this.app.getMetadata(fileInstance);
         if (!metadata) {
-            console.error("Pas de metadata");
+            console.error("Pas de metadata pour le fichier:", fileInstance.getPath());
             return;
         }
         
         const className = metadata["Classe"];
         if (!className) {
-            console.error("Pas de classe définie dans les métadonnées");
+            console.error("Pas de classe définie dans les métadonnées pour:", fileInstance.getPath());
+            console.error("Métadonnées disponibles:", Object.keys(metadata));
             return undefined;
         }
 

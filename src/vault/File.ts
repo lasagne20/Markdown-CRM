@@ -119,7 +119,7 @@ export class File implements IFile {
     
         try {
             // Déplacer uniquement le fichier .md
-            await this.vault.app.renameFile(this.file, newFilePath);
+            await this.vault.app.move(this.file, newFilePath);
             console.log(`Fichier déplacé vers ${newFilePath}`);
             
             // Update internal file object with new path

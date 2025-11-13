@@ -7,8 +7,8 @@ priorite: Haute
 assignee:
   - - Marie Martin
 projet: >-
-  [[/Institutions/Université Paris Tech/Sophie Bernard/Sophie Bernard.md|Sophie
-  Bernard]]
+  [[/Institutions/TechCorp Solutions/Personnes/Marie Dupont/Marie
+  Dupont.md|Marie Dupont]]
 dateEcheance: 2025-11-10T00:00:00.000Z
 tempsEstime: 16
 tempsPasse: 8
@@ -29,7 +29,7 @@ dupliquer: []
 chronometrer: []
 tempsRestant: []
 enRetard: []
-efficacite: []
+efficacite: '6.25'
 joursRestants: []
 
 ---

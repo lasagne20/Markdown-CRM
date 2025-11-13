@@ -68,10 +68,23 @@ export class ConfigLoader {
             }
             
             console.log("YAML content loaded:", fileContent);
-            const config = yaml.load(fileContent) as ClassConfig;
+            const config = yaml.load(fileContent) as any;
+            
+            // Convertir properties array → object si nécessaire
+            if (config.properties && Array.isArray(config.properties)) {
+                const propertiesObj: { [key: string]: any } = {};
+                for (const prop of config.properties) {
+                    if (prop.name) {
+                        propertiesObj[prop.name] = prop;
+                    }
+                }
+                config.properties = propertiesObj;
+            }
+            
+            console.log("Parsed config for", className, ":", JSON.stringify(config, null, 2));
+            console.log("Parent config:", config.parent);
 
-
-            this.loadedConfigs.set(className, config);
+            this.loadedConfigs.set(className, config as ClassConfig);
             return config;
         } catch (error) {
             console.error(`Failed to load config for class ${className}:`, error);

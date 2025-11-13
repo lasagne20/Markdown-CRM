@@ -7,8 +7,8 @@ priorite: +++
 dateDebut: 2025-10-01T00:00:00.000Z
 dateFin: 2025-12-15T00:00:00.000Z
 responsable: >-
-  [[/Institutions/TechCorp Solutions/Thomas Martin/Thomas Martin.md|Thomas
-  Martin]]
+  [[/Institutions/Université Paris Tech/Personnes/Sophie Bernard/Sophie
+  Bernard.md|Sophie Bernard]]
 budget: 25000 €
 budgetUtilise: 12000 €
 pourcentageCompletion: 45

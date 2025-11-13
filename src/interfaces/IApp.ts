@@ -10,6 +10,7 @@ export interface IFile {
 export interface IFolder {
     path: string;
     name: string;
+    parent?: IFolder;
     children?: (IFile | IFolder)[];
 }
 
@@ -41,7 +42,7 @@ export interface IApp {
     writeFile(file: IFile, content: string): Promise<void>;
     createFile(path: string, content: string): Promise<IFile>;
     delete(file: IFile | IFolder): Promise<void>;
-    renameFile(file: IFile, newPath: string): Promise<void>;
+    move(fileOrFolder: IFile | IFolder, newPath: string): Promise<void>;
     
     // Folder operations
     createFolder(path: string): Promise<IFolder>;

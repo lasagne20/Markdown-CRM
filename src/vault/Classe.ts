@@ -7,6 +7,7 @@ import { Data } from './Data';
 export class Classe {
     protected static Properties: { [key: string]: Property } = {};
     public static parentPropertyName?: string;
+    public static parentFolderName?: string; // Optional subfolder in parent where to place this file
     protected properties: Property[] = [];
     protected file?: File;
     public name: string = '';
@@ -139,8 +140,8 @@ export class Classe {
         // Update metadata first
         await this.file.updateMetadata(propertyName, value);
         
-        // If parent property changed, update folder structure
-        if (isParentPropertyChange) {
+        // If parent property changed and new value is not empty, update folder structure
+        if (isParentPropertyChange && value) {
             await this.updateParentFolder();
         }
     }
@@ -261,10 +262,10 @@ export class Classe {
         return undefined;
     }
     
-    /**
+ /**
      * Find all children of this file recursively
      * Supports two modes:
-     * 1. If folder parameter is provided or file.parent exists: use children property (new approach)
+     * 1. If file has children property populated: use it directly (new approach)
      * 2. Otherwise: scan filesystem for files in dedicated folder (fallback for compatibility)
      */
     protected async findChildren(folder?: IFile | IFolder): Promise<Classe[]> {
@@ -274,30 +275,18 @@ export class Classe {
 
         const children: Classe[] = [];
         
-        // Mode 1: Use parent/children structure if available
-        if (folder || this.file.parent) {
-            const targetFolder = folder || this.file.parent;
-            
-            if (targetFolder && targetFolder.children) {
-                for (const child of targetFolder.children) {
-                    // Check if it's a file (has basename and extension)
-                    if ('basename' in child && 'extension' in child) {
-                        // It's a file - try to create a Classe from it
-                        const classe = await this.vault.getFromFile(child as IFile);
-                        if (classe) {
-                            children.push(classe);
-                        }
-                    } else {
-                        // It's a folder - recurse into it
-                        const subChildren = await this.findChildren(child as IFolder);
-                        children.push(...subChildren);
-                    }
-                }
-                return children;
-            }
+        // Mode 1: Use file.children if available (folder-file structure)
+        const childrenToProcess = folder?.children || this.file.children;
+        
+        if (childrenToProcess && childrenToProcess.length > 0) {
+            console.log(`🔍 Mode 1: Processing ${childrenToProcess.length} items`);
+            await this.processChildrenRecursive(childrenToProcess, children);
+            console.log(`✅ Mode 1: Found ${children.length} children`);
+            return children;
         }
         
         // Mode 2: Fallback - scan filesystem (for backward compatibility with existing code)
+        console.log(`🔍 Mode 2: Fallback filesystem scan`);
         const allFiles = await this.vault.app.listFiles();
         const thisFileBaseName = this.file.getName(false);
         const thisFilePath = this.file.getPath();
@@ -311,6 +300,11 @@ export class Classe {
         for (const file of allFiles) {
             // Skip the current file
             if (file.path === thisFilePath) {
+                continue;
+            }
+
+            // Skip non-markdown files (config files, etc.)
+            if (!file.path.endsWith('.md')) {
                 continue;
             }
 
@@ -370,6 +364,40 @@ export class Classe {
         }
         
         return children;
+    }
+
+
+        
+    /**
+     * Helper method to recursively process children array without infinite loops
+     */
+    private async processChildrenRecursive(items: (IFile | IFolder)[], result: Classe[]): Promise<void> {
+        for (const item of items) {
+            // Check if it's a file (has basename and extension)
+            if ('basename' in item && 'extension' in item) {
+                // Skip non-markdown files
+                const file = item as IFile;
+                if (!file.path.endsWith('.md')) {
+                    continue;
+                }
+                
+                // It's a file - try to create a Classe from it
+                try {
+                    const classe = await this.vault.getFromFile(file);
+                    if (classe) {
+                        result.push(classe);
+                    }
+                } catch (e) {
+                    // Skip files that can't be loaded as classes
+                }
+            } else {
+                // It's a folder - process its children if available
+                const folder = item as IFolder;
+                if (folder.children && folder.children.length > 0) {
+                    await this.processChildrenRecursive(folder.children, result);
+                }
+            }
+        }
     }
 
     /**
@@ -451,8 +479,8 @@ export class Classe {
         const parentBaseName = parentFile.getName(false);
         
         // Check if parent is already in a folder with its name
-        const parentFolderName = parentFolderPath.substring(parentFolderPath.lastIndexOf("/") + 1);
-        const parentIsInDedicatedFolder = parentFolderName === parentBaseName;
+        const currentParentFolderName = parentFolderPath.substring(parentFolderPath.lastIndexOf("/") + 1);
+        const parentIsInDedicatedFolder = currentParentFolderName === parentBaseName;
         
         let parentDedicatedFolderPath: string;
         
@@ -474,7 +502,7 @@ export class Classe {
         
         // Now determine where to move this child file
         // If this file has children, it needs its own dedicated folder
-        // Otherwise, it can go directly in the parent's folder
+        // Otherwise, it can go directly in the parent's folder (or in a specified subfolder)
         const currentChildFolder = this.file.getFolderPath();
         const childBaseName = this.file.getName(false);
         
@@ -482,11 +510,21 @@ export class Classe {
         const children = await this.findChildren();
         const hasChildren = children.length > 0;
         
+        // Check if a specific subfolder is configured for this class
+        const parentFolderName = (this.constructor as typeof Classe).parentFolderName;
+        
         let targetFolderPath: string;
         
         if (hasChildren) {
             // Child has children, so it needs its own dedicated folder inside parent's folder
-            targetFolderPath = `${parentDedicatedFolderPath}/${childBaseName}`;
+            // If parentFolderName is specified, create the folder inside that subfolder
+            if (parentFolderName) {
+                const subfolderPath = `${parentDedicatedFolderPath}/${parentFolderName}`;
+                await this.ensureFolder(subfolderPath);
+                targetFolderPath = `${subfolderPath}/${childBaseName}`;
+            } else {
+                targetFolderPath = `${parentDedicatedFolderPath}/${childBaseName}`;
+            }
             
             // Ensure the dedicated folder exists
             const dedicatedFolder = await this.vault.app.getFile(targetFolderPath);
@@ -494,25 +532,56 @@ export class Classe {
                 await this.ensureFolder(targetFolderPath);
             }
         } else {
-            // Child has no children, put it directly in parent's folder
-            targetFolderPath = parentDedicatedFolderPath;
-        }
-        
-        if (currentChildFolder !== targetFolderPath) {
-            // Move this file to target folder
-            await this.file.move(targetFolderPath, this.file.getName());
-            
-            // Reload the file object from the new path to ensure all references are updated
-            const newFilePath = `${targetFolderPath}/${this.file.getName()}`;
-            const reloadedFile = await this.vault.app.getFile(newFilePath);
-            if (reloadedFile) {
-                this.file = new File(this.vault, reloadedFile);
+            // Child has no children
+            if (parentFolderName) {
+                // Put it in the specified subfolder
+                targetFolderPath = `${parentDedicatedFolderPath}/${parentFolderName}`;
+                await this.ensureFolder(targetFolderPath);
+            } else {
+                // Put it directly in parent's folder
+                targetFolderPath = parentDedicatedFolderPath;
             }
         }
         
-        // Move all children recursively to their proper folders
-        // This handles creating dedicated folders for children with grandchildren
-        await this.moveChildrenToFolder(targetFolderPath);
+        if (currentChildFolder !== targetFolderPath) {
+            // Check if this file has a dedicated folder (folder with same name as file)
+            const currentFolderName = currentChildFolder.substring(currentChildFolder.lastIndexOf("/") + 1);
+            const fileHasDedicatedFolder = currentFolderName === childBaseName;
+            
+            if (fileHasDedicatedFolder && hasChildren) {
+                // Move the entire folder (file + children) instead of just the file
+                const sourceFolderPath = currentChildFolder;
+                const newFolderPath = `${targetFolderPath}`;
+                
+                // Rename/move the folder using the vault's folder operations
+                const folder = await this.vault.app.getFile(sourceFolderPath);
+                if (folder && 'children' in folder) {
+                    // Use the adapter's move method to move the entire folder
+                    await this.vault.app.move(folder, newFolderPath);
+                    
+                    // Update this.file reference to point to new location
+                    const newFilePath = `${newFolderPath}/${this.file.getName()}`;
+                    const reloadedFile = await this.vault.app.getFile(newFilePath);
+                    if (reloadedFile) {
+                        this.file = new File(this.vault, reloadedFile);
+                    }
+                }
+            } else {
+                // Move just this file (no children or no dedicated folder)
+                await this.file.move(targetFolderPath, this.file.getName());
+                
+                // Reload the file object from the new path to ensure all references are updated
+                const newFilePath = `${targetFolderPath}/${this.file.getName()}`;
+                const reloadedFile = await this.vault.app.getFile(newFilePath);
+                if (reloadedFile) {
+                    this.file = new File(this.vault, reloadedFile);
+                }
+                
+                // Move all children recursively to their proper folders
+                // This handles creating dedicated folders for children with grandchildren
+                await this.moveChildrenToFolder(targetFolderPath);
+            }
+        }
     }
     
     // Lifecycle hooks

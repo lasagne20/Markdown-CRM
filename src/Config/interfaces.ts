@@ -52,7 +52,10 @@ export interface SubClassConfig {
 export interface ClassConfig {
     className: string;
     classIcon: string;
-    parentProperty?: string; // Name of the property that defines the parent (FileProperty, ObjectProperty, or MultiFileProperty)
+    parent?: {
+        property: string; // Name of the property that defines the parent (FileProperty, ObjectProperty, or MultiFileProperty)
+        folder?: string; // Optional subfolder name in parent's folder where this file should be placed
+    };
     subClassesProperty?: {
         name: string;
         subClasses: SubClassConfig[];

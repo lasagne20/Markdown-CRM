@@ -11,8 +11,8 @@ projet: >-
   Entreprise/Développement Backend.md|Développement Backend]]
 dateEcheance: 2026-02-01T00:00:00.000Z
 tempsEstime: 12
-tempsPasse: 0
-avancement: 0
+tempsPasse: '10'
+avancement: '12'
 dateCreation: null
 dateCompletion: null
 difficulte: null
@@ -29,7 +29,7 @@ dupliquer: null
 chronometrer: null
 tempsRestant: null
 enRetard: null
-efficacite: null
+efficacite: '1.20'
 joursRestants: null
 
 ---

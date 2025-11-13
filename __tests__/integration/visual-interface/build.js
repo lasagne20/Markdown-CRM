@@ -73,7 +73,9 @@ class BuildSystem {
                 "../../../src/vault/Vault.ts",
                 "../../../src/vault/File.ts",
                 "../../../src/vault/Classe.ts",
-                "../../../src/interfaces/IApp.ts"
+                "../../../src/interfaces/IApp.ts",
+                "../../../src/Config/**/*.ts",
+                "../../../src/properties/**/*.ts"
             ],
             "exclude": [
                 "../../../src/**/*.test.ts",

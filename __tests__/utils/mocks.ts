@@ -9,7 +9,7 @@ export interface MockApp extends IApp {
     getFile: jest.MockedFunction<any>;
     readFile: jest.MockedFunction<any>;
     writeFile: jest.MockedFunction<any>;
-    renameFile: jest.MockedFunction<any>;
+    move: jest.MockedFunction<any>;
     getMetadata: jest.MockedFunction<any>;
     updateMetadata: jest.MockedFunction<any>;
     waitForFileMetaDataUpdate: jest.MockedFunction<any>;
@@ -41,7 +41,7 @@ export function mockApp(settings?: Partial<ISettings>): MockApp {
         getFile: jest.fn(),
         readFile: jest.fn(),
         writeFile: jest.fn(),
-        renameFile: jest.fn(),
+        move: jest.fn(),
         getMetadata: jest.fn(),
         updateMetadata: jest.fn(),
         waitForFileMetaDataUpdate: jest.fn(),

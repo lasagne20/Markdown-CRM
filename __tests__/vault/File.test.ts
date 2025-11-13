@@ -18,6 +18,7 @@ const mockApp = {
     readFile: jest.fn(),
     writeFile: jest.fn(),
     renameFile: jest.fn(),
+    move: jest.fn(),
     getMetadata: jest.fn(),
     waitForFileMetaDataUpdate: jest.fn()
 };
@@ -190,7 +191,7 @@ describe('File', () => {
             
             await file.move('target/folder', 'newname.md');
             
-            expect(mockApp.renameFile).toHaveBeenCalledWith(
+            expect(mockApp.move).toHaveBeenCalledWith(
                 mockIFile,
                 'target/folder/newname.md'
             );
@@ -201,7 +202,7 @@ describe('File', () => {
             
             await file.move('target/folder');
             
-            expect(mockApp.renameFile).toHaveBeenCalledWith(
+            expect(mockApp.move).toHaveBeenCalledWith(
                 mockIFile,
                 'target/folder/test.md'
             );
@@ -212,12 +213,12 @@ describe('File', () => {
             
             await file.move('target/folder');
             
-            expect(mockApp.renameFile).not.toHaveBeenCalled();
+            expect(mockApp.move).not.toHaveBeenCalled();
         });
 
         it('should handle move errors gracefully', async () => {
             mockApp.getFile.mockResolvedValue(null);
-            mockApp.renameFile.mockRejectedValue(new Error('Move failed'));
+            mockApp.move.mockRejectedValue(new Error('Move failed'));
             
             await expect(file.move('target/folder')).resolves.not.toThrow();
         });
@@ -234,7 +235,7 @@ describe('File', () => {
             
             await file.move('target/folder');
             
-            expect(mockApp.renameFile).toHaveBeenCalled();
+            expect(mockApp.move).toHaveBeenCalled();
         });
 
         it('should move folder file correctly (only the .md file)', async () => {
@@ -251,7 +252,7 @@ describe('File', () => {
             
             // File.move() now only moves the .md file, not the folder
             // The parent-child recursion system in Classe handles moving children
-            expect(mockApp.renameFile).toHaveBeenCalledWith(
+            expect(mockApp.move).toHaveBeenCalledWith(
                 folderFileData,
                 'target/folder.md'
             );

@@ -4,7 +4,9 @@ icon: 📋
 description: Gestion des projets avec suivi complet
 template: Projet.md
 
-parentProperty: responsable
+parent:
+    property: responsable
+    folder: Projets
 
 # Configuration des propriétés
 properties:

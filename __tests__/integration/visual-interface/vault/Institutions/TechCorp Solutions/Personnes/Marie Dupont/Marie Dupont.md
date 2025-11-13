@@ -2,9 +2,7 @@
 Classe: Personne
 nom: Dupont
 prenom: Marie
-institution: >-
-  [[/Institutions/Université Paris Tech/Université Paris Tech.md|Université
-  Paris Tech]]
+institution: '[[/Institutions/TechCorp Solutions/TechCorp Solutions.md|TechCorp Solutions]]'
 poste: Directrice Technique
 email: marie.dupont@techcorp-solutions.example
 telephone: +33 6 12 34 56 78

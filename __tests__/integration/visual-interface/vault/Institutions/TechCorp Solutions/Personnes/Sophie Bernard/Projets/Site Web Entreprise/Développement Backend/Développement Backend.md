@@ -29,7 +29,7 @@ dupliquer: null
 chronometrer: null
 tempsRestant: null
 enRetard: null
-efficacite: null
+efficacite: '4.00'
 joursRestants: null
 
 ---
