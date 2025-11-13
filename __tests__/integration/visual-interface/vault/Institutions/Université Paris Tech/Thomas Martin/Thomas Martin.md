@@ -2,7 +2,9 @@
 Classe: Personne
 nom: Martin
 prenom: Thomas
-institution: '[[/Institutions/TechCorp Solutions/TechCorp Solutions.md|TechCorp Solutions]]'
+institution: >-
+  [[/Institutions/Université Paris Tech/Université Paris Tech.md|Université
+  Paris Tech]]
 poste: Développeur Senior
 email: thomas.martin@techcorp-solutions.example
 telephone: +33 6 98 76 54 32

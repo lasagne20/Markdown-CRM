@@ -406,4 +406,76 @@ describe('MultiFileProperty', () => {
             expect(typeof multiFileProperty.fillDisplay).toBe('function');
         });
     });
+
+    describe('getParentFile', () => {
+        beforeEach(() => {
+            multiFileProperty = new MultiFileProperty('testFiles', mockVault, ['Document']);
+        });
+
+        test('should return undefined for null value', async () => {
+            const result = await multiFileProperty.getParentFile(null);
+            expect(result).toBeUndefined();
+        });
+
+        test('should return undefined for empty array', async () => {
+            const result = await multiFileProperty.getParentFile([]);
+            expect(result).toBeUndefined();
+        });
+
+        test('should return File from first element in array', async () => {
+            const mockFile = { path: 'test.md', name: 'test' };
+            
+            // Mock the internal FileProperty's getParentFile method
+            multiFileProperty.property.getParentFile = jest.fn().mockResolvedValue(mockFile);
+            
+            const values = ['[[File1]]', '[[File2]]'];
+            const result = await multiFileProperty.getParentFile(values);
+            
+            expect(multiFileProperty.property.getParentFile).toHaveBeenCalledWith('[[File1]]');
+            expect(result).toBe(mockFile);
+        });
+
+        test('should handle JSON string value', async () => {
+            const mockFile = { path: 'test.md', name: 'test' };
+            
+            multiFileProperty.property.getParentFile = jest.fn().mockResolvedValue(mockFile);
+            
+            const jsonValue = JSON.stringify(['[[File1]]', '[[File2]]']);
+            const result = await multiFileProperty.getParentFile(jsonValue);
+            
+            expect(multiFileProperty.property.getParentFile).toHaveBeenCalledWith('[[File1]]');
+            expect(result).toBe(mockFile);
+        });
+
+        test('should handle single string value (not array)', async () => {
+            const mockFile = { path: 'test.md', name: 'test' };
+            
+            multiFileProperty.property.getParentFile = jest.fn().mockResolvedValue(mockFile);
+            
+            const result = await multiFileProperty.getParentFile('[[SingleFile]]');
+            
+            expect(multiFileProperty.property.getParentFile).toHaveBeenCalledWith('[[SingleFile]]');
+            expect(result).toBe(mockFile);
+        });
+
+        test('should return undefined when property.getParentFile returns undefined', async () => {
+            multiFileProperty.property.getParentFile = jest.fn().mockResolvedValue(undefined);
+            
+            const values = ['[[File1]]'];
+            const result = await multiFileProperty.getParentFile(values);
+            
+            expect(result).toBeUndefined();
+        });
+
+        test('should handle invalid JSON string by treating as single value', async () => {
+            const mockFile = { path: 'test.md', name: 'test' };
+            
+            multiFileProperty.property.getParentFile = jest.fn().mockResolvedValue(mockFile);
+            
+            const result = await multiFileProperty.getParentFile('not valid json');
+            
+            expect(multiFileProperty.property.getParentFile).toHaveBeenCalledWith('not valid json');
+            expect(result).toBe(mockFile);
+        });
+    });
 });

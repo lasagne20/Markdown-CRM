@@ -1,6 +1,8 @@
 import { File } from '../vault/File';
+import { Classe } from '../vault/Classe';
 import { LinkProperty } from './LinkProperty';
 import { Vault } from '../vault/Vault';
+
 
 export class FormulaProperty extends LinkProperty {
 
@@ -18,15 +20,17 @@ export class FormulaProperty extends LinkProperty {
         return value;
     }
 
-    override read(file: File) : any {
-        // Get all properties from the file
+    override async read(file: File | Classe) : Promise<any> {
+        // Get all properties from the file or classe
         const allFileProperties = file.getAllProperties() || {};
         // Convert properties to their actual values
         const allProperties: Record<string, any> = {};
         
         for (const [key, prop] of Object.entries(allFileProperties)) {
             if (key !== this.name) { // Exclude self to avoid circular reference
-                allProperties[key] = file.getMetadataValue(key);
+                allProperties[key] = file instanceof File 
+                    ? await file.getMetadataValue(key)
+                    : await (file as Classe).getPropertyValue(key);
             }
         }
         
@@ -37,20 +41,31 @@ export class FormulaProperty extends LinkProperty {
                 return acc;
             }, {} as Record<string, any>);
 
+            const getName = file instanceof File 
+                ? () => file.getName(false)
+                : () => (file as Classe).getName();
+
             const formulaContent = 
                 `
                     const properties = ${JSON.stringify(sanitizedProperties)};
-                    const name = "${file.getName(false)}";
+                    const name = "${getName()}";
                     const { ${Object.keys(sanitizedProperties).join(", ")} } = properties;
                     ${this.formula.includes("return") ? "" : "return "}${this.formula};
                 `;
 
+            const vault = file instanceof File ? file.vault : (file as Classe).getVault();
             const formulaFunction = new Function("vault", "file", formulaContent);
-            let value = formulaFunction(file.vault, file);
+            let value = formulaFunction(vault, file);
             if (this.write) {
-                let currentValue = file.getMetadataValue(this.name);
+                let currentValue = file instanceof File
+                    ? await file.getMetadataValue(this.name)
+                    : await (file as Classe).getPropertyValue(this.name);
                 if (currentValue !== value){
-                    file.updateMetadata(this.name, value);
+                    if (file instanceof File) {
+                        await file.updateMetadata(this.name, value);
+                    } else {
+                        await (file as Classe).updatePropertyValue(this.name, value);
+                    }
                 } 
             }
             return value;
@@ -107,7 +122,10 @@ export class FormulaProperty extends LinkProperty {
         try {
             const match = value.match(obsidianLinkRegex);
             if (match && match[1]) {
-                return `obsidian://open?vault=${this.vault.getName()}&file=${encodeURIComponent(this.vault.readLinkFile(match[1], true)[1])}`;
+                const filePath = this.vault.readLinkFile(match[1], true);
+                if (filePath) {
+                    return this.vault.app.getUrl(filePath);
+                }
             }
 
             // Check if it's a valid URL

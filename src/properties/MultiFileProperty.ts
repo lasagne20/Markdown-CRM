@@ -26,6 +26,36 @@ export class MultiFileProperty extends ObjectProperty {
         return [value]
     }
 
+    /**
+     * Extract the parent File from a MultiFileProperty value
+     * Takes the first element from the array
+     * @param value The property value (can be array or JSON string)
+     * @returns The File instance if found, undefined otherwise
+     */
+    override async getParentFile(value: any): Promise<File | undefined> {
+        if (!value) {
+            return undefined;
+        }
+
+        // Parse JSON string if needed
+        let values = value;
+        if (typeof values === 'string') {
+            try {
+                values = JSON.parse(values);
+            } catch (e) {
+                values = [values];
+            }
+        }
+
+        // Take the first link from the array
+        if (Array.isArray(values) && values.length > 0) {
+            const firstLink = values[0];
+            return await this.property.getParentFile(firstLink);
+        }
+
+        return undefined;
+    }
+
     // Méthode principale pour obtenir l'affichage
     override fillDisplay(values: any, update: (value: any) => Promise<void>) {
         // Parser les valeurs si c'est une string JSON

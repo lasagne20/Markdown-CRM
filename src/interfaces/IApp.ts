@@ -3,12 +3,14 @@ export interface IFile {
     name: string;
     basename: string;
     extension: string;
+    parent?: IFolder;
+    children?: (IFile | IFolder)[];
 }
 
 export interface IFolder {
     path: string;
     name: string;
-    children: IFile[] | IFolder[];
+    children?: (IFile | IFolder)[];
 }
 
 export interface ISettings {

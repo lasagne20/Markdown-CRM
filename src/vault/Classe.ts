@@ -1,4 +1,4 @@
-import { IFile } from '../interfaces/IApp';
+import { IFile, IFolder } from '../interfaces/IApp';
 import { Vault } from './Vault';
 import { Property } from '../properties/Property';
 import { File } from './File';
@@ -28,6 +28,10 @@ export class Classe {
       return this.name
     }
     
+    getVault(): Vault {
+        return this.vault;
+    }
+    
     // Property management
     addProperty(property: Property): void {
         this.properties.push(property);
@@ -39,6 +43,14 @@ export class Classe {
     
     getProperties(): Property[] {
         return [...this.properties];
+    }
+    
+    getAllProperties(): { [key: string]: Property } {
+        const allProps: { [key: string]: Property } = {};
+        for (const prop of this.properties) {
+            allProps[prop.name] = prop;
+        }
+        return allProps;
     }
     
     // File operations
@@ -241,74 +253,51 @@ export class Classe {
             return undefined;
         }
         
-        // Handle different property types
-        if (parentProperty.type === 'file') {
-            // FileProperty - single file link
-            const link = parentProperty.validate(parentValue);
-            if (link) {
-                const classe = await this.vault.getFromLink(link);
-                return classe?.getFile();
-            }
-        } else if (parentProperty.type === 'multiFile') {
-            // MultiFileProperty - array of links, take first one
-            let values = parentValue;
-            if (typeof values === 'string') {
-                try {
-                    values = JSON.parse(values);
-                } catch (e) {
-                    values = [values];
-                }
-            }
-            if (Array.isArray(values) && values.length > 0) {
-                const firstLink = values[0];
-                const classe = await this.vault.getFromLink(firstLink);
-                return classe?.getFile();
-            }
-        } else if (parentProperty.type === 'object') {
-            // ObjectProperty - look for first FileProperty in the object
-            const objProperty = parentProperty as any;
-            if (objProperty.properties) {
-                for (const prop of Object.values(objProperty.properties)) {
-                    const typedProp = prop as Property;
-                    if (typedProp.type === 'file' || typedProp.type === 'multiFile') {
-                        // Get value from the object array
-                        let values = parentValue;
-                        if (typeof values === 'string') {
-                            try {
-                                values = JSON.parse(values);
-                            } catch (e) {
-                                values = [];
-                            }
-                        }
-                        if (Array.isArray(values) && values.length > 0) {
-                            const firstObj = values[0];
-                            const linkValue = firstObj[typedProp.name];
-                            if (linkValue) {
-                                const classe = await this.vault.getFromLink(linkValue);
-                                return classe?.getFile();
-                            }
-                        }
-                        break; // Only use first FileProperty found
-                    }
-                }
-            }
+        // Delegate to the property's getParentFile method if available
+        if ('getParentFile' in parentProperty && typeof (parentProperty as any).getParentFile === 'function') {
+            return await (parentProperty as any).getParentFile(parentValue);
         }
         
         return undefined;
     }
     
     /**
-     * Find all children of this file
-     * A child is a file that either:
-     * 1. Is located in this file's dedicated folder (most reliable)
-     * 2. Has a FileProperty pointing to this file (for files not yet moved)
+     * Find all children of this file recursively
+     * Supports two modes:
+     * 1. If folder parameter is provided or file.parent exists: use children property (new approach)
+     * 2. Otherwise: scan filesystem for files in dedicated folder (fallback for compatibility)
      */
-    protected async findChildren(): Promise<Classe[]> {
+    protected async findChildren(folder?: IFile | IFolder): Promise<Classe[]> {
         if (!this.file) {
             return [];
         }
 
         const children: Classe[] = [];
+        
+        // Mode 1: Use parent/children structure if available
+        if (folder || this.file.parent) {
+            const targetFolder = folder || this.file.parent;
+            
+            if (targetFolder && targetFolder.children) {
+                for (const child of targetFolder.children) {
+                    // Check if it's a file (has basename and extension)
+                    if ('basename' in child && 'extension' in child) {
+                        // It's a file - try to create a Classe from it
+                        const classe = await this.vault.getFromFile(child as IFile);
+                        if (classe) {
+                            children.push(classe);
+                        }
+                    } else {
+                        // It's a folder - recurse into it
+                        const subChildren = await this.findChildren(child as IFolder);
+                        children.push(...subChildren);
+                    }
+                }
+                return children;
+            }
+        }
+        
+        // Mode 2: Fallback - scan filesystem (for backward compatibility with existing code)
         const allFiles = await this.vault.app.listFiles();
         const thisFileBaseName = this.file.getName(false);
         const thisFilePath = this.file.getPath();
@@ -327,51 +316,16 @@ export class Classe {
 
             const fileFolder = file.path.substring(0, file.path.lastIndexOf('/'));
             
-            // Check if file is in our dedicated folder
+            // Check if file is in our dedicated folder (or subdirectories)
             const isInDedicatedFolder = fileFolder === dedicatedFolderPath || fileFolder.startsWith(dedicatedFolderPath + '/');
             
             let isChild = false;
             
             if (isInDedicatedFolder) {
-                // File is in dedicated folder - verify it's a FileProperty relationship (not just a random file)
-                try {
-                    const childClasse = await this.vault.createClasse(file);
-                    if (childClasse) {
-                        // Check if it has a FileProperty pointing to us
-                        const metadata = await this.vault.app.getMetadata(file);
-                        const childProperties = childClasse.getProperties();
-                        
-                        for (const property of childProperties) {
-                            if (property.constructor.name !== 'FileProperty') continue;
-                            
-                            const propValue = metadata?.[property.name];
-                            if (!propValue || typeof propValue !== 'string') continue;
-                            
-                            const linkMatch = propValue.match(/\[\[([^\]|]+)/);
-                            if (linkMatch?.[1]) {
-                                const parentLink = linkMatch[1].trim().replace('.md', '');
-                                const parentBaseName = parentLink.includes('/') 
-                                    ? parentLink.split('/').pop()?.replace('.md', '') || ''
-                                    : parentLink;
-                                
-                                if (parentBaseName === thisFileBaseName) {
-                                    isChild = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // If no FileProperty found but file is in folder, might be a file without classe definition
-                        if (!isChild) {
-                            isChild = true; // Trust folder structure
-                        }
-                    }
-                } catch (e) {
-                    // Classe creation failed - trust folder structure for files without classe definitions
-                    isChild = true;
-                }
+                // File is in dedicated folder - it's a child
+                isChild = true;
             } else {
-                // File is NOT in dedicated folder - check if it should be (via FileProperty)
+                // Check if file has a parent property pointing to this file
                 try {
                     const childClasse = await this.vault.createClasse(file);
                     if (childClasse) {
@@ -379,7 +333,7 @@ export class Classe {
                         const childProperties = childClasse.getProperties();
                         
                         for (const property of childProperties) {
-                            if (property.constructor.name !== 'FileProperty') continue;
+                            if (property.type !== 'file') continue;
                             
                             const propValue = metadata?.[property.name];
                             if (!propValue || typeof propValue !== 'string') continue;
@@ -402,7 +356,7 @@ export class Classe {
                     // Can't create classe, skip this file
                 }
             }
-
+            
             if (isChild) {
                 try {
                     const childClasse = await this.vault.createClasse(file);

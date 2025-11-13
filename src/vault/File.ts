@@ -20,6 +20,8 @@ export class File implements IFile {
     public path : string;
     public basename : string;
     public extension : string;
+    public parent?: IFolder;
+    public children?: (IFile | IFolder)[];
 
     constructor(vault : Vault, file: IFile) {
       this.vault = vault;
@@ -30,6 +32,8 @@ export class File implements IFile {
       this.path = file.path;
       this.basename = file.basename;
       this.extension = file.extension;
+      this.parent = file.parent;
+      this.children = file.children;
 
     }
 

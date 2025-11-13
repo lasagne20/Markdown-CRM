@@ -210,54 +210,47 @@ describe('FileProperty', () => {
             fileProperty.vault = mockVault;
         });
 
-        it('should generate obsidian URL with file path when file exists', () => {
+        it('should generate URL using app.getUrl when file path exists', () => {
             const testValue = '[[TestFile]]';
             const filePath = 'path/to/TestFile.md';
             
-            mockVault.readLinkFile.mockReturnValueOnce(filePath).mockReturnValueOnce('TestFile');
-            mockVault.app.vault.getAbstractFileByPath.mockReturnValue(true);
+            mockVault.readLinkFile.mockReturnValue(filePath);
             mockVault.app.getUrl.mockReturnValue('obsidian://open?vault=TestVault&file=path%2Fto%2FTestFile.md');
             
             const result = fileProperty.getLink(testValue);
             
+            expect(mockVault.readLinkFile).toHaveBeenCalledWith(testValue, true);
+            expect(mockVault.app.getUrl).toHaveBeenCalledWith(filePath);
             expect(result).toBe('obsidian://open?vault=TestVault&file=path%2Fto%2FTestFile.md');
         });
 
-        it('should use fallback when file does not exist', () => {
+        it('should return empty string when file path does not exist', () => {
             const testValue = '[[TestFile]]';
-            const filePath = 'path/to/TestFile.md';
             
-            mockVault.readLinkFile.mockImplementation((value: any, withPath: any) => withPath ? null : 'TestFile');
-            mockVault.app.vault.getAbstractFileByPath.mockReturnValue(null);
+            mockVault.readLinkFile.mockReturnValue(null);
             
             const result = fileProperty.getLink(testValue);
             
-            expect(result).toBe('obsidian://open?vault=TestVault&file=TestFile');
+            expect(result).toBe('');
         });
 
         it('should set vault when provided as parameter', () => {
-            const newVault = { ...mockVault };
-            // fileProperty.vault is already set, but passing vault should override
-            
-            mockVault.readLinkFile.mockReturnValue('TestFile');
-            mockVault.app.vault.getAbstractFileByPath.mockReturnValue(null);
-            mockVault.app.getUrl.mockReturnValue('obsidian://open?vault=TestVault&file=TestFile');
+            const newVault = { ...mockVault, readLinkFile: jest.fn().mockReturnValue('path/to/TestFile.md') };
+            newVault.app.getUrl = jest.fn().mockReturnValue('http://example.com/file');
             
             fileProperty.getLink('[[TestFile]]', newVault);
             
             expect(fileProperty.vault).toBe(newVault);
+            expect(newVault.readLinkFile).toHaveBeenCalledWith('[[TestFile]]', true);
         });
 
-        it('should encode special characters in vault name', () => {
+        it('should return empty string when readLinkFile returns null', () => {
             const testValue = '[[TestFile]]';
-            mockVault.getName.mockReturnValue('My Vault & Stuff');
-            mockVault.readLinkFile.mockReturnValue('TestFile');
-            mockVault.app.vault.getAbstractFileByPath.mockReturnValue(null);
-            mockVault.app.getUrl.mockReturnValue('obsidian://open?vault=My%20Vault%20%26%20Stuff&file=TestFile');
+            mockVault.readLinkFile.mockReturnValue(null);
             
             const result = fileProperty.getLink(testValue);
             
-            expect(result).toContain('vault=My%20Vault%20%26%20Stuff');
+            expect(result).toBe('');
         });
     });
 
@@ -389,6 +382,62 @@ describe('FileProperty', () => {
             const link = result.querySelector('a');
             
             expect(link?.textContent).toBe('');
+        });
+    });
+
+    describe('getParentFile', () => {
+        beforeEach(() => {
+            fileProperty.vault = mockVault;
+        });
+
+        it('should return undefined for null value', async () => {
+            const result = await fileProperty.getParentFile(null as any);
+            expect(result).toBeUndefined();
+        });
+
+        it('should return undefined for empty value', async () => {
+            const result = await fileProperty.getParentFile('');
+            expect(result).toBeUndefined();
+        });
+
+        it('should return undefined for invalid link format', async () => {
+            const result = await fileProperty.getParentFile('invalid link');
+            expect(result).toBeUndefined();
+        });
+
+        it('should return File for valid link', async () => {
+            const mockFile = { path: 'test.md', name: 'test' };
+            const mockClasse = {
+                getFile: jest.fn().mockReturnValue(mockFile)
+            };
+            
+            mockVault.getFromLink.mockResolvedValue(mockClasse);
+            
+            const result = await fileProperty.getParentFile('[[TestFile]]');
+            
+            expect(mockVault.getFromLink).toHaveBeenCalledWith('[[TestFile]]');
+            expect(mockClasse.getFile).toHaveBeenCalled();
+            expect(result).toBe(mockFile);
+        });
+
+        it('should return undefined when classe not found', async () => {
+            mockVault.getFromLink.mockResolvedValue(undefined);
+            
+            const result = await fileProperty.getParentFile('[[NonExistent]]');
+            
+            expect(result).toBeUndefined();
+        });
+
+        it('should return undefined when classe has no file', async () => {
+            const mockClasse = {
+                getFile: jest.fn().mockReturnValue(undefined)
+            };
+            
+            mockVault.getFromLink.mockResolvedValue(mockClasse);
+            
+            const result = await fileProperty.getParentFile('[[TestFile]]');
+            
+            expect(result).toBeUndefined();
         });
     });
 });

@@ -78,7 +78,7 @@ export class ObjectProperty extends Property{
                 let display = property.fillDisplay(row[property.name],
                     async (value : any ) => await this.updateObject(values, async (value) => await file.updateMetadata(this.name, value), index, property, value));
                 
-                let classe = this.vault.getFromLink(row[this.properties[propertyClasseName].name])
+                let classe = await this.vault.getFromLink(row[this.properties[propertyClasseName].name])
                 properties.push({classe: classe, display : display});
             }
         }
@@ -97,6 +97,50 @@ export class ObjectProperty extends Property{
             }
         });
         return [newObject]
+    }
+
+    /**
+     * Extract the parent File from an ObjectProperty value
+     * Looks for the first FileProperty or MultiFileProperty in the object's properties
+     * @param value The property value (array of objects)
+     * @returns The File instance if found, undefined otherwise
+     */
+    async getParentFile(value: any): Promise<File | undefined> {
+        if (!value) {
+            return undefined;
+        }
+
+        // Parse JSON string if needed
+        let values = value;
+        if (typeof values === 'string') {
+            try {
+                values = JSON.parse(values);
+            } catch (e) {
+                values = [];
+            }
+        }
+
+        // Take the first object from the array
+        if (Array.isArray(values) && values.length > 0) {
+            const firstObj = values[0];
+            
+            // Look for first FileProperty or MultiFileProperty
+            for (const prop of Object.values(this.properties)) {
+                const typedProp = prop as Property;
+                if (typedProp.type === 'file' || typedProp.type === 'multiFile') {
+                    const linkValue = firstObj[typedProp.name];
+                    if (linkValue) {
+                        // Delegate to the property's getParentFile method
+                        if ('getParentFile' in typedProp && typeof (typedProp as any).getParentFile === 'function') {
+                            return await (typedProp as any).getParentFile(linkValue);
+                        }
+                    }
+                    break; // Only use first FileProperty found
+                }
+            }
+        }
+
+        return undefined;
     }
 
     override async getDisplay(classe: any, args?: { staticMode?: boolean; title?: string; display? : string}): Promise<HTMLDivElement> {

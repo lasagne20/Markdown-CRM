@@ -22,6 +22,9 @@ describe('FormulaProperty', () => {
                 setIcon: jest.fn((element: HTMLElement, iconName: string) => {
                     element.setAttribute('data-icon', iconName);
                     element.textContent = `[${iconName}]`;
+                }),
+                getUrl: jest.fn((filePath: string) => {
+                    return `obsidian://open?vault=TestVault&file=${encodeURIComponent(filePath)}`;
                 })
             },
             readLinkFile: jest.fn()
@@ -31,8 +34,10 @@ describe('FormulaProperty', () => {
             vault: mockVault,
             getName: jest.fn(),
             getAllProperties: jest.fn(),
-            getMetadataValue: jest.fn(),
-            updateMetadata: jest.fn()
+            getPropertyValue: jest.fn(),
+            updateMetadata: jest.fn(),
+            updatePropertyValue: jest.fn(),
+            getVault: jest.fn().mockReturnValue(mockVault)
         } as any;
 
         // Reset des mocks
@@ -105,76 +110,76 @@ describe('FormulaProperty', () => {
             mockFile.getName.mockReturnValue('TestFile');
         });
 
-        test('should execute simple arithmetic formula', () => {
-            mockFile.getMetadataValue
-                .mockImplementation((key: string) => {
+        test('should execute simple arithmetic formula', async () => {
+            mockFile.getPropertyValue
+                .mockImplementation(async (key: string) => {
                     if (key === 'price') return 10;
                     if (key === 'quantity') return 5;
                     return null;
                 });
 
-            const result = formulaProperty.read(mockFile);
+            const result = await formulaProperty.read(mockFile);
             expect(result).toBe(50);
         });
 
-        test('should handle formula with return statement', () => {
+        test('should handle formula with return statement', async () => {
             const formulaWithReturn = new FormulaProperty('test', mockVault, 'return price + quantity');
             
-            mockFile.getMetadataValue
-                .mockImplementation((key: string) => {
+            mockFile.getPropertyValue
+                .mockImplementation(async (key: string) => {
                     if (key === 'price') return 15;
                     if (key === 'quantity') return 25;
                     return null;
                 });
 
-            const result = formulaWithReturn.read(mockFile);
+            const result = await formulaWithReturn.read(mockFile);
             expect(result).toBe(40);
         });
 
-        test('should sanitize property names (remove spaces)', () => {
+        test('should sanitize property names (remove spaces)', async () => {
             mockFile.getAllProperties.mockReturnValue({
                 'unit price': { name: 'unit price' } as any,
                 'item count': { name: 'item count' } as any,
                 totalFormula: { name: 'totalFormula' } as any
             });
 
-            mockFile.getMetadataValue
-                .mockImplementation((key: string) => {
+            mockFile.getPropertyValue
+                .mockImplementation(async (key: string) => {
                     if (key === 'unit price') return 12;
                     if (key === 'item count') return 3;
                     return null;
                 });
 
             const sanitizedFormula = new FormulaProperty('test', mockVault, 'unitprice * itemcount');
-            const result = sanitizedFormula.read(mockFile);
+            const result = await sanitizedFormula.read(mockFile);
             expect(result).toBe(36);
         });
 
-        test('should exclude self property from formula context', () => {
+        test('should exclude self property from formula context', async () => {
             mockFile.getAllProperties.mockReturnValue({
                 price: { name: 'price' } as any,
                 totalFormula: { name: 'totalFormula' } as any
             });
 
-            mockFile.getMetadataValue
-                .mockImplementation((key: string) => {
+            mockFile.getPropertyValue
+                .mockImplementation(async (key: string) => {
                     if (key === 'price') return 100;
                     if (key === 'totalFormula') return 999; // Should be excluded
                     return null;
                 });
 
             const selfExcludingFormula = new FormulaProperty('totalFormula', mockVault, 'price * 2');
-            const result = selfExcludingFormula.read(mockFile);
+            const result = await selfExcludingFormula.read(mockFile);
             expect(result).toBe(200);
         });
 
-        test('should handle formula errors gracefully (ReferenceError)', () => {
+        test('should handle formula errors gracefully (ReferenceError)', async () => {
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             
-            mockFile.getMetadataValue.mockReturnValue(null);
+            mockFile.getPropertyValue.mockResolvedValue(null);
             
             const faultyFormula = new FormulaProperty('test', mockVault, 'undefinedVariable * 5');
-            const result = faultyFormula.read(mockFile);
+            const result = await faultyFormula.read(mockFile);
             
             expect(result).toBeNull();
             // Test simple que console.error a été appelé avec le bon message
@@ -186,13 +191,13 @@ describe('FormulaProperty', () => {
             consoleSpy.mockRestore();
         });
 
-        test('should handle general formula errors', () => {
+        test('should handle general formula errors', async () => {
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             
-            mockFile.getMetadataValue.mockReturnValue(null);
+            mockFile.getPropertyValue.mockResolvedValue(null);
             
             const faultyFormula = new FormulaProperty('test', mockVault, 'throw new Error("test error")');
-            const result = faultyFormula.read(mockFile);
+            const result = await faultyFormula.read(mockFile);
             
             expect(result).toBeNull();
             expect(consoleSpy).toHaveBeenCalledWith(
@@ -203,7 +208,7 @@ describe('FormulaProperty', () => {
         });
 
         describe('write functionality', () => {
-            test('should update metadata when write is true and value changed', () => {
+            test('should update metadata when write is true and value changed', async () => {
                 const writeFormula = new FormulaProperty('total', mockVault, 'price + tax', {
                     icon: '',
                     write: true
@@ -216,21 +221,21 @@ describe('FormulaProperty', () => {
                     total: { name: 'total' } as any
                 });
 
-                mockFile.getMetadataValue
-                    .mockImplementation((key: string) => {
+                mockFile.getPropertyValue
+                    .mockImplementation(async (key: string) => {
                         if (key === 'price') return 100;
                         if (key === 'tax') return 20;
                         if (key === 'total') return 110; // Old value
                         return null;
                     });
 
-                const result = writeFormula.read(mockFile);
+                const result = await writeFormula.read(mockFile);
                 
                 expect(result).toBe(120);
-                expect(mockFile.updateMetadata).toHaveBeenCalledWith('total', 120);
+                expect(mockFile.updatePropertyValue).toHaveBeenCalledWith('total', 120);
             });
 
-            test('should not update metadata when write is true but value unchanged', () => {
+            test('should not update metadata when write is true but value unchanged', async () => {
                 const writeFormula = new FormulaProperty('total', mockVault, 'price + tax', {
                     icon: '',
                     write: true
@@ -243,21 +248,21 @@ describe('FormulaProperty', () => {
                     total: { name: 'total' } as any
                 });
 
-                mockFile.getMetadataValue
-                    .mockImplementation((key: string) => {
+                mockFile.getPropertyValue
+                    .mockImplementation(async (key: string) => {
                         if (key === 'price') return 100;
                         if (key === 'tax') return 20;
                         if (key === 'total') return 120; // Same as calculated
                         return null;
                     });
 
-                const result = writeFormula.read(mockFile);
+                const result = await writeFormula.read(mockFile);
                 
                 expect(result).toBe(120);
-                expect(mockFile.updateMetadata).not.toHaveBeenCalled();
+                expect(mockFile.updatePropertyValue).not.toHaveBeenCalled();
             });
 
-            test('should not update metadata when write is false', () => {
+            test('should not update metadata when write is false', async () => {
                 const readOnlyFormula = new FormulaProperty('total', mockVault, 'price + tax', {
                     icon: '',
                     write: false
@@ -270,17 +275,17 @@ describe('FormulaProperty', () => {
                     total: { name: 'total' } as any
                 });
 
-                mockFile.getMetadataValue
-                    .mockImplementation((key: string) => {
+                mockFile.getPropertyValue
+                    .mockImplementation(async (key: string) => {
                         if (key === 'price') return 100;
                         if (key === 'tax') return 20;
                         return null;
                     });
 
-                const result = readOnlyFormula.read(mockFile);
+                const result = await readOnlyFormula.read(mockFile);
                 
                 expect(result).toBe(120);
-                expect(mockFile.updateMetadata).not.toHaveBeenCalled();
+                expect(mockFile.updatePropertyValue).not.toHaveBeenCalled();
             });
         });
     });
@@ -374,7 +379,7 @@ describe('FormulaProperty', () => {
         });
 
         test('should handle Obsidian links', () => {
-            mockVault.readLinkFile.mockReturnValue([null, 'path/to/file.md'] as any);
+            mockVault.readLinkFile.mockReturnValue('path/to/file.md' as any);
             
             const result = formulaProperty.getLink('[[My Note]]');
             
@@ -424,3 +429,4 @@ describe('FormulaProperty', () => {
         });
     });
 });
+

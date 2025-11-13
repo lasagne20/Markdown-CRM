@@ -44,23 +44,37 @@ export class FileProperty extends LinkProperty{
       return "";
    }
 
+   /**
+    * Extract the parent File from a FileProperty value
+    * @param value The property value (should be a link like "[[filename]]")
+    * @returns The File instance if found, undefined otherwise
+    */
+   async getParentFile(value: string): Promise<File | undefined> {
+      if (!value) {
+        return undefined;
+      }
+      
+      const link = this.validate(value);
+      if (link) {
+        const classe = await this.vault.getFromLink(link);
+        return classe?.getFile();
+      }
+      
+      return undefined;
+   }
+
    override getLink(value: string, vault? : any): string {
     if (vault) {
       this.vault = vault;
     }
-    const vaultName = this.vault.getName(); 
     const filePath = this.vault.readLinkFile(value, true);
 
-    // If readLinkFile returned a path and the file exists in the vault, use it.
+    // Use IApp.getUrl() to generate the proper URL
     if (filePath) {
       return this.vault.app.getUrl(filePath);
     }
-    // Fallback: generate obsidian URL with filename
-    const fileName = this.vault.readLinkFile(value, false);
-    if (fileName) {
-      return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(fileName)}`;
-    }
-    return ""
+    
+    return "";
    }
   
    override createIconContainer(update: (value: string) => Promise<void>) {

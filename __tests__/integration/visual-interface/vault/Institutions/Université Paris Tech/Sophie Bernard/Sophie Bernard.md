@@ -2,7 +2,9 @@
 Classe: Personne
 nom: Bernard
 prenom: Sophie
-institution: '[[/Institutions/TechCorp Solutions/TechCorp Solutions.md|TechCorp Solutions]]'
+institution: >-
+  [[/Institutions/Université Paris Tech/Université Paris Tech.md|Université
+  Paris Tech]]
 poste: Professeure en Informatique
 email: sophie.bernard@paristech.example
 telephone: 06.11.22.33.44
