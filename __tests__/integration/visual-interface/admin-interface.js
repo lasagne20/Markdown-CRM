@@ -5,6 +5,7 @@ class AdminInterface {
         this.selectedClass = null;
         this.selectedFile = null;
         this.filesData = new Map();
+        this.classesWithData = new Map(); // Map pour stocker les données par classe
         
         this.init();
     }
@@ -549,18 +550,91 @@ class AdminInterface {
     }
 
     // Modal management
-    showCreateFileModal(preSelectedClass = '') {
+    async showCreateFileModal(preSelectedClass = '') {
         const modal = document.getElementById('createFileModal');
         const classSelect = document.getElementById('newFileClass');
         const nameInput = document.getElementById('newFileName');
 
         if (preSelectedClass) {
             classSelect.value = preSelectedClass;
+            // Charger les données si c'est une classe avec data
+            await this.handleClassChangeForModal(preSelectedClass);
         }
         nameInput.value = '';
 
         modal.classList.add('active');
         nameInput.focus();
+    }
+    
+    async handleClassChangeForModal(className) {
+        const nameGroup = document.getElementById('newFileNameGroup');
+        const dataSelectGroup = document.getElementById('newFileDataSelectGroup');
+        const dataSelect = document.getElementById('newFileDataSelect');
+        
+        if (!className) {
+            nameGroup.style.display = 'block';
+            dataSelectGroup.style.display = 'none';
+            return;
+        }
+        
+        // Vérifier si la classe a des données configurées
+        try {
+            const configLoader = this.fakeEnvironment.factory['configLoader'];
+            const config = await configLoader.loadClassConfig(className);
+            
+            if (config.data && config.data.length > 0) {
+                // Charger les données pour cette classe
+                const classData = await configLoader.loadClassData(className);
+                
+                if (classData && classData.length > 0) {
+                    // Classe avec données : afficher le select
+                    nameGroup.style.display = 'none';
+                    dataSelectGroup.style.display = 'block';
+                    
+                    // Peupler le select avec les noms disponibles
+                    dataSelect.innerHTML = '<option value="">-- Sélectionner depuis les données --</option>';
+                    
+                    // Obtenir les fichiers existants pour cette classe
+                    const existingFiles = await this.getExistingFilesForClass(className);
+                    const existingNames = new Set(existingFiles.map(f => f.nom || f.name));
+                    
+                    for (const item of classData) {
+                        const itemName = item.nom || item.name;
+                        if (itemName && !existingNames.has(itemName)) {
+                            const option = document.createElement('option');
+                            option.value = itemName;
+                            option.textContent = `${itemName}${item.type ? ` (${item.type})` : ''}`;
+                            dataSelect.appendChild(option);
+                        }
+                    }
+                    
+                    this.classesWithData.set(className, classData);
+                    return;
+                }
+            }
+        } catch (error) {
+            console.log(`Pas de données configurées pour ${className}`);
+        }
+        
+        // Pas de données : afficher l'input normal
+        nameGroup.style.display = 'block';
+        dataSelectGroup.style.display = 'none';
+    }
+    
+    async getExistingFilesForClass(className) {
+        try {
+            const allInstances = await this.fakeEnvironment.factory.getAllInstancesForClass(className);
+            return allInstances.map(instance => {
+                const metadata = instance.getFile()?.getMetadata() || {};
+                return {
+                    nom: metadata.nom || metadata.name,
+                    name: metadata.name || metadata.nom
+                };
+            });
+        } catch (error) {
+            console.error('Erreur lors de la récupération des fichiers existants:', error);
+            return [];
+        }
     }
 
     hideCreateFileModal() {
@@ -1519,3 +1593,338 @@ document.addEventListener('click', function(event) {
         event.target.classList.remove('active');
     }
 });
+
+// Raccourci clavier Ctrl+L pour créer/rechercher un lieu
+document.addEventListener('keydown', function(event) {
+    // Vérifier si Ctrl+L est pressé (ou Cmd+L sur Mac)
+    if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+        event.preventDefault(); // Empêcher le comportement par défaut du navigateur
+        
+        console.log('⌨️ Raccourci Ctrl+L détecté - Ouverture du modal Lieu');
+        
+        if (adminInterface && adminInterface.fakeEnvironment) {
+            showLieuModal();
+        }
+    }
+});
+
+// Fonction globale pour gérer le changement de classe dans le modal
+async function handleClassChange() {
+    const classSelect = document.getElementById('newFileClass');
+    const className = classSelect.value;
+    
+    if (adminInterface) {
+        await adminInterface.handleClassChangeForModal(className);
+    }
+}
+
+// Fonctions globales pour les modals
+function showCreateFileModal() {
+    if (adminInterface) {
+        adminInterface.showCreateFileModal();
+    }
+}
+
+function showCreateLieuModal() {
+    showLieuModal();
+}
+
+function hideCreateFileModal() {
+    if (adminInterface) {
+        adminInterface.hideCreateFileModal();
+    }
+}
+
+function showStatsModal() {
+    if (adminInterface) {
+        adminInterface.showStatsModal();
+    }
+}
+
+function hideStatsModal() {
+    if (adminInterface) {
+        adminInterface.hideStatsModal();
+    }
+}
+
+// Fonctions globales pour le modal de Lieu
+let allLieuxData = [];
+let existingLieux = [];
+
+async function showLieuModal() {
+    const modal = document.getElementById('lieuModal');
+    if (!modal || !adminInterface || !adminInterface.fakeEnvironment) return;
+    
+    modal.classList.add('active');
+    
+    // Charger les données
+    await loadLieuxData();
+    
+    // Focus sur le champ de recherche
+    setTimeout(() => {
+        const searchInput = document.getElementById('lieuSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+            
+            // Afficher message initial
+            document.getElementById('lieuResultsContainer').innerHTML = `
+                <div class="no-results">
+                    <h4>🔍 Recherche de lieux</h4>
+                    <p>Tapez le nom d'un lieu pour rechercher...</p>
+                </div>
+            `;
+            
+            // Ajouter l'écouteur de recherche
+            searchInput.oninput = (e) => searchLieux(e.target.value);
+            
+            // Rechercher au clavier (Enter pour sélectionner le premier résultat)
+            searchInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    const firstItem = document.querySelector('.lieu-item');
+                    if (firstItem) {
+                        firstItem.click();
+                    }
+                }
+            };
+        }
+    }, 100);
+}
+
+function hideLieuModal() {
+    const modal = document.getElementById('lieuModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+async function loadLieuxData() {
+    try {
+        console.log('🔄 Chargement des données de lieux...');
+        
+        // Charger les lieux existants depuis le vault
+        const vault = adminInterface.fakeEnvironment.vault;
+        const allFiles = vault.app.getAllFiles();
+        
+        // Filtrer les fichiers Lieu
+        const lieuFiles = [];
+        for (const file of allFiles) {
+            const metadata = await vault.app.getMetadata(file);
+            if (metadata && metadata.Classe === 'Lieu') {
+                lieuFiles.push({
+                    nom: metadata.nom || file.name.replace('.md', ''),
+                    type: metadata.type || 'Inconnu',
+                    parent: metadata.parent || null,
+                    code_postal: metadata.code_postal || null,
+                    code_insee: metadata.code_insee || null,
+                    population: metadata.population || null,
+                    path: file.path,
+                    existing: true
+                });
+            }
+        }
+        
+        existingLieux = lieuFiles;
+        console.log(`✅ ${existingLieux.length} lieux existants chargés`);
+        
+        // Charger les données depuis geo.json directement avec fetch
+        const dataPath = 'data/geo.json';
+        
+        console.log(`📥 Chargement depuis: ${dataPath}`);
+        try {
+            const response = await fetch(dataPath);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            allLieuxData = await response.json();
+            console.log(`✅ ${allLieuxData.length} lieux chargés depuis geo.json`);
+        } catch (fetchError) {
+            console.error('❌ Erreur lors du chargement de geo.json:', fetchError);
+            throw fetchError;
+        }
+        
+        console.log(`✅ Total: ${existingLieux.length} lieux existants, ${allLieuxData.length} lieux dans geo.json`);
+        
+    } catch (error) {
+        console.error('❌ Erreur lors du chargement des lieux:', error);
+        const container = document.getElementById('lieuResultsContainer');
+        if (container) {
+            container.innerHTML = '<div class="error">Erreur lors du chargement des lieux: ' + error.message + '</div>';
+        }
+    }
+}
+
+function searchLieux(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    const container = document.getElementById('lieuResultsContainer');
+    
+    console.log(`🔍 Recherche de: "${term}"`);
+    
+    if (!term) {
+        container.innerHTML = `
+            <div class="no-results">
+                <h4>🔍 Recherche de lieux</h4>
+                <p>Tapez le nom d'un lieu pour rechercher...</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Rechercher dans les lieux existants
+    const existingMatches = existingLieux.filter(lieu =>
+        lieu.nom.toLowerCase().includes(term) ||
+        (lieu.type && lieu.type.toLowerCase().includes(term)) ||
+        (lieu.code_postal && String(lieu.code_postal).includes(term)) ||
+        (lieu.code_insee && String(lieu.code_insee).includes(term))
+    );
+    
+    console.log(`📂 ${existingMatches.length} lieux existants trouvés`);
+    
+    // Rechercher dans les données geo.json (seulement ceux qui n'existent pas encore)
+    const existingNames = new Set(existingLieux.map(l => l.nom));
+    const dataMatches = allLieuxData.filter(lieu =>
+        !existingNames.has(lieu.nom) &&
+        (lieu.nom.toLowerCase().includes(term) ||
+         (lieu.type && lieu.type.toLowerCase().includes(term)) ||
+         (lieu.code_postal && String(lieu.code_postal).includes(term)) ||
+         (lieu.code_insee && String(lieu.code_insee).includes(term)))
+    );
+    
+    console.log(`✨ ${dataMatches.length} nouveaux lieux disponibles (depuis geo.json)`);
+    
+    // Construire le HTML des résultats
+    let html = '';
+    
+    // Lieux existants
+    if (existingMatches.length > 0) {
+        html += '<div class="results-section">';
+        html += `<div class="results-header">📂 Lieux existants (${existingMatches.length})</div>`;
+        html += existingMatches.slice(0, 10).map(lieu => `
+            <div class="lieu-item" onclick="openExistingLieu('${lieu.path.replace(/'/g, "\\'")}')">
+                <div class="lieu-icon">📍</div>
+                <div class="lieu-info">
+                    <div class="lieu-name">${escapeHtml(lieu.nom)}</div>
+                    <div class="lieu-meta">
+                        <span class="lieu-badge type-${lieu.type}">${lieu.type}</span>
+                        ${lieu.code_postal ? `<span>📮 ${lieu.code_postal}</span>` : ''}
+                        ${lieu.population ? `<span>👥 ${lieu.population.toLocaleString()}</span>` : ''}
+                    </div>
+                </div>
+                <div class="lieu-action">Ouvrir →</div>
+            </div>
+        `).join('');
+        html += '</div>';
+    }
+    
+    // Nouveaux lieux depuis geo.json
+    if (dataMatches.length > 0) {
+        html += '<div class="results-section">';
+        html += `<div class="results-header">✨ Créer un nouveau lieu (${dataMatches.length})</div>`;
+        html += dataMatches.slice(0, 10).map(lieu => `
+            <div class="lieu-item create-item" onclick='createNewLieu(${JSON.stringify(lieu).replace(/'/g, "&#39;")})'>
+                <div class="lieu-icon">➕</div>
+                <div class="lieu-info">
+                    <div class="lieu-name">Créer : ${escapeHtml(lieu.nom)}</div>
+                    <div class="lieu-meta">
+                        <span class="lieu-badge type-${lieu.type}">${lieu.type}</span>
+                        ${lieu.parent ? `<span>📂 Parent: ${escapeHtml(lieu.parent)}</span>` : ''}
+                        ${lieu.code_postal ? `<span>📮 ${lieu.code_postal}</span>` : ''}
+                        ${lieu.population ? `<span>👥 ${lieu.population.toLocaleString()}</span>` : ''}
+                    </div>
+                </div>
+                <div class="lieu-action">Créer →</div>
+            </div>
+        `).join('');
+        html += '</div>';
+    }
+    
+    // Aucun résultat
+    if (existingMatches.length === 0 && dataMatches.length === 0) {
+        html = `
+            <div class="no-results">
+                <h4>❌ Aucun résultat</h4>
+                <p>Aucun lieu trouvé pour "${escapeHtml(term)}".</p>
+                <p style="font-size: 0.9rem; margin-top: 10px; color: #999;">
+                    Seuls les lieux présents dans geo.json peuvent être créés.
+                </p>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+    console.log(`✅ Affichage de ${existingMatches.length + dataMatches.length} résultats`);
+}
+
+async function openExistingLieu(filePath) {
+    console.log('📂 Ouverture du lieu existant:', filePath);
+    hideLieuModal();
+    
+    if (adminInterface) {
+        await adminInterface.openFileFromPath(filePath);
+    }
+}
+
+async function createNewLieu(lieuData) {
+    console.log('✨ Création du nouveau lieu:', lieuData);
+    
+    try {
+        // Afficher un indicateur de chargement
+        const container = document.getElementById('lieuResultsContainer');
+        container.innerHTML = '<div class="loading">Création du lieu en cours...</div>';
+        
+        // Créer le fichier via DynamicClassFactory
+        const vault = adminInterface.fakeEnvironment.vault;
+        const factory = vault.getDynamicClassFactory();
+        
+        if (!factory) {
+            throw new Error('DynamicClassFactory non disponible');
+        }
+        
+        // Passer allLieuxData pour éviter de recharger geo.json à chaque création de parent
+        await factory.createInstanceFromDataObject('Lieu', lieuData, vault, allLieuxData);
+        
+        console.log('✅ Lieu créé avec succès');
+        
+        // Fermer le modal
+        hideLieuModal();
+        
+        // Rafraîchir l'arborescence
+        await adminInterface.refreshFileTree();
+        
+        // Afficher un message de succès
+        adminInterface.showSuccess(`Lieu "${lieuData.nom}" créé avec succès !`);
+        
+        // Ouvrir le fichier créé
+        setTimeout(async () => {
+            const createdFile = adminInterface.fakeEnvironment.app.getAllFiles()
+                .find(f => f.path.includes(lieuData.nom + '.md'));
+            
+            if (createdFile) {
+                await adminInterface.loadFileContent(createdFile);
+            }
+        }, 500);
+        
+    } catch (error) {
+        console.error('❌ Erreur lors de la création du lieu:', error);
+        adminInterface.showError('Erreur lors de la création du lieu: ' + error.message);
+        hideLieuModal();
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showStatsModal() {
+    if (adminInterface) {
+        adminInterface.showStatsModal();
+    }
+}
+
+function hideStatsModal() {
+    if (adminInterface) {
+        adminInterface.hideStatsModal();
+    }
+}

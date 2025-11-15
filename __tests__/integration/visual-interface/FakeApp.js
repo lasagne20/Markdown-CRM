@@ -132,9 +132,15 @@ export class FakeApp {
             }
         }
 
+        const fileName = cleanPath.split('/').pop();
+        const baseName = fileName.replace(/\.[^/.]+$/, '');
+        const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
+
         const file = {
             path: cleanPath,
-            name: cleanPath.split('/').pop(),
+            name: fileName,
+            basename: baseName,
+            extension: extension,
             content: content, // Store full content including frontmatter
             metadata: metadata
         };
@@ -573,20 +579,41 @@ export class FakeApp {
     async getFile(filePath) {
         console.log("Getting file at path: ", filePath);
         
+        // Normalize path - ensure it starts with /
+        const normalizedPath = filePath.startsWith('/') ? filePath : '/' + filePath;
+        const alternativePath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+        
         // Check if the file/folder exists in the local file system first
-        if (this.fileSystem.has(filePath)) {
-            const data = this.fileSystem.get(filePath);
+        if (this.fileSystem.has(normalizedPath)) {
+            const data = this.fileSystem.get(normalizedPath);
             
             if (data.isFolder) {
                 // Return folder object
-                return this.createFolderObject(filePath);
+                return this.createFolderObject(normalizedPath);
             } else {
                 // Return file object
-                const fileName = filePath.split('/').pop();
+                const fileName = normalizedPath.split('/').pop();
                 const baseName = fileName.replace(/\.[^/.]+$/, '');
                 const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
                 
-                return this.createFileObject(filePath, fileName, baseName, extension);
+                return this.createFileObject(normalizedPath, fileName, baseName, extension);
+            }
+        }
+        
+        // Also check alternative path (without leading slash)
+        if (this.fileSystem.has(alternativePath)) {
+            const data = this.fileSystem.get(alternativePath);
+            
+            if (data.isFolder) {
+                // Return folder object
+                return this.createFolderObject(alternativePath);
+            } else {
+                // Return file object
+                const fileName = alternativePath.split('/').pop();
+                const baseName = fileName.replace(/\.[^/.]+$/, '');
+                const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
+                
+                return this.createFileObject(alternativePath, fileName, baseName, extension);
             }
         }
         

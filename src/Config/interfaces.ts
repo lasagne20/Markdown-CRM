@@ -49,6 +49,11 @@ export interface SubClassConfig {
     properties?: { [key: string]: PropertyConfig };
 }
 
+export interface DataSourceConfig {
+    file: string; // Path to JSON file relative to config directory
+    dynamic?: boolean; // If true, watch for file changes and reload data automatically
+}
+
 export interface ClassConfig {
     className: string;
     classIcon: string;
@@ -65,4 +70,5 @@ export interface ClassConfig {
         layout?: 'default' | 'custom';
         containers?: DisplayContainer[];
     };
+    data?: DataSourceConfig[]; // Data sources for pre-populating instances
 }

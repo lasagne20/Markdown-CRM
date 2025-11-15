@@ -449,7 +449,7 @@ describe('Classe - Parent Folder Configuration', () => {
             // Verify file content was written (metadata update happens via writeFile)
             expect(mockApp.writeFile).toHaveBeenCalled();
             const writeCall = (mockApp.writeFile as jest.Mock).mock.calls[0];
-            expect(writeCall[1]).toContain('status: published');
+            expect(writeCall[1]).toMatch(/status:\s*"?published"?/); // Handle both quoted and unquoted values
         });
     });
 });

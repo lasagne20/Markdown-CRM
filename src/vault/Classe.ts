@@ -444,8 +444,8 @@ export class Classe {
                 // Reload the child's file object
                 const newFilePath = `${childTargetFolder}/${childFile.getName()}`;
                 const reloadedFile = await this.vault.app.getFile(newFilePath);
-                if (reloadedFile) {
-                    child.setFile(new File(this.vault, reloadedFile));
+                if (reloadedFile && 'extension' in reloadedFile) {
+                    child.setFile(new File(this.vault, reloadedFile as IFile));
                 }
 
                 // Recursively move this child's children to its folder
@@ -562,8 +562,8 @@ export class Classe {
                     // Update this.file reference to point to new location
                     const newFilePath = `${newFolderPath}/${this.file.getName()}`;
                     const reloadedFile = await this.vault.app.getFile(newFilePath);
-                    if (reloadedFile) {
-                        this.file = new File(this.vault, reloadedFile);
+                    if (reloadedFile && 'extension' in reloadedFile) {
+                        this.file = new File(this.vault, reloadedFile as IFile);
                     }
                 }
             } else {
@@ -573,8 +573,8 @@ export class Classe {
                 // Reload the file object from the new path to ensure all references are updated
                 const newFilePath = `${targetFolderPath}/${this.file.getName()}`;
                 const reloadedFile = await this.vault.app.getFile(newFilePath);
-                if (reloadedFile) {
-                    this.file = new File(this.vault, reloadedFile);
+                if (reloadedFile && 'extension' in reloadedFile) {
+                    this.file = new File(this.vault, reloadedFile as IFile);
                 }
                 
                 // Move all children recursively to their proper folders

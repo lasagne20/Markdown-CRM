@@ -1,0 +1,155 @@
+# Configuration de la classe Lieu
+name: Lieu
+icon: 📍
+description: Gestion des lieux géographiques
+template: lieu-template
+
+parent:
+  property: parent
+
+data:
+  - file: geo.json
+    dynamic: true
+
+properties:
+  - name: nom
+    type: NameProperty
+    title: Nom du lieu
+    icon: 📝
+    required: true
+    
+  - name: type
+    type: SelectProperty
+    title: Type de territoire
+    icon: 🗺️
+    required: true
+    static: true
+    options:
+      - National
+      - Région
+      - Département
+      - EPCI
+      - Commune
+        
+  - name: code_postal
+    type: Property
+    title: Code postal
+    icon: 📮
+    
+  - name: code_insee
+    type: Property
+    title: Code INSEE
+    icon: 🔢
+    
+  - name: population
+    type: NumberProperty
+    title: Population
+    icon: 👥
+    format: '0,0'
+    
+  - name: superficie
+    type: NumberProperty
+    title: Superficie
+    icon: 📏
+    format: '0,0.00'
+    unit: km²
+    
+  - name: parent
+    type: FileProperty
+    title: Territoire parent
+    icon: 📂
+    static: true
+    classes:
+      - Lieu
+      
+  - name: adresse
+    type: AdressProperty
+    title: Adresse
+    icon: 📍
+    
+  - name: contacts
+    type: MultiFileProperty
+    title: Contacts
+    icon: 👤
+    classes:
+      - Personne
+      
+  - name: institutions
+    type: MultiFileProperty
+    title: Institutions
+    icon: 🏢
+    classes:
+      - Institution
+      
+  - name: projets
+    type: MultiFileProperty
+    title: Projets
+    icon: 📊
+    classes:
+      - Projet
+      
+  - name: site_web
+    type: LinkProperty
+    title: Site web
+    icon: 🌐
+    
+  - name: email
+    type: EmailProperty
+    title: Email
+    icon: 📧
+    
+  - name: telephone
+    type: PhoneProperty
+    title: Téléphone
+    icon: 📞
+    
+  - name: description
+    type: TextProperty
+    title: Description
+    icon: 📋
+    multiline: true
+    
+  - name: date_creation
+    type: DateProperty
+    title: Date de création
+    icon: 📅
+
+display:
+  containers:
+    - type: line
+      title: "Identification"
+      className: "lieu-identity-section"
+      properties:
+        - nom
+        - type
+        - parent
+        
+    - type: tabs
+      title: "Informations"
+      className: "lieu-info-tabs"
+      tabs:
+        - name: "Général"
+          properties:
+            - code_postal
+            - code_insee
+            - population
+            - superficie
+        - name: "Coordonnées"
+          properties:
+            - adresse
+            - telephone
+            - email
+            - site_web
+        - name: "Relations"
+          properties:
+            - contacts
+            - institutions
+            - projets
+        
+    - type: fold
+      foldTitle: "Description"
+      className: "lieu-description-fold"
+      properties:
+        - description
+        - date_creation
+

@@ -8,12 +8,25 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/tests-942%20passing-brightgreen.svg)](/__tests__)
+[![Tests](https://img.shields.io/badge/tests-1081%20passing-brightgreen.svg)](/__tests__)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](coverage)
 
 [Features](#features) • [Why Markdown CRM?](#why-markdown-crm) • [Getting Started](#getting-started) • [Documentation](#documentation) • [Contributing](#contributing)
 
 </div>
+
+---
+
+## 📢 Latest Updates
+
+### ✨ November 2025
+
+- **🔒 Static Properties** - New feature: mark fields as non-editable with `static: true`
+- **📊 Dataset Expansion** - 36,360 French territories (regions, departments, communes)
+- **✅ Test Suite** - 1,081 tests passing (100% success rate)
+- **🐛 Bug Fixes** - Multiple test corrections and improvements
+
+[See full changelog](CHANGELOG.md) • [Read documentation](docs/Static-Properties.md)
 
 ---
 
@@ -45,11 +58,15 @@ Create custom fields for any data type:
 - **📎 File Attachments** - Link documents, images, and media
 - **📊 Objects & Nested Data** - Complex structured data
 - **🧮 Formulas** - Calculated fields with custom logic
+- **🔒 Static Properties** - Mark fields as non-editable after creation
 
 ### 🎭 Type-Safe Architecture
 
 - **Dynamic Class Factory** - Generate classes from YAML configurations
 - **Runtime Type Validation** - Catch errors before they happen
+- **Property Inheritance** - Share configurations across classes
+- **Extensible System** - Add new property types easily
+- **Static Field Support** - Protect critical fields from modification
 - **Property Inheritance** - Share configurations across classes
 - **Extensible System** - Add new property types easily
 
@@ -72,7 +89,7 @@ Create custom fields for any data type:
 
 ### Production-Ready
 
-- **942 Passing Tests** - Comprehensive test coverage
+- **1,081 Passing Tests** - Comprehensive test coverage (100% success rate)
 - **Type-Safe** - Written in TypeScript with strict checks
 - **Error Handling** - Graceful degradation and recovery
 - **Data Integrity** - Validated writes, atomic operations

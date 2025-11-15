@@ -44,6 +44,26 @@ Welcome to the comprehensive documentation for **Markdown CRM** - a robust, offl
    - Complete examples
    - Styling and customization
 
+7. **[🔒 Static Properties](Static-Properties.md)** - Non-editable fields
+   - What are static properties?
+   - Configuration guide
+   - Use cases and best practices
+   - Implementation details
+
+8. **[📊 Data Loading](Data-Loading.md)** - Data management
+   - Loading data from JSON
+   - Hierarchical relationships
+   - Dynamic class creation
+   - Data validation
+
+### Maintenance & Updates
+
+9. **[🔧 Test Fixes - November 2025](Test-Fixes-Nov-2025.md)** - Recent improvements
+   - Static properties implementation
+   - Test suite corrections (1081 tests passing)
+   - Dataset updates (36k French territories)
+   - Bug fixes and enhancements
+
 ## 🚀 Quick Links
 
 - **[Back to Main README](../README.md)** - Project overview
@@ -100,6 +120,27 @@ UI Layout and display system:
 - Interactive components (tabs, accordions)
 - CSS customization
 - Complete configuration examples
+
+### [Static-Properties.md](Static-Properties.md)
+Non-editable properties guide:
+- Configuration with `static: true`
+- Use cases (IDs, types, hierarchies)
+- Technical implementation
+- Behavior in the interface
+
+### [Data-Loading.md](Data-Loading.md)
+Data management and loading:
+- JSON data import
+- Hierarchical relationships
+- Parent-child resolution
+- Bulk data operations
+
+### [Test-Fixes-Nov-2025.md](Test-Fixes-Nov-2025.md)
+Recent updates and improvements:
+- Static properties feature
+- Test suite corrections (1081 tests)
+- Dataset expansion (36,360 territories)
+- Bug fixes and refactoring
 
 ## 🎯 Use Cases by Role
 

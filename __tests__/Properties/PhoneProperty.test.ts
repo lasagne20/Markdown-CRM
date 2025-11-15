@@ -150,8 +150,8 @@ describe('PhoneProperty', () => {
 
         it('should handle empty or null values', () => {
             expect(phoneProperty.getPretty('')).toBe('');
-            expect(phoneProperty.getPretty(null as any)).toBe(null);
-            expect(phoneProperty.getPretty(undefined as any)).toBe(undefined);
+            expect(phoneProperty.getPretty(null as any)).toBe('');
+            expect(phoneProperty.getPretty(undefined as any)).toBe('');
         });
 
         it('should return formatted value for valid numbers', () => {
@@ -186,9 +186,9 @@ describe('PhoneProperty', () => {
 
         it('should handle empty or invalid input', () => {
             expect(phoneProperty.getLink('')).toBe('callto:');
-            expect(phoneProperty.getLink('invalid')).toBe('callto:invalid');
-            expect(phoneProperty.getLink(null as any)).toBe('callto:undefined'); // null?.replace returns undefined
-            expect(phoneProperty.getLink(undefined as any)).toBe('callto:undefined');
+            expect(phoneProperty.getLink('invalid')).toBe('callto:'); // 'invalid' contains no digits, so cleaned = ''
+            expect(phoneProperty.getLink(null as any)).toBe('callto:'); // null is not a string
+            expect(phoneProperty.getLink(undefined as any)).toBe('callto:'); // undefined is not a string
         });
     });
 
@@ -360,9 +360,9 @@ describe('PhoneProperty', () => {
 
     describe('edge cases and error handling', () => {
         it('should handle null and undefined values in validate', () => {
-            // The actual implementation will throw an error on null/undefined
-            expect(() => phoneProperty.validate(null as any)).toThrow();
-            expect(() => phoneProperty.validate(undefined as any)).toThrow();
+            // validate should gracefully handle null/undefined by returning empty string
+            expect(phoneProperty.validate(null as any)).toBe('');
+            expect(phoneProperty.validate(undefined as any)).toBe('');
         });
 
         it('should handle numbers with only special characters', () => {

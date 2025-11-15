@@ -12,6 +12,7 @@ import { LinkProperty } from '../properties/LinkProperty';
 import { MediaProperty } from '../properties/MediaProperty';
 import { MultiFileProperty } from '../properties/MultiFileProperty';
 import { MultiSelectProperty } from '../properties/MultiSelectProperty';
+import { NameProperty } from '../properties/NameProperty';
 import { NumberProperty } from '../properties/NumberProperty';
 import { ObjectProperty } from '../properties/ObjectProperty';
 import { PhoneProperty } from '../properties/PhoneProperty';
@@ -46,10 +47,10 @@ export class ConfigLoader {
             const configFilePath = `${this.configPath}/${className}.yaml`;
             let fileContent: string;
             let file = await this.vault.app.getFile(configFilePath);
-            if (file) {
+            if (file && 'extension' in file) {
                 // Try to read using vault adapter for plugin files
                 try {
-                    fileContent = await this.vault.app.readFile(file);
+                    fileContent = await this.vault.app.readFile(file as IFile);
                 } catch (error) {
                     // Fallback to vault API for files in the vault
                     const file = await this.vault.app.getFile(configFilePath);
@@ -70,6 +71,14 @@ export class ConfigLoader {
             console.log("YAML content loaded:", fileContent);
             const config = yaml.load(fileContent) as any;
             
+            // Normaliser name → className et icon → classIcon pour compatibilité
+            if (config.name && !config.className) {
+                config.className = config.name;
+            }
+            if (config.icon && !config.classIcon) {
+                config.classIcon = config.icon;
+            }
+            
             // Convertir properties array → object si nécessaire
             if (config.properties && Array.isArray(config.properties)) {
                 const propertiesObj: { [key: string]: any } = {};
@@ -81,7 +90,6 @@ export class ConfigLoader {
                 config.properties = propertiesObj;
             }
             
-            console.log("Parsed config for", className, ":", JSON.stringify(config, null, 2));
             console.log("Parent config:", config.parent);
 
             this.loadedConfigs.set(className, config as ClassConfig);
@@ -96,7 +104,12 @@ export class ConfigLoader {
      * Create a Property instance from configuration
      */
     createProperty(config: PropertyConfig): Property {
-        const options = config.icon ? { icon: config.icon} : {};
+        const options: any = config.icon ? { icon: config.icon} : {};
+        
+        // Map 'static' from config to 'staticProperty' for the constructor
+        if (config.static !== undefined) {
+            options.staticProperty = config.static;
+        }
         
         switch (config.type) {
             case 'Property':
@@ -172,6 +185,9 @@ export class ConfigLoader {
             
             case 'ClasseProperty':
                 return new ClasseProperty(config.name, this.vault, config.icon || 'box');
+            
+            case 'NameProperty':
+                return new NameProperty(this.vault);
             
             case 'TextProperty':
                 return new TextProperty(config.name, this.vault, options);
@@ -301,6 +317,49 @@ export class ConfigLoader {
         }
 
         return config;
+    }
+
+    /**
+     * Load data from JSON file for a class configuration
+     */
+    async loadClassData(className: string): Promise<any[]> {
+        const config = await this.loadClassConfig(className);
+        
+        if (!config.data || config.data.length === 0) {
+            return [];
+        }
+
+        const allData: any[] = [];
+        
+        for (const dataSource of config.data) {
+            try {
+                const dataFilePath = `${this.configPath}/../data/${dataSource.file}`;
+                const file = await this.vault.app.getFile(dataFilePath);
+                
+                if (!file) {
+                    console.warn(`Data file not found: ${dataFilePath}`);
+                    continue;
+                }
+
+                if (!('extension' in file)) {
+                    console.warn(`Data path is a folder, not a file: ${dataFilePath}`);
+                    continue;
+                }
+
+                const fileContent = await this.vault.app.readFile(file as IFile);
+                const data = JSON.parse(fileContent);
+                
+                if (Array.isArray(data)) {
+                    allData.push(...data);
+                } else {
+                    allData.push(data);
+                }
+            } catch (error) {
+                console.error(`Failed to load data from ${dataSource.file}:`, error);
+            }
+        }
+
+        return allData;
     }
 
     /**

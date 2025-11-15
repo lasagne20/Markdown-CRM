@@ -10,8 +10,9 @@ export class NameProperty extends Property{
       super("name", vault, {static : true});
     }
 
-    override read(file: any) {
-      return file.getLink()
+    override read(classe: any) {
+      const file = classe.getFile();
+      return file ? file.getLink() : '';
     }
 
 }

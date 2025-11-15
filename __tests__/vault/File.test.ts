@@ -341,7 +341,7 @@ Body content here`;
                     lineWidth: -1, 
                     noRefs: true, 
                     sortKeys: false,
-                    forceQuotes: false,
+                    forceQuotes: true,
                     quotingType: '"',
                     noCompatMode: true
                 }
@@ -475,7 +475,15 @@ Body content`;
             
             expect(mockJsYaml.dump).toHaveBeenCalledWith(
                 frontmatter,
-                { flowLevel: -1, lineWidth: -1, noRefs: true, sortKeys: false }
+                { 
+                    flowLevel: -1, 
+                    lineWidth: -1, 
+                    noRefs: true, 
+                    sortKeys: false,
+                    forceQuotes: true,
+                    quotingType: '"',
+                    noCompatMode: true
+                }
             );
             expect(mockApp.writeFile).toHaveBeenCalledWith(mockIFile, expectedContent);
         });
@@ -556,7 +564,15 @@ Content`;
             
             expect(mockJsYaml.dump).toHaveBeenCalledWith(
                 frontmatter,
-                { flowLevel: -1, lineWidth: -1, noRefs: true, sortKeys: false }
+                { 
+                    flowLevel: -1, 
+                    lineWidth: -1, 
+                    noRefs: true, 
+                    sortKeys: false,
+                    forceQuotes: true,
+                    quotingType: '"',
+                    noCompatMode: true
+                }
             );
             expect(result).toBe('testKey: testValue\n');
         });

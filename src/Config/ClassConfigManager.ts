@@ -25,7 +25,6 @@ export class ClassConfigManager {
         }
 
         const config = await this.configLoader.loadClassConfig(className);
-        console.log(`📋 Configuration chargée pour ${className}:`, JSON.stringify(config, null, 2));
         
         class DynamicClasse extends Classe {
             public override name = config.className || className;
@@ -238,6 +237,13 @@ export class ClassConfigManager {
      */
     async getClassConfig(className: string): Promise<ClassConfig> {
         return await this.configLoader.loadClassConfig(className);
+    }
+
+    /**
+     * Load data from JSON file for a class
+     */
+    async loadClassData(className: string): Promise<any[]> {
+        return await this.configLoader.loadClassData(className);
     }
 
     /**

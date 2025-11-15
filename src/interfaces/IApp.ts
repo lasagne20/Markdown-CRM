@@ -48,7 +48,7 @@ export interface IApp {
     createFolder(path: string): Promise<IFolder>;
     listFiles(folder?: IFolder): Promise<IFile[]>;
     listFolders(folder?: IFolder): Promise<IFolder[]>;
-    getFile(path: string): Promise<IFile | null>;
+    getFile(path: string): Promise<IFile | IFolder | null>;
     getAbsolutePath(relativePath: string): string;
 
     getName(): string;

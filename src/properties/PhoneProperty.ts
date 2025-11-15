@@ -47,6 +47,8 @@ export class PhoneProperty extends LinkProperty{
     }
 
     override validate(phoneNumber: string) {
+      if (!phoneNumber) return "";
+      
       // Remove all non-digit characters
       let cleaned = phoneNumber.replace(/[^0-9+]/g, "");
       
@@ -80,7 +82,7 @@ export class PhoneProperty extends LinkProperty{
   }
 
   override getPretty(value: string) {
-    if (!value) return value;
+    if (!value || typeof value !== 'string') return '';
     
     // Extract digits to reformat
     let cleaned = value.replace(/[^0-9]/g, "");
@@ -101,7 +103,8 @@ export class PhoneProperty extends LinkProperty{
 
   override getLink(value : string){
     // Extract only digits for the callto link
-    const cleaned = (value?.replace(/[^0-9+]/g, "") || value) ?? 'undefined';
+    if (!value || typeof value !== 'string') return 'callto:';
+    const cleaned = value.replace(/[^0-9+]/g, "");
     return `callto:${cleaned}`;
   }
 

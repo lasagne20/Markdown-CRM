@@ -51,17 +51,23 @@ describe('NameProperty', () => {
             const mockFile = {
                 getLink: jest.fn().mockReturnValue('Test Link')
             };
+            const mockClasse = {
+                getFile: jest.fn().mockReturnValue(mockFile)
+            };
             
-            const result = nameProperty.read(mockFile);
+            const result = nameProperty.read(mockClasse);
             
+            expect(mockClasse.getFile).toHaveBeenCalledTimes(1);
             expect(mockFile.getLink).toHaveBeenCalledTimes(1);
             expect(result).toBe('Test Link');
         });
 
         it('should throw error when file has no getLink method', () => {
-            const mockFile = {};
+            const mockClasse = {
+                getFile: jest.fn().mockReturnValue({})
+            };
             
-            expect(() => nameProperty.read(mockFile)).toThrow();
+            expect(() => nameProperty.read(mockClasse)).toThrow();
         });
 
         it('should throw error with null file', () => {
@@ -76,8 +82,11 @@ describe('NameProperty', () => {
             const mockFile = {
                 getLink: jest.fn().mockReturnValue('')
             };
+            const mockClasse = {
+                getFile: jest.fn().mockReturnValue(mockFile)
+            };
             
-            const result = nameProperty.read(mockFile);
+            const result = nameProperty.read(mockClasse);
             
             expect(result).toBe('');
         });
@@ -86,8 +95,11 @@ describe('NameProperty', () => {
             const mockFile = {
                 getLink: jest.fn().mockReturnValue(null)
             };
+            const mockClasse = {
+                getFile: jest.fn().mockReturnValue(mockFile)
+            };
             
-            const result = nameProperty.read(mockFile);
+            const result = nameProperty.read(mockClasse);
             
             expect(result).toBeNull();
         });

@@ -198,8 +198,8 @@ export class File implements IFile {
                 lineWidth: -1,     // Pas de limite de largeur de ligne (empêche le folding)
                 noRefs: true,      // Pas de références YAML
                 sortKeys: false,   // Garder l'ordre des clés
-                forceQuotes: false,// Ne pas forcer les guillemets
-                quotingType: '"',  // Utiliser des guillemets doubles si nécessaire
+                forceQuotes: true, // Forcer les guillemets pour éviter les problèmes avec les crochets
+                quotingType: '"',  // Utiliser des guillemets doubles
                 noCompatMode: true // Mode moderne (pas de wrap automatique)
             });
 
@@ -249,7 +249,10 @@ export class File implements IFile {
             flowLevel: -1,
             lineWidth: -1,
             noRefs: true,
-            sortKeys: false
+            sortKeys: false,
+            forceQuotes: true,
+            quotingType: '"',
+            noCompatMode: true
         });
         const filteredExtraProperties = extraProperties.filter(prop => prop && prop.trim() !== "");
         //const extraText = filteredExtraProperties.length > 0 ? `\n${filteredExtraProperties.join("\n")}` : "";
@@ -280,7 +283,10 @@ export class File implements IFile {
             flowLevel: -1,
             lineWidth: -1,
             noRefs: true,
-            sortKeys: false
+            sortKeys: false,
+            forceQuotes: true,
+            quotingType: '"',
+            noCompatMode: true
         });
     }
 

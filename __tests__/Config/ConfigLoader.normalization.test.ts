@@ -1,0 +1,259 @@
+import { ConfigLoader } from '../../src/Config/ConfigLoader';
+import { Vault } from '../../src/vault/Vault';
+import * as yaml from 'js-yaml';
+
+describe('ConfigLoader - Config Format Normalization', () => {
+    let configLoader: ConfigLoader;
+    let mockVault: Vault;
+    let mockApp: any;
+
+    beforeEach(() => {
+        mockApp = {
+            getFile: jest.fn(),
+            readFile: jest.fn(),
+            writeFile: jest.fn(),
+            createFile: jest.fn(),
+            getMetadata: jest.fn(),
+            updateMetadata: jest.fn(),
+            listFiles: jest.fn().mockResolvedValue([]),
+            waitForFileMetaDataUpdate: jest.fn(),
+            setIcon: jest.fn(),
+            getUrl: jest.fn(),
+            selectFile: jest.fn(),
+            open: jest.fn()
+        };
+
+        mockVault = new Vault(mockApp, { vaultPath: './test-vault' } as any);
+        configLoader = new ConfigLoader('./test-config', mockVault);
+    });
+
+    describe('loadClassConfig with format normalization', () => {
+        it('should normalize "name" to "className"', async () => {
+            const yamlContent = `
+name: Lieu
+icon: 📍
+description: Gestion des lieux
+properties:
+  - name: nom
+    type: Property
+`;
+
+            mockApp.getFile.mockResolvedValue({
+                path: './test-config/Lieu.yaml',
+                basename: 'Lieu',
+                extension: 'yaml'
+            });
+            mockApp.readFile.mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Lieu');
+
+            expect(config).toHaveProperty('className', 'Lieu');
+            expect(config).toHaveProperty('icon', '📍');
+        });
+
+        it('should normalize "icon" to "classIcon"', async () => {
+            const yamlContent = `
+name: Personne
+icon: 👤
+description: Gestion des personnes
+properties:
+  - name: nom
+    type: Property
+`;
+
+            mockApp.getFile.mockResolvedValue({
+                path: './test-config/Personne.yaml',
+                basename: 'Personne',
+                extension: 'yaml'
+            });
+            mockApp.readFile.mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Personne');
+
+            expect(config).toHaveProperty('className', 'Personne');
+            expect(config).toHaveProperty('classIcon', '👤');
+        });
+
+        it('should keep className if already present', async () => {
+            const yamlContent = `
+className: Lieu
+classIcon: map-pin
+name: LieuAlternate
+icon: 📍
+properties:
+  - name: nom
+    type: Property
+`;
+
+            mockApp.getFile.mockResolvedValue({
+                path: './test-config/Lieu.yaml',
+                basename: 'Lieu',
+                extension: 'yaml'
+            });
+            mockApp.readFile.mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Lieu');
+
+            // Should keep className, not use name
+            expect(config).toHaveProperty('className', 'Lieu');
+            expect(config).toHaveProperty('classIcon', 'map-pin');
+        });
+
+        it('should handle old format (className/classIcon)', async () => {
+            const yamlContent = `
+className: Institution
+classIcon: building
+description: Gestion des institutions
+properties:
+  - name: nom
+    type: Property
+`;
+
+            mockApp.getFile.mockResolvedValue({
+                path: './test-config/Institution.yaml',
+                basename: 'Institution',
+                extension: 'yaml'
+            });
+            mockApp.readFile.mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Institution');
+
+            expect(config).toHaveProperty('className', 'Institution');
+            expect(config).toHaveProperty('classIcon', 'building');
+        });
+
+        it('should convert properties array to object', async () => {
+            const yamlContent = `
+name: Lieu
+icon: 📍
+properties:
+  - name: nom
+    type: Property
+  - name: type
+    type: SelectProperty
+    options:
+      - National
+      - Région
+`;
+
+            mockApp.getFile.mockResolvedValue({
+                path: './test-config/Lieu.yaml',
+                basename: 'Lieu',
+                extension: 'yaml'
+            });
+            mockApp.readFile.mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Lieu');
+
+            expect(config.properties).toBeDefined();
+            expect(config.properties).toHaveProperty('nom');
+            expect(config.properties).toHaveProperty('type');
+            expect(config.properties.nom).toHaveProperty('name', 'nom');
+            expect(config.properties.nom).toHaveProperty('type', 'Property');
+        });
+
+        it('should handle both formats in display configuration', async () => {
+            const yamlContent = `
+name: Lieu
+icon: 📍
+properties:
+  - name: nom
+    type: Property
+display:
+  containers:
+    - type: line
+      properties:
+        - nom
+`;
+
+            mockApp.getFile.mockResolvedValue({
+                path: './test-config/Lieu.yaml',
+                basename: 'Lieu',
+                extension: 'yaml'
+            });
+            mockApp.readFile.mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Lieu');
+
+            expect(config).toHaveProperty('display');
+            expect(config.display).toBeDefined();
+            if (config.display) {
+                expect(config.display).toHaveProperty('containers');
+                expect(config.display.containers).toHaveLength(1);
+                expect(config.display.containers![0]).toHaveProperty('type', 'line');
+            }
+        });
+    });
+
+    describe('backward compatibility', () => {
+        it('should work with documentation format (name/icon)', async () => {
+            const docFormatYaml = `
+name: Personne
+icon: 👤
+description: Gestion des personnes
+parent:
+  property: institution
+  folder: Personnes
+properties:
+  - name: nom
+    type: Property
+    title: Nom complet
+    icon: 📝
+  - name: email
+    type: EmailProperty
+    title: Email professionnel
+    icon: 📧
+display:
+  containers:
+    - type: line
+      title: "Identité"
+      properties:
+        - nom
+`;
+
+            mockApp.getFile.mockResolvedValue({
+                path: './test-config/Personne.yaml',
+                basename: 'Personne',
+                extension: 'yaml'
+            });
+            mockApp.readFile.mockResolvedValue(docFormatYaml);
+
+            const config = await configLoader.loadClassConfig('Personne');
+
+            expect(config.className).toBe('Personne');
+            expect(config.classIcon).toBe('👤');
+            expect(config.properties).toHaveProperty('nom');
+            expect(config.properties).toHaveProperty('email');
+        });
+
+        it('should work with code format (className/classIcon)', async () => {
+            const codeFormatYaml = `
+className: Institution
+classIcon: building
+description: Gestion des institutions
+properties:
+  - name: nom
+    type: Property
+  - name: secteur
+    type: SelectProperty
+    options:
+      - Public
+      - Privé
+`;
+
+            mockApp.getFile.mockResolvedValue({
+                path: './test-config/Institution.yaml',
+                basename: 'Institution',
+                extension: 'yaml'
+            });
+            mockApp.readFile.mockResolvedValue(codeFormatYaml);
+
+            const config = await configLoader.loadClassConfig('Institution');
+
+            expect(config.className).toBe('Institution');
+            expect(config.classIcon).toBe('building');
+            expect(config.properties).toHaveProperty('nom');
+            expect(config.properties).toHaveProperty('secteur');
+        });
+    });
+});

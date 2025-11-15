@@ -207,8 +207,8 @@ export class Vault {
         const newFilePath = name.includes(".md") ? name : `${name}.md`;
         let templateContent = "---\nClasse: " + classeType.name + "\n---\n";
 
-        if (templateFile && (await this.app.isFile(templateFile))) {
-            templateContent = await this.app.readFile(templateFile);
+        if (templateFile && 'extension' in templateFile && (await this.app.isFile(templateFile as IFile))) {
+            templateContent = await this.app.readFile(templateFile as IFile);
         } else {
             console.warn("Le fichier template n'existe pas :" + templatePath + ". Un fichier vide sera créé.");
         }
@@ -222,8 +222,8 @@ export class Vault {
             if (!file) {
                 throw Error("Le fichier n'a pas pu être créé ou modifié : " + newFilePath);
             }
-            if (file && this.app.isFile(file)) {
-                await this.app.writeFile(file, templateContent);
+            if (file && 'extension' in file && this.app.isFile(file as IFile)) {
+                await this.app.writeFile(file as IFile, templateContent);
                 console.log("Fichier modifié : " + newFilePath);
             } else {
                 throw Error("Le fichier n'a pas pu être créé ou modifié : " + newFilePath);

@@ -1,443 +1,565 @@
-# Configuration d'affichage (Display)
+# Display Configuration
 
-La configuration d'affichage permet de personnaliser complètement la présentation des propriétés d'une classe dans l'interface. Vous pouvez organiser vos propriétés en sections, onglets, et zones repliables.
+The display configuration allows you to completely customize the presentation of class properties in the interface. You can organize your properties into sections, tabs, and collapsible areas.
 
-## Table des matières
+## Table of Contents
 
-- [Structure de base](#structure-de-base)
-- [Types de conteneurs](#types-de-conteneurs)
-  - [Line - Disposition en ligne](#line---disposition-en-ligne)
-  - [Column - Disposition en colonne](#column---disposition-en-colonne)
-  - [Tabs - Onglets](#tabs---onglets)
-  - [Fold - Zone repliable](#fold---zone-repliable)
-- [Exemples complets](#exemples-complets)
+- [Basic Structure](#basic-structure)
+- [Container Types](#container-types)
+  - [Line - Horizontal Layout](#line---horizontal-layout)
+  - [Column - Vertical Layout](#column---vertical-layout)
+  - [Tabs - Tabbed Interface](#tabs---tabbed-interface)
+  - [Fold - Collapsible Section](#fold---collapsible-section)
+- [Complete Examples](#complete-examples)
 
-## Structure de base
+## Basic Structure
 
-La configuration d'affichage se place dans la section `display` du fichier YAML de configuration de classe :
+The display configuration goes in the `display` section of the class YAML configuration file:
 
 ```yaml
 display:
   containers:
     - type: line | column | tabs | fold
-      title: "Titre de la section"
-      className: "classe-css-personnalisee"
+      title: "Section Title"
+      className: "custom-css-class"
       properties:
-        - propriete1
-        - propriete2
+        - property1
+        - property2
 ```
 
-### Propriétés communes
+### Common Properties
 
-Tous les conteneurs partagent ces propriétés de base :
+All containers share these base properties:
 
-| Propriété | Type | Obligatoire | Description |
-|-----------|------|-------------|-------------|
-| `type` | string | ✅ | Type de conteneur (`line`, `column`, `tabs`, `fold`) |
-| `title` | string | ❌ | Titre affiché au-dessus du conteneur |
-| `className` | string | ❌ | Classe CSS personnalisée pour le style |
-| `properties` | string[] | ❌* | Liste des noms de propriétés à afficher |
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | string | ✅ | Container type (`line`, `column`, `tabs`, `fold`) |
+| `title` | string | ❌ | Title displayed above the container |
+| `className` | string | ❌ | Custom CSS class for styling |
+| `properties` | string[] | ❌* | List of property names to display |
 
-*Obligatoire sauf pour le type `tabs` qui utilise `tabs` à la place
+*Required except for `tabs` type which uses `tabs` instead
 
-## Types de conteneurs
+## Container Types
 
-### Line - Disposition en ligne
+### Line - Horizontal Layout
 
-Affiche les propriétés sur une seule ligne horizontale, idéal pour des informations courtes.
+Displays properties on a single horizontal line, ideal for short information.
 
 ```yaml
 - type: line
-  title: "Informations de base"
-  className: "basic-info"
+  title: "Basic Information"
   properties:
-    - nom
+    - name
     - email
-    - telephone
+    - phone
 ```
 
-**Cas d'usage :**
-- Informations d'identification (nom, prénom, etc.)
-- Données de contact
-- Statuts et badges
-
-**Rendu visuel :**
+**Result:**
 ```
-┌─────────────────────────────────────┐
-│ Informations de base                │
-├─────────────────────────────────────┤
-│ [Nom] [Email] [Téléphone]          │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ Basic Information                    │
+├──────────────────────────────────────┤
+│ [Name]  [Email]  [Phone]            │
+└──────────────────────────────────────┘
 ```
 
-### Column - Disposition en colonne
+**Best for:**
+- Key identifiers (ID, code, reference)
+- Status indicators
+- Quick metadata
+- Fields with short values
 
-Affiche les propriétés en colonne verticale, parfait pour des champs plus larges.
+### Column - Vertical Layout
+
+Displays properties in a vertical column, perfect for wider fields.
 
 ```yaml
 - type: column
-  title: "Description détaillée"
-  className: "details-column"
+  title: "Contact Details"
   properties:
-    - description
-    - notes
-    - commentaires
+    - address
+    - city
+    - postal_code
+    - country
 ```
 
-**Cas d'usage :**
-- Champs de texte multiligne
-- Descriptions longues
-- Notes et commentaires
-
-**Rendu visuel :**
+**Result:**
 ```
-┌─────────────────────────────────────┐
-│ Description détaillée               │
-├─────────────────────────────────────┤
-│ [Description...................]    │
-│                                     │
-│ [Notes..........................]    │
-│                                     │
-│ [Commentaires...................]    │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ Contact Details                      │
+├──────────────────────────────────────┤
+│ Address: [________________]          │
+│ City: [________________]             │
+│ Postal Code: [________________]      │
+│ Country: [________________]          │
+└──────────────────────────────────────┘
 ```
 
-### Tabs - Onglets
+**Best for:**
+- Address fields
+- Long text descriptions
+- Multiple related fields
+- Forms requiring vertical space
 
-Organise les propriétés dans des onglets cliquables pour économiser l'espace vertical.
+### Tabs - Tabbed Interface
+
+Organizes properties into clickable tabs to save vertical space.
 
 ```yaml
 - type: tabs
-  title: "Détails du contact"
-  className: "contact-tabs"
+  title: "Complete Profile"
   tabs:
-    - name: "Entreprise"
+    - title: "General"
       properties:
-        - nomEntreprise
-        - poste
-        - secteur
-    - name: "Adresse"
+        - name
+        - email
+        - phone
+        
+    - title: "Address"
       properties:
-        - adresse
-        - ville
-        - codePostal
-    - name: "Suivi"
+        - street
+        - city
+        - country
+        
+    - title: "Professional"
       properties:
-        - dateCreation
-        - dernierContact
-        - priorite
+        - company
+        - job_title
+        - department
 ```
 
-**Structure des tabs :**
-
-| Propriété | Type | Obligatoire | Description |
-|-----------|------|-------------|-------------|
-| `tabs` | array | ✅ | Liste des onglets |
-| `tabs[].name` | string | ✅ | Nom de l'onglet (affiché dans l'en-tête) |
-| `tabs[].properties` | string[] | ✅ | Propriétés à afficher dans cet onglet |
-
-**Cas d'usage :**
-- Séparer des catégories d'informations
-- Réduire l'encombrement visuel
-- Grouper des informations logiquement liées
-
-**Rendu visuel :**
+**Result:**
 ```
-┌─────────────────────────────────────┐
-│ Détails du contact                  │
-├─────────────────────────────────────┤
-│ [Entreprise] [Adresse] [Suivi]     │
-├─────────────────────────────────────┤
-│ Contenu de l'onglet actif           │
-│ [Propriétés...]                     │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ Complete Profile                     │
+├──────────────────────────────────────┤
+│ [General] [Address] [Professional]   │
+├──────────────────────────────────────┤
+│ Name: [________________]             │
+│ Email: [________________]            │
+│ Phone: [________________]            │
+└──────────────────────────────────────┘
 ```
 
-**Interactions :**
-- Cliquer sur un onglet affiche son contenu
-- Un seul onglet visible à la fois
-- Le premier onglet est actif par défaut
-- Animation de transition entre onglets
+**Best for:**
+- Grouping related properties
+- Large number of fields
+- Logical information categories
+- Progressive disclosure
 
-### Fold - Zone repliable
+### Fold - Collapsible Section
 
-Crée une section repliable (accordéon) pour masquer/afficher des informations secondaires.
+A section that can be collapsed/expanded, useful for secondary information.
 
 ```yaml
 - type: fold
-  foldTitle: "Informations avancées"
-  className: "advanced-fold"
+  title: "Advanced Options"
+  collapsed: true  # Optional: starts collapsed
   properties:
-    - metadata
-    - tags
-    - historique
+    - advanced_setting_1
+    - advanced_setting_2
+    - debug_mode
 ```
 
-**Propriété spécifique :**
-
-| Propriété | Type | Obligatoire | Description |
-|-----------|------|-------------|-------------|
-| `foldTitle` | string | ✅ | Texte du bouton de pliage/dépliage |
-
-**Cas d'usage :**
-- Informations rarement consultées
-- Données techniques ou avancées
-- Historique et métadonnées
-- Réduire la longueur de la page
-
-**Rendu visuel :**
-
-*État replié :*
+**Result (collapsed):**
 ```
-┌─────────────────────────────────────┐
-│ ▶ Informations avancées            │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ ▶ Advanced Options                   │
+└──────────────────────────────────────┘
 ```
 
-*État déplié :*
+**Result (expanded):**
 ```
-┌─────────────────────────────────────┐
-│ ▼ Informations avancées            │
-├─────────────────────────────────────┤
-│ [Metadata......................]    │
-│ [Tags...........................]    │
-│ [Historique.....................]    │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ ▼ Advanced Options                   │
+├──────────────────────────────────────┤
+│ Advanced Setting 1: [____]           │
+│ Advanced Setting 2: [____]           │
+│ Debug Mode: [✓]                      │
+└──────────────────────────────────────┘
 ```
 
-**Interactions :**
-- Cliquer sur l'en-tête bascule l'état
-- Animation fluide d'ouverture/fermeture
-- Démarre en position repliée par défaut
+**Best for:**
+- Optional/advanced fields
+- Infrequently used information
+- Technical details
+- Keeping interface clean
 
-## Exemples complets
+## Complete Examples
 
-### Exemple 1 : Configuration simple
+### Example 1: Contact Management
 
 ```yaml
+className: Contact
+classIcon: 👤
+
 display:
   containers:
+    # Quick identification
     - type: line
-      title: "Identification"
+      title: "Identity"
       properties:
-        - nom
-        - prenom
+        - name
         - email
+        - phone
     
-    - type: column
-      title: "Notes"
-      properties:
-        - description
-```
-
-### Exemple 2 : Configuration avec onglets
-
-```yaml
-display:
-  containers:
-    - type: line
-      title: "Informations principales"
-      properties:
-        - nom
-        - email
-    
+    # Main information tabs
     - type: tabs
-      title: "Détails"
+      title: "Details"
       tabs:
-        - name: "Professionnel"
+        - title: "Personal"
           properties:
-            - entreprise
-            - poste
-            - telephone
-        - name: "Personnel"
+            - date_of_birth
+            - nationality
+            - languages
+            
+        - title: "Professional"
           properties:
-            - adresse
-            - dateNaissance
-```
-
-### Exemple 3 : Configuration complète (Contact)
-
-```yaml
-display:
-  containers:
-    # Section toujours visible
-    - type: line
-      title: "Informations personnelles"
-      className: "contact-info-section"
-      properties:
-        - nom
-        - email
-        - telephone
+            - company
+            - job_title
+            - department
+            - manager
+            
+        - title: "Address"
+          properties:
+            - street
+            - city
+            - postal_code
+            - country
     
-    # Onglets pour les détails
-    - type: tabs
-      title: "Détails du contact"
-      className: "contact-details-tabs"
-      tabs:
-        - name: "Entreprise"
-          properties:
-            - infosEntreprise
-            - adresse
-        - name: "Suivi"
-          properties:
-            - dateRencontre
-            - priorite
-            - actif
-    
-    # Zone repliable pour les notes
+    # Secondary information
     - type: fold
-      foldTitle: "Notes supplémentaires"
-      className: "contact-notes-fold"
+      title: "Additional Notes"
+      collapsed: true
       properties:
         - notes
+        - tags
+        - custom_fields
+
+properties:
+  - name: name
+    type: NameProperty
+    title: Full Name
+    required: true
+    
+  - name: email
+    type: EmailProperty
+    title: Email
+    required: true
+    
+  - name: phone
+    type: PhoneProperty
+    title: Phone Number
+    
+  # ... other properties
 ```
 
-### Exemple 4 : Configuration pour un projet
+### Example 2: Project Management
+
+```yaml
+className: Project
+classIcon: 📊
+
+display:
+  containers:
+    # Project status at a glance
+    - type: line
+      title: "Status"
+      properties:
+        - status
+        - priority
+        - progress
+        - deadline
+    
+    # Core information
+    - type: column
+      title: "Project Information"
+      properties:
+        - name
+        - description
+        - client
+        - budget
+    
+    # Organized details
+    - type: tabs
+      title: "Details"
+      tabs:
+        - title: "Team"
+          properties:
+            - project_manager
+            - team_members
+            - stakeholders
+            
+        - title: "Milestones"
+          properties:
+            - milestones
+            - deliverables
+            - dependencies
+            
+        - title: "Resources"
+          properties:
+            - assigned_resources
+            - equipment
+            - external_contractors
+    
+    # Technical details
+    - type: fold
+      title: "Technical Information"
+      collapsed: true
+      properties:
+        - repository
+        - documentation
+        - api_keys
+        - server_config
+
+properties:
+  # ... property definitions
+```
+
+### Example 3: Product Catalog
+
+```yaml
+className: Product
+classIcon: 📦
+
+display:
+  containers:
+    # Quick product identification
+    - type: line
+      title: "Product ID"
+      properties:
+        - sku
+        - barcode
+        - category
+        - status
+    
+    # Main product info
+    - type: column
+      title: "Product Information"
+      properties:
+        - name
+        - description
+        - price
+        - stock_quantity
+        - minimum_order
+    
+    # Detailed specifications
+    - type: tabs
+      title: "Specifications"
+      tabs:
+        - title: "Physical"
+          properties:
+            - dimensions
+            - weight
+            - material
+            - color
+            - size
+            
+        - title: "Supplier"
+          properties:
+            - supplier
+            - supplier_sku
+            - lead_time
+            - minimum_order_quantity
+            
+        - title: "Media"
+          properties:
+            - images
+            - videos
+            - documents
+            - 3d_model
+    
+    # SEO and marketing
+    - type: fold
+      title: "Marketing & SEO"
+      collapsed: true
+      properties:
+        - seo_title
+        - seo_description
+        - keywords
+        - marketing_tags
+
+properties:
+  # ... property definitions
+```
+
+## Nested Containers
+
+Containers can be nested for complex layouts:
 
 ```yaml
 display:
   containers:
-    - type: line
-      title: "Vue d'ensemble"
-      properties:
-        - nomProjet
-        - statut
-        - priorite
-    
     - type: tabs
-      title: "Gestion du projet"
+      title: "Main Sections"
       tabs:
-        - name: "Planning"
-          properties:
-            - dateDebut
-            - dateFin
-            - budget
-        - name: "Équipe"
-          properties:
-            - responsable
-            - equipe
-            - client
-        - name: "Livrables"
-          properties:
-            - livrables
-            - jalons
+        - title: "Overview"
+          containers:
+            - type: line
+              properties:
+                - id
+                - status
+            - type: column
+              properties:
+                - name
+                - description
+                
+        - title: "Details"
+          containers:
+            - type: fold
+              title: "Basic Details"
+              properties:
+                - field1
+                - field2
+            - type: fold
+              title: "Advanced Details"
+              collapsed: true
+              properties:
+                - field3
+                - field4
+```
+
+## Styling with CSS Classes
+
+Add custom styling by using `className`:
+
+```yaml
+- type: line
+  title: "Priority Information"
+  className: "priority-section highlight-section"
+  properties:
+    - priority
+    - deadline
+```
+
+Then in your CSS:
+
+```css
+.priority-section {
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 10px;
+}
+
+.highlight-section {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+```
+
+## Best Practices
+
+### 1. Organize by Usage Frequency
+- Put most-used properties in `line` or top `column`
+- Use `fold` for rarely accessed fields
+- Group related properties in `tabs`
+
+### 2. Progressive Disclosure
+```yaml
+# Good: Show essential first, details later
+- type: line
+  properties: [name, status]  # Always visible
+  
+- type: fold
+  collapsed: true
+  properties: [details...]  # Hidden by default
+```
+
+### 3. Logical Grouping
+```yaml
+# Good: Related properties together
+tabs:
+  - title: "Personal"
+    properties: [name, age, address]
+  - title: "Professional"
+    properties: [company, title, salary]
+```
+
+### 4. Limit Properties per Container
+- **Line**: 3-5 properties max
+- **Column**: 5-10 properties max
+- **Tab**: 8-15 properties max
+- **Fold**: No strict limit, but keep focused
+
+### 5. Meaningful Titles
+```yaml
+# Good
+- title: "Emergency Contact Information"
+
+# Bad
+- title: "Section 1"
+```
+
+## Common Patterns
+
+### Dashboard Pattern
+```yaml
+# Quick overview + detailed tabs
+containers:
+  - type: line
+    title: "At a Glance"
+    properties: [key_metrics]
     
-    - type: fold
-      foldTitle: "Détails techniques"
-      properties:
-        - technologie
-        - infrastructure
-        - documentation
+  - type: tabs
+    title: "Detailed Information"
+    tabs: [...]
+```
+
+### Form Pattern
+```yaml
+# Vertical forms with sections
+containers:
+  - type: column
+    title: "Required Information"
+    properties: [required_fields]
     
-    - type: column
-      title: "Description"
-      properties:
-        - description
-        - objectifs
+  - type: fold
+    title: "Optional Information"
+    collapsed: true
+    properties: [optional_fields]
 ```
 
-## Styles CSS personnalisés
-
-Vous pouvez personnaliser l'apparence en utilisant les classes CSS suivantes :
-
-### Classes globales
-
-```css
-/* Wrapper de chaque conteneur */
-.display-container-wrapper { }
-
-/* Titre de section */
-.container-section-title { }
-
-/* Conteneurs de base */
-.metadata-line { }
-.metadata-column { }
+### Wizard Pattern
+```yaml
+# Step-by-step progression
+containers:
+  - type: tabs
+    title: "Setup Wizard"
+    tabs:
+      - title: "Step 1: Basic Info"
+      - title: "Step 2: Configuration"
+      - title: "Step 3: Review"
 ```
 
-### Classes pour les onglets
+## Troubleshooting
 
-```css
-/* Container principal des onglets */
-.metadata-tabs-container { }
+### Property Not Displaying
+1. Check property name matches exactly (case-sensitive)
+2. Verify property is defined in `properties` section
+3. Check for typos in YAML
+4. Ensure indentation is correct
 
-/* En-têtes des onglets */
-.tab-headers { }
-.tab-header { }
-.tab-header.active { }
-.tab-header:hover { }
+### Layout Issues
+1. Verify YAML syntax (indentation matters!)
+2. Check for missing required fields
+3. Ensure `type` is valid
+4. Test with simple configuration first
 
-/* Contenus des onglets */
-.tab-contents { }
-.tab-content { }
-.tab-content.active { }
-```
+### Tab Not Showing
+1. Ensure using `tabs` array, not `properties`
+2. Each tab needs `title` and `properties`
+3. Check for proper nesting
 
-### Classes pour les folds
+## Performance Considerations
 
-```css
-/* Container principal du fold */
-.metadata-fold-container { }
+- **Light containers**: `line` and `column` render quickly
+- **Heavy containers**: `tabs` with many tabs may slow down
+- **Nested containers**: Limit nesting depth to 2-3 levels
+- **Property count**: Keep total visible properties under 50
 
-/* En-tête cliquable */
-.fold-header { }
-.fold-header.expanded { }
-.fold-header:hover { }
+## See Also
 
-/* Contenu repliable */
-.fold-content { }
-.fold-content.collapsed { }
-```
-
-### Exemple de personnalisation
-
-```css
-/* Personnaliser les onglets d'entreprise */
-.contact-details-tabs .tab-header {
-    background: #f0f0f0;
-    border-radius: 5px 5px 0 0;
-}
-
-.contact-details-tabs .tab-header.active {
-    background: white;
-    color: #0066cc;
-}
-
-/* Personnaliser le fold des notes */
-.contact-notes-fold .fold-header {
-    background: linear-gradient(to right, #667eea, #764ba2);
-    color: white;
-}
-```
-
-## Bonnes pratiques
-
-### Organisation de l'information
-
-1. **Hiérarchie claire** : Placez les informations les plus importantes en haut
-2. **Groupement logique** : Regroupez les propriétés liées ensemble
-3. **Éviter la surcharge** : Ne mettez pas trop de propriétés dans un seul conteneur
-
-### Utilisation des types
-
-- **Line** : Pour 2-4 propriétés courtes qui vont bien ensemble
-- **Column** : Pour les champs texte longs ou les listes
-- **Tabs** : Quand vous avez 3+ groupes distincts de propriétés
-- **Fold** : Pour les informations secondaires ou rarement consultées
-
-### Performance
-
-- Limitez le nombre d'onglets à 5-7 maximum
-- Ne créez pas plus de 2-3 folds par page
-- Groupez intelligemment pour réduire le scrolling
-
-### Accessibilité
-
-- Donnez des titres clairs et descriptifs
-- Utilisez des noms d'onglets concis
-- Les folds doivent avoir un `foldTitle` explicite
-
-## Voir aussi
-
-- [Property Types](./Property-Types.md) - Types de propriétés disponibles
-- [Architecture](./Architecture.md) - Architecture du système
-- [Installation](./Installation.md) - Guide d'installation
+- [Property Types](./Property-Types.md) - All available property types
+- [Static Properties](./Static-Properties.md) - Non-editable fields
+- [Architecture](./Architecture.md) - System design
+- [Data Loading](./Data-Loading.md) - Loading data from JSON
