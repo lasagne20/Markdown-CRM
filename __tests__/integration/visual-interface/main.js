@@ -40,6 +40,7 @@ export class FakeEnvironment {
     constructor() {
         this.app = null;
         this.vault = null;
+        this.factory = null;
         this.Vault = null;
         this.File = null;
     }
@@ -67,6 +68,9 @@ export class FakeEnvironment {
             
             // Initialize the vault with the app and settings
             this.vault = new this.Vault(this.app, settings);
+            
+            // Exposer le factory pour un accès facile
+            this.factory = this.vault.getDynamicClassFactory();
             
             console.log('Environnement initialise avec succes');
             console.log('Vault:', this.vault.getName());

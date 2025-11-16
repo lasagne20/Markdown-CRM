@@ -827,6 +827,160 @@ export class FakeApp {
         return null;
     }
 
+    async selectFromList(items, options) {
+        return new Promise((resolve) => {
+            console.log(`📋 Sélection depuis liste:`, { items, options });
+            
+            const isMultiple = options?.multiple || false;
+            const title = options?.title || (isMultiple ? 'Sélectionner des éléments' : 'Sélectionner un élément');
+            
+            // Créer un modal pour sélectionner depuis une liste
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '10000';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.maxWidth = '500px';
+            
+            const modalHeader = document.createElement('div');
+            modalHeader.className = 'modal-header';
+            modalHeader.innerHTML = `<h3 class="modal-title">📋 ${title}</h3>`;
+            
+            const itemList = document.createElement('div');
+            itemList.style.maxHeight = '400px';
+            itemList.style.overflowY = 'auto';
+            itemList.style.marginTop = '20px';
+            
+            const selectedItems = new Set();
+            
+            if (!items || items.length === 0) {
+                itemList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Aucun élément disponible</p>';
+            } else {
+                items.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.style.padding = '12px';
+                    itemDiv.style.margin = '5px 0';
+                    itemDiv.style.border = '2px solid #e1e5e9';
+                    itemDiv.style.borderRadius = '8px';
+                    itemDiv.style.cursor = 'pointer';
+                    itemDiv.style.transition = 'all 0.2s ease';
+                    itemDiv.style.display = 'flex';
+                    itemDiv.style.alignItems = 'center';
+                    itemDiv.style.gap = '10px';
+                    
+                    if (isMultiple) {
+                        // Mode multiple : ajouter une checkbox
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.style.width = '18px';
+                        checkbox.style.height = '18px';
+                        checkbox.style.cursor = 'pointer';
+                        
+                        checkbox.onchange = (e) => {
+                            e.stopPropagation();
+                            if (checkbox.checked) {
+                                selectedItems.add(item);
+                                itemDiv.style.borderColor = '#667eea';
+                                itemDiv.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+                            } else {
+                                selectedItems.delete(item);
+                                itemDiv.style.borderColor = '#e1e5e9';
+                                itemDiv.style.backgroundColor = 'transparent';
+                            }
+                        };
+                        
+                        itemDiv.appendChild(checkbox);
+                    }
+                    
+                    const itemText = document.createElement('div');
+                    itemText.style.flex = '1';
+                    itemText.style.fontWeight = '500';
+                    itemText.style.color = '#333';
+                    itemText.textContent = String(item);
+                    
+                    itemDiv.appendChild(itemText);
+                    
+                    itemDiv.onmouseover = () => {
+                        if (!isMultiple || !selectedItems.has(item)) {
+                            itemDiv.style.borderColor = '#667eea';
+                            itemDiv.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+                        }
+                    };
+                    
+                    itemDiv.onmouseout = () => {
+                        if (!isMultiple || !selectedItems.has(item)) {
+                            itemDiv.style.borderColor = '#e1e5e9';
+                            itemDiv.style.backgroundColor = 'transparent';
+                        }
+                    };
+                    
+                    itemDiv.onclick = () => {
+                        if (isMultiple) {
+                            // Toggle checkbox
+                            const checkbox = itemDiv.querySelector('input[type="checkbox"]');
+                            checkbox.checked = !checkbox.checked;
+                            checkbox.dispatchEvent(new Event('change'));
+                        } else {
+                            // Mode simple : sélection directe
+                            console.log(`✅ Élément sélectionné: ${item}`);
+                            document.body.removeChild(modal);
+                            resolve(item);
+                        }
+                    };
+                    
+                    itemList.appendChild(itemDiv);
+                });
+            }
+            
+            const modalActions = document.createElement('div');
+            modalActions.className = 'modal-actions';
+            modalActions.style.marginTop = '20px';
+            modalActions.style.display = 'flex';
+            modalActions.style.gap = '10px';
+            modalActions.style.justifyContent = 'flex-end';
+            
+            if (isMultiple) {
+                // Bouton de validation pour le mode multiple
+                const validateButton = document.createElement('button');
+                validateButton.className = 'btn primary';
+                validateButton.textContent = 'Valider';
+                validateButton.onclick = () => {
+                    console.log(`✅ Éléments sélectionnés (${selectedItems.size}):`, Array.from(selectedItems));
+                    document.body.removeChild(modal);
+                    resolve(Array.from(selectedItems));
+                };
+                modalActions.appendChild(validateButton);
+            }
+            
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'btn-secondary';
+            cancelButton.textContent = 'Annuler';
+            cancelButton.onclick = () => {
+                console.log('❌ Sélection annulée');
+                document.body.removeChild(modal);
+                resolve(null);
+            };
+            
+            modalActions.appendChild(cancelButton);
+            
+            modalContent.appendChild(modalHeader);
+            modalContent.appendChild(itemList);
+            modalContent.appendChild(modalActions);
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Fermer le modal en cliquant à l'extérieur
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                    resolve(null);
+                }
+            };
+        });
+    }
+
     async selectFile(vault, classNames, options) {
         return new Promise((resolve) => {
             console.log(`📂 Sélection de fichier demandée pour les classes: ${classNames?.join(', ')}`);

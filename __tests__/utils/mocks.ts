@@ -75,6 +75,7 @@ export function mockApp(settings?: Partial<ISettings>): MockApp {
         selectMedia: jest.fn(),
         selectMultipleFile: jest.fn(),
         selectFile: jest.fn(),
-        selectClasse: jest.fn()
+        selectClasse: jest.fn(),
+        selectFromList: jest.fn()
     } as any;
 }

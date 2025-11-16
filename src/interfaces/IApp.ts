@@ -84,6 +84,7 @@ export interface IApp {
     selectMultipleFile(vault: any, classes: string[], options: any): Promise<any>;
     selectFile(vault: any, classes: string[], options: any): Promise<any>;
     selectClasse(vault: any, classes: string[], options: any): Promise<any>;
+    selectFromList<T>(items: T[], options: {multiple: boolean, title?: string}): Promise<T | T[] | null>;
 
     sendNotice(message: string, timeout?: number): void;
 

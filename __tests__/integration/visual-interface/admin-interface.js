@@ -641,6 +641,71 @@ class AdminInterface {
         document.getElementById('createFileModal').classList.remove('active');
     }
 
+    async createNewFile() {
+        try {
+            const classSelect = document.getElementById('newFileClass');
+            const nameInput = document.getElementById('newFileName');
+            const dataSelect = document.getElementById('newFileDataSelect');
+            
+            const className = classSelect.value;
+            if (!className) {
+                this.showError('Veuillez sélectionner une classe');
+                return;
+            }
+            
+            // Déterminer le nom du fichier
+            let fileName = '';
+            const dataSelectGroup = document.getElementById('newFileDataSelectGroup');
+            if (dataSelectGroup.style.display !== 'none' && dataSelect.value) {
+                // Créer depuis les données
+                fileName = dataSelect.value;
+                const classData = this.classesWithData.get(className);
+                const selectedData = classData.find(item => (item.nom || item.name) === fileName);
+                
+                if (selectedData) {
+                    // Utiliser DynamicClassFactory pour créer depuis les données
+                    await this.fakeEnvironment.factory.createInstanceFromDataObject(className, selectedData, this.fakeEnvironment.vault, classData);
+                    this.showSuccess(`Fichier "${fileName}" créé avec succès depuis les données !`);
+                    this.hideCreateFileModal();
+                    await this.refreshFileTree();
+                    return;
+                }
+            } else {
+                // Créer manuellement
+                fileName = nameInput.value.trim();
+                if (!fileName) {
+                    this.showError('Veuillez entrer un nom de fichier');
+                    return;
+                }
+            }
+            
+            // Obtenir la classe TypeScript
+            const ClassConstructor = await this.fakeEnvironment.factory.getClass(className);
+            
+            // Créer le fichier via Vault.createFile (qui déclenche le populate)
+            console.log(`🚀 Création du fichier "${fileName}" de classe "${className}"...`);
+            const file = await this.fakeEnvironment.vault.createFile(ClassConstructor, fileName + '.md');
+            
+            if (file) {
+                this.showSuccess(`Fichier "${fileName}" créé avec succès !`);
+                this.hideCreateFileModal();
+                await this.refreshFileTree();
+                
+                // Ouvrir le fichier créé
+                setTimeout(async () => {
+                    await this.loadFileContent(file);
+                }, 500);
+            } else {
+                // L'utilisateur a probablement annulé le populate
+                console.log('⚠️ Création de fichier annulée (probablement via populate)');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur lors de la création du fichier:', error);
+            this.showError('Erreur lors de la création du fichier: ' + error.message);
+        }
+    }
+
     showStatsModal() {
         const modal = document.getElementById('statsModal');
         modal.classList.add('active');
@@ -1036,7 +1101,9 @@ class AdminInterface {
             const className = metadata.Classe || 'Unknown';
             
             // Récupérer le contenu brut
-            const content = await file.getContent();
+            // Si file est une instance File du vault, utiliser file.file pour obtenir IFile
+            const iFile = file.file || file;
+            const content = await this.fakeEnvironment.app.readFile(iFile);
             
             // Créer l'affichage
             mainContent.innerHTML = '';
@@ -1226,7 +1293,8 @@ class AdminInterface {
                     const editor = document.getElementById('markdownEditor');
                     if (editor) {
                         await new Promise(resolve => setTimeout(resolve, 200));
-                        const updatedContent = await file.getContent();
+                        const iFile = file.file || file;
+                        const updatedContent = await this.fakeEnvironment.app.readFile(iFile);
                         console.log('📥 Contenu mis à jour récupéré, longueur:', updatedContent.length);
                         editor.value = updatedContent;
                         
@@ -1595,6 +1663,7 @@ document.addEventListener('click', function(event) {
 });
 
 // Raccourci clavier Ctrl+L pour créer/rechercher un lieu
+// Raccourci clavier Ctrl+P pour créer/rechercher une personne
 document.addEventListener('keydown', function(event) {
     // Vérifier si Ctrl+L est pressé (ou Cmd+L sur Mac)
     if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
@@ -1604,6 +1673,17 @@ document.addEventListener('keydown', function(event) {
         
         if (adminInterface && adminInterface.fakeEnvironment) {
             showLieuModal();
+        }
+    }
+    
+    // Vérifier si Ctrl+P est pressé (ou Cmd+P sur Mac)
+    if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
+        event.preventDefault(); // Empêcher le comportement par défaut du navigateur (impression)
+        
+        console.log('⌨️ Raccourci Ctrl+P détecté - Ouverture du modal Personne');
+        
+        if (adminInterface && adminInterface.fakeEnvironment) {
+            showPersonneModal();
         }
     }
 });
@@ -1916,6 +1996,244 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// ========== MODAL PERSONNE ==========
+let existingPersonnes = [];
+
+async function showPersonneModal() {
+    const modal = document.getElementById('personneModal');
+    if (!modal || !adminInterface || !adminInterface.fakeEnvironment) return;
+    
+    modal.classList.add('active');
+    
+    // Charger les données
+    await loadPersonnesData();
+    
+    // Focus sur le champ de recherche
+    setTimeout(() => {
+        const searchInput = document.getElementById('personneSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+            
+            // Afficher message initial
+            document.getElementById('personneResultsContainer').innerHTML = `
+                <div class="no-results">
+                    <h4>🔍 Recherche de personnes</h4>
+                    <p>Tapez le nom d'une personne ou cliquez sur "Créer une nouvelle personne"</p>
+                </div>
+            `;
+            
+            // Ajouter l'écouteur de recherche
+            searchInput.oninput = (e) => searchPersonnes(e.target.value);
+            
+            // Rechercher au clavier (Enter pour sélectionner le premier résultat)
+            searchInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    const firstItem = document.querySelector('.personne-item');
+                    if (firstItem) {
+                        firstItem.click();
+                    }
+                }
+            };
+        }
+    }, 100);
+}
+
+function hidePersonneModal() {
+    const modal = document.getElementById('personneModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+async function loadPersonnesData() {
+    try {
+        console.log('🔄 Chargement des données de personnes...');
+        
+        // Charger les personnes existantes depuis le vault
+        const vault = adminInterface.fakeEnvironment.vault;
+        const allFiles = vault.app.getAllFiles();
+        
+        // Filtrer les fichiers Personne
+        const personneFiles = [];
+        for (const file of allFiles) {
+            const metadata = await vault.app.getMetadata(file);
+            if (metadata && metadata.Classe === 'Personne') {
+                personneFiles.push({
+                    nom: metadata.nom || file.name.replace('.md', ''),
+                    prenom: metadata.prenom || '',
+                    institution: metadata.institution || null,
+                    poste: metadata.poste || null,
+                    email: metadata.email || null,
+                    statut: metadata.statut || null,
+                    path: file.path,
+                    existing: true
+                });
+            }
+        }
+        
+        existingPersonnes = personneFiles;
+        console.log(`✅ ${existingPersonnes.length} personnes existantes chargées`);
+        
+    } catch (error) {
+        console.error('❌ Erreur lors du chargement des personnes:', error);
+        const container = document.getElementById('personneResultsContainer');
+        if (container) {
+            container.innerHTML = '<div class="error">Erreur lors du chargement des personnes: ' + error.message + '</div>';
+        }
+    }
+}
+
+function searchPersonnes(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    const container = document.getElementById('personneResultsContainer');
+    
+    console.log(`🔍 Recherche de: "${term}"`);
+    
+    if (!term) {
+        // Afficher le bouton pour créer une nouvelle personne
+        container.innerHTML = `
+            <div class="no-results">
+                <h4>🔍 Recherche de personnes</h4>
+                <p>Tapez le nom d'une personne pour rechercher...</p>
+            </div>
+            <div class="results-section">
+                <div class="personne-item create-item" onclick="createNewPersonneFromSearch('')">
+                    <div class="personne-icon">➕</div>
+                    <div class="personne-info">
+                        <div class="personne-name">Créer une nouvelle personne</div>
+                        <div class="personne-meta">
+                            <span>Cliquez pour créer avec le formulaire</span>
+                        </div>
+                    </div>
+                    <div class="personne-action">Créer →</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Rechercher dans les personnes existantes
+    const existingMatches = existingPersonnes.filter(personne => {
+        const fullName = `${personne.prenom} ${personne.nom}`.toLowerCase();
+        return fullName.includes(term) ||
+               personne.nom.toLowerCase().includes(term) ||
+               (personne.prenom && personne.prenom.toLowerCase().includes(term)) ||
+               (personne.email && personne.email.toLowerCase().includes(term)) ||
+               (personne.institution && personne.institution.toLowerCase().includes(term));
+    });
+    
+    console.log(`📂 ${existingMatches.length} personnes existantes trouvées`);
+    
+    // Construire le HTML des résultats
+    let html = '';
+    
+    // Personnes existantes
+    if (existingMatches.length > 0) {
+        html += '<div class="results-section">';
+        html += `<div class="results-header">📂 Personnes existantes (${existingMatches.length})</div>`;
+        html += existingMatches.slice(0, 10).map(personne => {
+            const fullName = personne.prenom ? `${personne.prenom} ${personne.nom}` : personne.nom;
+            return `
+                <div class="personne-item" onclick="openExistingPersonne('${personne.path.replace(/'/g, "\\'")}')">
+                    <div class="personne-icon">👤</div>
+                    <div class="personne-info">
+                        <div class="personne-name">${escapeHtml(fullName)}</div>
+                        <div class="personne-meta">
+                            ${personne.institution ? `<span>🏢 ${escapeHtml(personne.institution)}</span>` : ''}
+                            ${personne.poste ? `<span>💼 ${escapeHtml(personne.poste)}</span>` : ''}
+                            ${personne.statut ? `<span class="personne-badge statut-${personne.statut}">${personne.statut}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="personne-action">Ouvrir →</div>
+                </div>
+            `;
+        }).join('');
+        html += '</div>';
+    }
+    
+    // Bouton pour créer une nouvelle personne avec le terme de recherche
+    html += '<div class="results-section">';
+    html += `<div class="results-header">✨ Créer une nouvelle personne</div>`;
+    html += `
+        <div class="personne-item create-item" onclick='createNewPersonneFromSearch("${escapeHtml(term)}")'>
+            <div class="personne-icon">➕</div>
+            <div class="personne-info">
+                <div class="personne-name">Créer : ${escapeHtml(term)}</div>
+                <div class="personne-meta">
+                    <span>Cliquez pour créer avec le formulaire</span>
+                </div>
+            </div>
+            <div class="personne-action">Créer →</div>
+        </div>
+    `;
+    html += '</div>';
+    
+    container.innerHTML = html;
+    console.log(`✅ Affichage de ${existingMatches.length} résultats`);
+}
+
+async function openExistingPersonne(filePath) {
+    console.log('📂 Ouverture de la personne existante:', filePath);
+    hidePersonneModal();
+    
+    if (adminInterface) {
+        await adminInterface.openFileFromPath(filePath);
+    }
+}
+
+async function createNewPersonneFromSearch(searchTerm) {
+    console.log('✨ Création d\'une nouvelle personne avec le nom:', searchTerm);
+    
+    hidePersonneModal();
+    
+    // Créer directement le fichier via Vault.createFile pour lancer le populate
+    if (adminInterface && adminInterface.fakeEnvironment) {
+        try {
+            const vault = adminInterface.fakeEnvironment.vault;
+            const factory = adminInterface.fakeEnvironment.factory;
+            
+            if (!factory) {
+                throw new Error('DynamicClassFactory non disponible');
+            }
+            
+            // Récupérer la classe Personne
+            const PersonneClass = await factory.getClass('Personne');
+            console.log('📦 Classe récupérée:', PersonneClass?.name || 'undefined');
+            
+            // Créer le fichier avec le nom fourni (le populate va se lancer automatiquement)
+            console.log(`🚀 Création du fichier "${searchTerm}" de classe "Personne"...`);
+            const file = await vault.createFile(PersonneClass, searchTerm + '.md');
+            
+            if (file) {
+                adminInterface.showSuccess(`Personne "${searchTerm}" créée avec succès !`);
+                await adminInterface.refreshFileTree();
+                
+                // Attendre que toutes les opérations de déplacement et mise à jour soient terminées
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Récupérer le fichier à son emplacement final
+                const finalFile = await adminInterface.fakeEnvironment.app.getFile(file.path);
+                
+                // Ouvrir le fichier créé
+                if (finalFile) {
+                    await adminInterface.loadFileContent(finalFile);
+                } else {
+                    console.warn('⚠️ Impossible de charger le fichier créé');
+                }
+            } else {
+                // L'utilisateur a annulé durant le populate
+                console.log('⚠️ Création annulée par l\'utilisateur');
+            }
+        } catch (error) {
+            console.error('❌ Erreur lors de la création de la personne:', error);
+            adminInterface.showError(`Erreur lors de la création : ${error.message}`);
+        }
+    }
+}
+
+// ========== FIN MODAL PERSONNE ==========
 
 function showStatsModal() {
     if (adminInterface) {

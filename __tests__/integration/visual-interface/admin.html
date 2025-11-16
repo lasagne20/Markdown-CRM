@@ -589,6 +589,10 @@
                     <option value="">-- Sélectionner un lieu --</option>
                 </select>
             </div>
+            <div class="modal-actions">
+                <button class="btn primary" onclick="adminInterface.createNewFile()">Créer</button>
+                <button class="btn-secondary" onclick="hideCreateFileModal()">Annuler</button>
+            </div>
         </div>
     </div>
 
@@ -632,6 +636,35 @@
             
             <div class="modal-actions">
                 <button class="btn-secondary" onclick="hideLieuModal()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Personne (similaire au modal Lieu) -->
+    <div class="modal" id="personneModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 class="modal-title">👤 Rechercher ou Créer une Personne</h3>
+            </div>
+            
+            <!-- Search input -->
+            <div class="form-group">
+                <input 
+                    type="text" 
+                    class="form-input" 
+                    id="personneSearchInput" 
+                    placeholder="🔍 Rechercher une personne..."
+                    autocomplete="off"
+                    style="font-size: 1.1rem; padding: 14px; border: 2px solid #667eea;">
+            </div>
+            
+            <!-- Results container -->
+            <div id="personneResultsContainer" style="max-height: 500px; overflow-y: auto; margin-top: 10px;">
+                <div class="loading">Tapez pour rechercher...</div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="hidePersonneModal()">Fermer</button>
             </div>
         </div>
     </div>
@@ -742,6 +775,88 @@
             background: rgba(102, 126, 234, 0.1);
             border-radius: 6px;
             margin-bottom: 8px;
+        }
+        
+        /* Styles pour le modal Personne (réutilise les classes lieu-*) */
+        .personne-item {
+            padding: 14px;
+            margin: 6px 0;
+            border-radius: 8px;
+            border: 2px solid #e1e5e9;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+        }
+        
+        .personne-item:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateX(4px);
+        }
+        
+        .personne-item.create-item {
+            border-color: #27ae60;
+            background: rgba(39, 174, 96, 0.05);
+        }
+        
+        .personne-item.create-item:hover {
+            border-color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+        }
+        
+        .personne-icon {
+            font-size: 1.8rem;
+            width: 36px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .personne-info {
+            flex: 1;
+        }
+        
+        .personne-name {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .personne-meta {
+            font-size: 0.85rem;
+            color: #666;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .personne-badge {
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .personne-badge.statut-Actif { background: #27ae60; }
+        .personne-badge.statut-Inactif { background: #95a5a6; }
+        .personne-badge.statut-En\ congé { background: #f39c12; }
+        .personne-badge.statut-Parti { background: #e74c3c; }
+        
+        .personne-action {
+            font-size: 0.9rem;
+            color: #667eea;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .create-item .personne-action {
+            color: #27ae60;
         }
     </style>
 

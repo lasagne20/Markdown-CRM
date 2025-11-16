@@ -1,6 +1,6 @@
 import * as yaml from 'js-yaml';
 import { Classe } from '../vault/Classe';
-import { IApp, IFile } from 'interfaces';
+import { IApp, IFile } from '../interfaces/IApp';
 import { AdressProperty } from '../properties/AdressProperty';
 import { BooleanProperty } from '../properties/BooleanProperty';
 import { ClasseProperty } from '../properties/ClasseProperty';
@@ -39,8 +39,12 @@ export class ConfigLoader {
      * Load a class configuration from YAML file
      */
     async loadClassConfig(className: string): Promise<ClassConfig> {
+        console.log(`🔍 Chargement de la config pour ${className}, cache:`, this.loadedConfigs.has(className));
+        
         if (this.loadedConfigs.has(className)) {
-            return this.loadedConfigs.get(className)!;
+            const cached = this.loadedConfigs.get(className)!;
+            console.log(`📦 Config depuis cache pour ${className}, populate:`, cached.populate);
+            return cached;
         }
 
         try {
@@ -333,7 +337,7 @@ export class ConfigLoader {
         
         for (const dataSource of config.data) {
             try {
-                const dataFilePath = `${this.configPath}/../data/${dataSource.file}`;
+                const dataFilePath = `${this.configPath}/${dataSource.file}`;
                 const file = await this.vault.app.getFile(dataFilePath);
                 
                 if (!file) {

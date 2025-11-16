@@ -28,7 +28,8 @@ export class ClassConfigManager {
 
         const config = await this.configLoader.loadClassConfig(className);
         
-        class DynamicClasse extends Classe {
+        // Create a dynamic class with the proper name using Object.defineProperty
+        const DynamicClasseBase = class extends Classe {
             public override name = config.className || className;
             public override icon = config.classIcon || '📄';
             
@@ -41,17 +42,17 @@ export class ClassConfigManager {
                 
                 // Initialize instance properties from static configuration
                 this.properties = [];
-                for (const [key, property] of Object.entries(DynamicClasse.Properties)) {
+                for (const [key, property] of Object.entries(DynamicClasseBase.Properties)) {
                     this.properties.push(property);
                 }
             }
 
-            static getConstructor(): typeof DynamicClasse {
-                return DynamicClasse;
+            static getConstructor(): typeof DynamicClasseBase {
+                return DynamicClasseBase;
             }
 
-            getConstructor(): typeof DynamicClasse {
-                return DynamicClasse;
+            getConstructor(): typeof DynamicClasseBase {
+                return DynamicClasseBase;
             }
 
             async populate(...args: any[]): Promise<void> {
@@ -336,24 +337,27 @@ export class ClassConfigManager {
 
         // Initialize static properties from parent configuration
         if (config.parent?.property) {
-            DynamicClasse.parentPropertyName = config.parent.property;
+            DynamicClasseBase.parentPropertyName = config.parent.property;
         }
         
         if (config.parent?.folder) {
-            DynamicClasse.parentFolderName = config.parent.folder;
+            DynamicClasseBase.parentFolderName = config.parent.folder;
         }
 
-        console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasse.parentPropertyName);
-        console.log(`📁 Dossier parent pour ${className}:`, DynamicClasse.parentFolderName);
+        console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasseBase.parentPropertyName);
+        console.log(`📁 Dossier parent pour ${className}:`, DynamicClasseBase.parentFolderName);
         console.log("Propriétés : ", config.properties);
 
         // Initialize all properties
         for (const [key, propConfig] of Object.entries(config.properties)) {
-                DynamicClasse.Properties[key] = this.configLoader.createProperty(propConfig);
+                DynamicClasseBase.Properties[key] = this.configLoader.createProperty(propConfig);
         }
 
-        this.loadedClasses.set(className, DynamicClasse);
-        return DynamicClasse;
+        // Set the class name to match the configuration
+        Object.defineProperty(DynamicClasseBase, 'name', { value: className });
+
+        this.loadedClasses.set(className, DynamicClasseBase);
+        return DynamicClasseBase;
     }
 
     /**

@@ -46,6 +46,13 @@ export class DynamicClassFactory {
     }
 
     /**
+     * Get class configuration by name
+     */
+    async getClassConfig(className: string) {
+        return await this.configManager.getClassConfig(className);
+    }
+
+    /**
      * Public method to create a single instance from data
      * This is a convenience wrapper for the private createInstanceFromData method
      */
@@ -354,7 +361,7 @@ export class DynamicClassFactory {
                 continue; // Skip non-dynamic data sources
             }
 
-            const dataFilePath = `${this.configManager['configLoader']['configPath']}/../data/${dataSource.file}`;
+            const dataFilePath = `${this.configManager['configLoader']['configPath']}/${dataSource.file}`;
             const watchKey = `${className}:${dataSource.file}`;
             
             // Clear existing watcher if any

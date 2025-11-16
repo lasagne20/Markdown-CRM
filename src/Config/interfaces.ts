@@ -76,6 +76,12 @@ export interface DataSourceConfig {
     dynamic?: boolean; // If true, watch for file changes and reload data automatically
 }
 
+export interface PopulateConfig {
+    property: string; // Name of the property to populate
+    title: string; // Title/prompt to show to the user
+    required?: boolean; // If true, user cannot skip this field
+}
+
 export interface ClassConfig {
     className: string;
     classIcon: string;
@@ -93,4 +99,5 @@ export interface ClassConfig {
         containers?: DisplayContainer[];
     };
     data?: DataSourceConfig[]; // Data sources for pre-populating instances
+    populate?: PopulateConfig[]; // Properties to prompt for during file creation
 }

@@ -332,6 +332,10 @@ const French = (window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l
             if (entry.isDirectory()) {
                 await this.copyDirectory(srcPath, destPath);
             } else {
+                // Force overwrite of existing files
+                if (fs.existsSync(destPath)) {
+                    fs.unlinkSync(destPath);
+                }
                 fs.copyFileSync(srcPath, destPath);
             }
         }

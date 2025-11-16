@@ -1,4 +1,5 @@
 import { DynamicClassFactory } from "../Config/DynamicClassFactory";
+import { PopulateManager } from "../Config/PopulateManager";
 import { IApp, IFile } from "../interfaces/IApp";
 import { Classe } from "./Classe";
 import { File } from "./File";
@@ -196,6 +197,32 @@ export class Vault {
             if (!classeType) { return; }
         }
         console.log("Args ; ",args)
+        
+        // Get class configuration for populate feature
+        let classConfig = null;
+        let populatedValues: { [key: string]: any } = {};
+        
+        if (Vault.dynamicClassFactory) {
+            try {
+                classConfig = await Vault.dynamicClassFactory.getClassConfig(classeType.name);
+                
+                // If populate is configured, prompt user for values before creating file
+                if (classConfig && classConfig.populate && classConfig.populate.length > 0) {
+                    const populateManager = new PopulateManager(this);
+                    const values = await populateManager.populateProperties(classConfig);
+                    
+                    if (values === null) {
+                        // User cancelled - abort file creation
+                        return undefined;
+                    }
+                    
+                    populatedValues = values;
+                }
+            } catch (error) {
+                console.warn(`Could not load populate config for ${classeType.name}:`, error);
+            }
+        }
+        
         if (!name) {
             let classe = await this.app.selectFile(this, [classeType.name], {hint:"Entrer un nom pour ce fichier", classeArgs: args});
             // Select File call createFile if the file doesn't exist
@@ -212,6 +239,32 @@ export class Vault {
         } else {
             console.warn("Le fichier template n'existe pas :" + templatePath + ". Un fichier vide sera créé.");
         }
+        
+        // Apply populated values to template content before creating file
+        if (Object.keys(populatedValues).length > 0) {
+            console.log("📝 Injection des valeurs populate dans le template...");
+            
+            // Parse frontmatter and inject values
+            const frontmatterMatch = templateContent.match(/^---\n([\s\S]*?)\n---/);
+            if (frontmatterMatch) {
+                let frontmatter = frontmatterMatch[1];
+                
+                // Inject each populated value into frontmatter
+                for (const [propName, value] of Object.entries(populatedValues)) {
+                    // Check if property exists in frontmatter
+                    const propRegex = new RegExp(`^${propName}:\\s*.*$`, 'm');
+                    if (propRegex.test(frontmatter)) {
+                        // Replace existing value
+                        frontmatter = frontmatter.replace(propRegex, `${propName}: ${value}`);
+                        console.log(`  ✓ ${propName} injecté dans le template`);
+                    }
+                }
+                
+                // Reconstruct template with updated frontmatter
+                templateContent = `---\n${frontmatter}\n---` + templateContent.substring(frontmatterMatch[0].length);
+            }
+        }
+        
         let file: File | null = null;
         try {
             file = new File(this, await this.app.createFile(newFilePath, templateContent));
@@ -242,6 +295,19 @@ export class Vault {
                 console.error("Classe non trouvée pour le fichier : " + file.path);
                 return;
             }
+            
+            // Apply populated values to the classe
+            if (Object.keys(populatedValues).length > 0) {
+                console.log("🎨 Application des valeurs pré-remplies...");
+                for (const [propName, value] of Object.entries(populatedValues)) {
+                    const property = classe.getProperty(propName);
+                    if (property) {
+                        await classe.updatePropertyValue(propName, value);
+                        console.log(`  ✓ ${propName}: ${value}`);
+                    }
+                }
+            }
+            
             await classe.onCreate();
             await classe.onUpdate();
             console.log("Classe créée : " + classe.name);

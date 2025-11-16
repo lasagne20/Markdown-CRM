@@ -9,6 +9,13 @@ parent:
     property: institution
     folder: Personnes
 
+populate:
+  - property: institution
+    title: "Choisir une institution"
+
+  - property: statut
+    title: "Choisir un statut"
+
 # Configuration des propriétés
 properties:
   - name: nom

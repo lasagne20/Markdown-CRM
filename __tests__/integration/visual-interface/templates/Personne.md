@@ -1,14 +1,15 @@
 ---
-nom: 
-prenom: 
-institution: 
-poste: 
-email: 
-telephone: 
-dateEntree: 
+Classe: Personne
+nom: ""
+prenom: ""
+institution: ""
+poste: ""
+email: ""
+telephone: ""
+dateEntree: ""
 statut: Actif
 competences: []
-notes: 
+notes: ""
 ---
 
 # {{prenom}} {{nom}}

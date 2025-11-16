@@ -34,6 +34,7 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 
 ### Feature Guides
 - **[Static Properties](./Static-Properties.md)** - Non-editable fields guide
+- **[Populate Feature](./Populate-Feature.md)** - Interactive file creation with property prompts
 - **[Quick Reference: Static Properties](./QUICK-REFERENCE-Static-Properties.md)** - Quick snippets and examples
 
 ---
@@ -53,6 +54,7 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 ### Configuration
 - [Display Configuration](./Display-Configuration.md) - Visual display setup
 - [Static Properties](./Static-Properties.md) - Non-editable fields
+- [Populate Feature](./Populate-Feature.md) - Interactive file creation
 - [Property Types](./Property-Types.md) - Available property types
 
 ### Development
@@ -84,11 +86,13 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 **Start here:**
 1. [Installation Guide](./Installation.md) - Get set up
 2. [Display Configuration](./Display-Configuration.md) - Configure your classes
-3. [Quick Reference: Static Properties](./QUICK-REFERENCE-Static-Properties.md) - Use non-editable fields
+3. [Populate Feature](./Populate-Feature.md) - Create files interactively
+4. [Quick Reference: Static Properties](./QUICK-REFERENCE-Static-Properties.md) - Use non-editable fields
 
 **Key features:**
 - 📝 Markdown-based data storage
 - 🎨 Customizable displays
+- 🚀 Interactive file creation with populate
 - 🔒 Protected fields (static properties)
 
 ### I'm a Developer / Integrator
@@ -134,6 +138,7 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 - [Installation Guide](./Installation.md)
 - [Display Configuration](./Display-Configuration.md)
 - [Static Properties Guide](./Static-Properties.md)
+- [Populate Feature Guide](./Populate-Feature.md)
 - [Migration Guide](../MIGRATION-GUIDE.md)
 
 #### Reference Documentation
@@ -164,6 +169,7 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 ### Common Questions
 - **What is Markdown CRM?**: [Why Markdown CRM?](./Why-Markdown-CRM.md)
 - **What's new?**: [Release Notes](../RELEASE-NOTES.md)
+- **How to create files interactively?**: [Populate Feature](./Populate-Feature.md)
 - **How to make fields read-only?**: [Static Properties](./Static-Properties.md)
 - **What properties are available?**: [Property Types](./Property-Types.md)
 
@@ -190,6 +196,7 @@ docs/
 ├── Display-Configuration.md              # Display setup
 ├── Property-Types.md                     # Property reference
 ├── Static-Properties.md                  # Static properties guide
+├── Populate-Feature.md                   # Populate feature guide
 ├── QUICK-REFERENCE-Static-Properties.md  # Quick reference
 └── Test-Fixes-Nov-2025.md               # Test documentation
 
@@ -245,8 +252,9 @@ Root:
 ### Intermediate Path
 1. [Property Types](./Property-Types.md) - 20 min read
 2. [Static Properties](./Static-Properties.md) - 15 min read
-3. [Quick Reference](./QUICK-REFERENCE-Static-Properties.md) - 5 min
-4. Configure advanced properties
+3. [Populate Feature](./Populate-Feature.md) - 20 min read
+4. [Quick Reference](./QUICK-REFERENCE-Static-Properties.md) - 5 min
+5. Configure advanced properties
 
 ### Advanced Path
 1. [Architecture](./Architecture.md) - 30 min read

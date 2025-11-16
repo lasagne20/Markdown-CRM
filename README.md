@@ -21,12 +21,13 @@
 
 ### ✨ November 2025
 
-- **🔒 Static Properties** - New feature: mark fields as non-editable with `static: true`
+- **� Populate Feature** - Interactive file creation with property prompts
+- **�🔒 Static Properties** - New feature: mark fields as non-editable with `static: true`
 - **📊 Dataset Expansion** - 36,360 French territories (regions, departments, communes)
 - **✅ Test Suite** - 1,081 tests passing (100% success rate)
 - **🐛 Bug Fixes** - Multiple test corrections and improvements
 
-[See full changelog](CHANGELOG.md) • [Read documentation](docs/Static-Properties.md)
+[See full changelog](CHANGELOG.md) • [Read populate docs](docs/Populate-Feature.md) • [Read static properties docs](docs/Static-Properties.md)
 
 ---
 
@@ -59,6 +60,7 @@ Create custom fields for any data type:
 - **📊 Objects & Nested Data** - Complex structured data
 - **🧮 Formulas** - Calculated fields with custom logic
 - **🔒 Static Properties** - Mark fields as non-editable after creation
+- **🚀 Interactive Populate** - Prompt users for values during file creation
 
 ### 🎭 Type-Safe Architecture
 
@@ -67,8 +69,7 @@ Create custom fields for any data type:
 - **Property Inheritance** - Share configurations across classes
 - **Extensible System** - Add new property types easily
 - **Static Field Support** - Protect critical fields from modification
-- **Property Inheritance** - Share configurations across classes
-- **Extensible System** - Add new property types easily
+- **Populate Manager** - Guide users through data entry with smart prompts
 
 ### 🗂️ Flexible Data Organization
 
