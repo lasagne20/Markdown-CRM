@@ -111,3 +111,76 @@ display:
             - dateCreation
             - nombreEmployes
             - description
+    
+    - type: table
+      title: "Membres de l'institution"
+      className: "members-table"
+      source:
+        class: Personne
+        filter: children
+      columns:
+        - name: "Fichier"
+          propertyName: _fileName
+          filter: text
+          sort: true
+        - name: "Nom"
+          propertyName: nom
+          filter: text
+          sort: true
+        - name: "Poste"
+          propertyName: poste
+          filter: select
+          sort: true
+        - name: "Email"
+          propertyName: email
+          filter: text
+          sort: true
+        - name: "Téléphone"
+          propertyName: telephone
+          filter: false
+          sort: false
+      totals:
+        - column: "Nombre de membres"
+          formula: count
+    
+    - type: table
+      title: "Projets de l'institution"
+      className: "projects-table"
+      source:
+        class: Projet
+        filter: children
+      columns:
+        - name: "Fichier"
+          propertyName: _fileName
+          filter: text
+          sort: true
+        - name: "Nom du projet"
+          propertyName: nom
+          filter: text
+          sort: true
+        - name: "Statut"
+          propertyName: statut
+          filter: select
+          sort: true
+        - name: "Priorité"
+          propertyName: priorite
+          filter: false
+          sort: true
+        - name: "Progression"
+          propertyName: pourcentageCompletion
+          filter: false
+          sort: true
+        - name: "Budget"
+          propertyName: budget
+          filter: false
+          sort: true
+        - name: "Responsable"
+          propertyName: responsable
+          filter: text
+          sort: true
+      totals:
+        - column: "Total projets"
+          formula: count
+        - column: "Total budget"
+          formula: sum
+          propertyName: budget

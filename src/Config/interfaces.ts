@@ -34,13 +34,35 @@ export interface TabConfig {
     properties: string[];
 }
 
+export interface TableColumnConfig {
+    name: string;
+    propertyName?: string;
+    filter?: 'text' | 'select' | 'multi-select' | false;
+    sort?: boolean;
+}
+
+export interface TableSourceConfig {
+    class: string;
+    filter: 'all' | 'children' | 'parent' | 'siblings' | 'roots';
+}
+
+export interface TableTotalConfig {
+    column: string;
+    formula: 'sum' | 'average' | 'avg' | 'count' | 'min' | 'max' | string;
+    propertyName?: string; // Property to calculate on (for sum, avg, min, max)
+}
+
 export interface DisplayContainer {
-    type: 'line' | 'column' | 'custom' | 'tabs' | 'fold';
+    type: 'line' | 'column' | 'custom' | 'tabs' | 'fold' | 'table';
     properties?: string[];
     className?: string;
     title?: string;
     tabs?: TabConfig[]; // Pour le type tabs
     foldTitle?: string; // Pour le type fold
+    // Pour le type table
+    source?: TableSourceConfig;
+    columns?: TableColumnConfig[];
+    totals?: TableTotalConfig[];
 }
 
 export interface SubClassConfig {

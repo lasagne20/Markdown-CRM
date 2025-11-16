@@ -7,6 +7,8 @@ import { Property } from '../properties/Property';
 import { SubClassProperty } from '../properties/SubClassProperty';
 import { ConfigLoader } from './ConfigLoader';
 import { ClassConfig, DisplayContainer } from './interfaces';
+import { DynamicTable } from '../display/DynamicTable';
+
 
 export class ClassConfigManager {
     private configLoader: ConfigLoader;
@@ -113,6 +115,10 @@ export class ClassConfigManager {
                     case 'fold':
                         await this.createFoldContainer(container, containerConfig);
                         break;
+                    
+                    case 'table':
+                        await this.createTableContainer(container, containerConfig, this);
+                        break;
                         
                     default:
                         await this.addPropertiesToContainer(container, containerConfig.properties);
@@ -207,6 +213,124 @@ export class ClassConfigManager {
                     foldContent.classList.toggle("collapsed");
                     foldHeader.classList.toggle("expanded");
                 });
+            }
+            
+            private async createTableContainer(container: HTMLElement, containerConfig: DisplayContainer, instance: Classe): Promise<void> {
+                if (!containerConfig.source) {
+                    console.error('Table container requires a source configuration');
+                    return;
+                }
+                
+                container.classList.add("metadata-table-container");
+                
+                // Get files based on filter
+                const files = await this.getFilesForTable(containerConfig.source, instance);
+                
+                // Create table container
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'data-table-container';
+                
+                if (files.length === 0) {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = 'data-table-empty';
+                    emptyState.textContent = `Aucun(e) ${containerConfig.source.class} trouvé(e)`;
+                    tableContainer.appendChild(emptyState);
+                    container.appendChild(tableContainer);
+                    return;
+                }
+                
+                // Use DynamicTable class to create and configure the table
+                const dynamicTable = new DynamicTable(files, containerConfig, this.vault);
+                const table = dynamicTable.getTable();
+                
+                tableContainer.appendChild(table);
+                container.appendChild(tableContainer);
+            }
+            
+            private async getFilesForTable(source: any, instance: Classe): Promise<Classe[]> {
+                // Get the target class from the vault's dynamicClassFactory
+                let targetClassConstructor: typeof Classe;
+                try {
+                    targetClassConstructor = await this.vault.getClasseFromName(source.class) as typeof Classe;
+                } catch (error) {
+                    console.error(`Class ${source.class} not found:`, error);
+                    return [];
+                }
+                
+                switch (source.filter) {
+                    case 'all':
+                        // Get all instances of the class
+                        console.warn('filter: all not yet implemented');
+                        return [];
+                    
+                    case 'children':
+                        // Get files where parent = current file
+                        const children = await (instance as any).findChildren();
+                        
+                        // Filter by target class if specified
+                        if (source.class) {
+                            const filtered = children.filter((child: Classe) => {
+                                const constructorName = child.constructor.name;
+                                const staticClassName = (child.constructor as any).className;
+                                const instanceClassName = (child as any).className;
+                                const childName = child.getName();
+                                
+                                // Try multiple ways to match the class
+                                return constructorName === source.class || 
+                                       staticClassName === source.class ||
+                                       instanceClassName === source.class ||
+                                       childName === source.class ||
+                                       (child as any).name === source.class;
+                            });
+                            return filtered;
+                        }
+                        
+                        return children;
+                    
+                    case 'parent':
+                        // Get the parent file
+                        const parentFile = await (instance as any).getParentFile();
+                        return parentFile ? [parentFile as any] : [];
+                    
+                    case 'siblings':
+                        // Get files with the same parent
+                        const parent = await (instance as any).getParentFile();
+                        if (!parent) return [];
+                        console.warn('filter: siblings not yet fully implemented');
+                        return [];
+                    
+                    case 'roots':
+                        // Get files without a parent
+                        console.warn('filter: roots not yet implemented');
+                        return [];
+                    
+                    default:
+                        return [];
+                }
+            }
+            
+            private getFormulaFunction(formula: string): (values: any[]) => any {
+                switch (formula) {
+                    case 'sum':
+                        return (values) => values.reduce((a, b) => a + b, 0);
+                    case 'average':
+                    case 'avg':
+                        return (values) => values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                    case 'count':
+                        return (values) => values.length;
+                    case 'min':
+                        return (values) => Math.min(...values);
+                    case 'max':
+                        return (values) => Math.max(...values);
+                    default:
+                        // For custom formulas, try to evaluate as JavaScript
+                        try {
+                            return new Function('values', `return ${formula}`) as (values: any[]) => any;
+                        } catch (e) {
+                            console.error(`Invalid formula: ${formula}`, e);
+                            return (values) => 0;
+                        }
+                }
             }
         }
 

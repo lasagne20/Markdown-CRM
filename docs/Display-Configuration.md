@@ -10,6 +10,7 @@ The display configuration allows you to completely customize the presentation of
   - [Column - Vertical Layout](#column---vertical-layout)
   - [Tabs - Tabbed Interface](#tabs---tabbed-interface)
   - [Fold - Collapsible Section](#fold---collapsible-section)
+  - [Table - Dynamic Data Table](#table---dynamic-data-table)
 - [Complete Examples](#complete-examples)
 
 ## Basic Structure
@@ -185,6 +186,189 @@ A section that can be collapsed/expanded, useful for secondary information.
 - Infrequently used information
 - Technical details
 - Keeping interface clean
+
+### Table - Dynamic Data Table
+
+Displays related files in an interactive table with filtering, sorting, and totals.
+
+```yaml
+- type: table
+  title: "Team Members"
+  className: "members-table"
+  source:
+    class: Person
+    filter: children  # children | all | parent | siblings | roots
+  columns:
+    - name: "File"
+      propertyName: _fileName
+      filter: text
+      sort: true
+    - name: "Name"
+      propertyName: name
+      filter: text
+      sort: true
+    - name: "Role"
+      propertyName: role
+      filter: select
+      sort: true
+    - name: "Email"
+      propertyName: email
+      filter: text
+      sort: false
+  totals:
+    - column: "Total Members"
+      formula: count
+```
+
+**Configuration Options:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `source.class` | string | ✅ | Class name to query |
+| `source.filter` | string | ✅ | Filter type (see below) |
+| `columns` | array | ✅ | Column definitions |
+| `columns[].name` | string | ✅ | Column header text |
+| `columns[].propertyName` | string | ✅ | Property to display |
+| `columns[].filter` | string/boolean | ❌ | Filter type: `text`, `select`, `false` |
+| `columns[].sort` | boolean | ❌ | Enable sorting (default: true) |
+| `totals` | array | ❌ | Total calculations |
+| `totals[].column` | string | ✅ | Label for total |
+| `totals[].formula` | string | ✅ | Formula: `count`, `sum`, `avg`, `min`, `max` |
+| `totals[].propertyName` | string | ❌* | Property for calculation |
+
+*Required for `sum`, `avg`, `min`, `max` formulas
+
+**Source Filter Types:**
+
+- `children`: Files that are children of the current file
+- `all`: All files of the specified class
+- `parent`: Parent file of the current file
+- `siblings`: Files at the same level
+- `roots`: Top-level files (no parent)
+
+**Result:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Team Members                                                │
+├─────────────────────────────────────────────────────────────┤
+│ File ▼      │ Name ▼      │ Role ▼      │ Email           │
+├─────────────┼─────────────┼─────────────┼─────────────────┤
+│ [Filter...] │ [Filter...] │ [All ▼]     │ [Filter...]     │
+├─────────────┼─────────────┼─────────────┼─────────────────┤
+│ John Doe    │ John Doe    │ Developer   │ john@example.com│
+│ Jane Smith  │ Jane Smith  │ Designer    │ jane@example.com│
+│ Bob Wilson  │ Bob Wilson  │ Manager     │ bob@example.com │
+├─────────────┼─────────────┼─────────────┼─────────────────┤
+│ Total Members: 3                                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Features:**
+
+1. **Interactive Filtering**
+   - Text filters: Type to filter
+   - Select filters: Dropdown with unique values
+   - Filters work in combination
+
+2. **Column Sorting**
+   - Click column header to sort
+   - Click again to reverse
+   - Visual indicators (▲/▼)
+
+3. **Clickable File Names**
+   - First column (`_fileName`) is automatically added
+   - Clicking navigates to the file
+
+4. **Totals Row**
+   - Multiple totals on one row
+   - Positioned in respective columns
+   - Auto-formats currency (€) for budget/price fields
+
+**Formula Examples:**
+
+```yaml
+totals:
+  # Count rows
+  - column: "Total Projects"
+    formula: count
+  
+  # Sum numeric property
+  - column: "Total Budget"
+    formula: sum
+    propertyName: budget
+  
+  # Average calculation
+  - column: "Average Score"
+    formula: avg
+    propertyName: score
+  
+  # Find minimum
+  - column: "Min Price"
+    formula: min
+    propertyName: price
+  
+  # Find maximum
+  - column: "Max Value"
+    formula: max
+    propertyName: value
+```
+
+**Complete Example:**
+
+```yaml
+- type: table
+  title: "Company Projects"
+  className: "projects-table"
+  source:
+    class: Project
+    filter: children
+  columns:
+    - name: "File"
+      propertyName: _fileName
+      filter: text
+      sort: true
+    - name: "Project Name"
+      propertyName: name
+      filter: text
+      sort: true
+    - name: "Status"
+      propertyName: status
+      filter: select
+      sort: true
+    - name: "Priority"
+      propertyName: priority
+      filter: select
+      sort: true
+    - name: "Progress"
+      propertyName: completion
+      filter: false
+      sort: true
+    - name: "Budget"
+      propertyName: budget
+      filter: false
+      sort: true
+    - name: "Manager"
+      propertyName: manager
+      filter: text
+      sort: true
+  totals:
+    - column: "Total Projects"
+      formula: count
+    - column: "Total Budget"
+      formula: sum
+      propertyName: budget
+    - column: "Average Progress"
+      formula: avg
+      propertyName: completion
+```
+
+**Best for:**
+- Listing related records
+- Project/task management
+- Team member directories
+- Budget tracking
+- Inventory lists
+- Any tabular data with relationships
 
 ## Complete Examples
 

@@ -190,6 +190,13 @@ export class File implements IFile {
                 return;
             }
             
+            // Check if value actually changed BEFORE assignment
+            const oldValue = frontmatter[key];
+            if (JSON.stringify(oldValue) === JSON.stringify(value)) {
+                this.lock = false;
+                return; // No change, skip write and wait
+            }
+            
             frontmatter[key] = value;
             
             // Options pour dump : utiliser le format YAML multi-ligne pour les tableaux

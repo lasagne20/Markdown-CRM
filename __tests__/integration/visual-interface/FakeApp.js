@@ -1429,9 +1429,11 @@ export class FakeApp {
         console.log(`⚙️ Paramètre défini: ${key} = ${value}`);
     }
 
-    open(absoluteMediaPath) {
-        console.log(`🔗 Ouverture: ${absoluteMediaPath}`);
-        window.open(absoluteMediaPath, '_blank');
+    open(filePath) {
+        console.log(`🔗 Ouverture du fichier: ${filePath}`);
+        // Navigate to the admin interface with the file parameter
+        const url = this.getUrl(filePath);
+        window.location.href = url;
     }
 
     async waitForMetaDataCacheUpdate(callback) {

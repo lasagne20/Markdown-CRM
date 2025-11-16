@@ -7,8 +7,8 @@ priorite: Haute
 assignee:
   - - Pierre Durand
 projet: >-
-  [[/Institutions/Université Paris Tech/Sophie Bernard/Site Web Entreprise/Site
-  Web Entreprise.md|Site Web Entreprise]]
+  [[/Institutions/TechCorp Solutions/Personnes/Marie Dupont/Marie
+  Dupont.md|Marie Dupont]]
 dateEcheance: 2025-11-20T00:00:00.000Z
 tempsEstime: 24
 tempsPasse: 10
