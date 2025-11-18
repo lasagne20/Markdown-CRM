@@ -226,6 +226,7 @@ Displays related files in an interactive table with filtering, sorting, and tota
 |----------|------|----------|-------------|
 | `source.class` | string | ✅ | Class name to query |
 | `source.filter` | string | ✅ | Filter type (see below) |
+| `source.filterBy` | object | ❌ | Filter by property values (see below) |
 | `columns` | array | ✅ | Column definitions |
 | `columns[].name` | string | ✅ | Column header text |
 | `columns[].propertyName` | string | ✅ | Property to display |
@@ -245,6 +246,48 @@ Displays related files in an interactive table with filtering, sorting, and tota
 - `parent`: Parent file of the current file
 - `siblings`: Files at the same level
 - `roots`: Top-level files (no parent)
+
+**Property Value Filtering (`filterBy`):**
+
+Filter table results by specific property values. All conditions must match (AND logic).
+
+```yaml
+source:
+  class: Person
+  filter: children
+  filterBy:
+    statut: "Actif"              # Single value
+    type: ["Client", "Partner"]   # Multiple values (OR)
+    verified: true                # Boolean
+    score: 5                      # Number
+```
+
+**Examples:**
+
+```yaml
+# Show only active members
+source:
+  class: Person
+  filter: children
+  filterBy:
+    statut: "Actif"
+
+# Show clients or partners with high priority
+source:
+  class: Contact
+  filter: all
+  filterBy:
+    type: ["Client", "Partner"]
+    priorite: "Haute"
+
+# Show completed projects
+source:
+  class: Project
+  filter: children
+  filterBy:
+    statut: "Terminé"
+    archived: false
+```
 
 **Result:**
 ```

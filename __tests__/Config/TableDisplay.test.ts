@@ -311,5 +311,148 @@ display:
             expect(config.display?.containers?.[1].type).toBe('table');
             expect(config.display?.containers?.[2].type).toBe('fold');
         });
+
+        it('should parse filterBy with single value', async () => {
+            const yamlContent = `
+className: Person
+classIcon: 👤
+
+properties:
+  name:
+    type: NameProperty
+    name: name
+  statut:
+    type: SelectProperty
+    name: statut
+    options:
+      - "Actif"
+      - "Inactif"
+
+display:
+  containers:
+    - type: table
+      source:
+        class: Person
+        filter: children
+        filterBy:
+          statut: "Actif"
+      columns:
+        - name: "Name"
+          propertyName: name
+`;
+
+            vault.app.getFile = jest.fn().mockResolvedValue({ 
+                path: 'Person.yaml',
+                extension: 'yaml',
+                name: 'Person.yaml'
+            });
+            vault.app.readFile = jest.fn().mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Person');
+
+            const tableContainer = config.display?.containers?.[0];
+            expect(tableContainer?.source?.filterBy).toBeDefined();
+            expect(tableContainer?.source?.filterBy?.statut).toBe('Actif');
+        });
+
+        it('should parse filterBy with multiple values (array)', async () => {
+            const yamlContent = `
+className: Contact
+classIcon: 👤
+
+properties:
+  name:
+    type: NameProperty
+    name: name
+  type:
+    type: SelectProperty
+    name: type
+    options:
+      - "Client"
+      - "Partner"
+      - "Supplier"
+
+display:
+  containers:
+    - type: table
+      source:
+        class: Contact
+        filter: all
+        filterBy:
+          type: ["Client", "Partner"]
+      columns:
+        - name: "Name"
+          propertyName: name
+`;
+
+            vault.app.getFile = jest.fn().mockResolvedValue({ 
+                path: 'Contact.yaml',
+                extension: 'yaml',
+                name: 'Contact.yaml'
+            });
+            vault.app.readFile = jest.fn().mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Contact');
+
+            const tableContainer = config.display?.containers?.[0];
+            expect(tableContainer?.source?.filterBy).toBeDefined();
+            expect(Array.isArray(tableContainer?.source?.filterBy?.type)).toBe(true);
+            expect(tableContainer?.source?.filterBy?.type).toEqual(['Client', 'Partner']);
+        });
+
+        it('should parse filterBy with multiple properties', async () => {
+            const yamlContent = `
+className: Project
+classIcon: 📊
+
+properties:
+  name:
+    type: NameProperty
+    name: name
+  statut:
+    type: SelectProperty
+    name: statut
+  priorite:
+    type: SelectProperty
+    name: priorite
+  archived:
+    type: BooleanProperty
+    name: archived
+  score:
+    type: NumberProperty
+    name: score
+
+display:
+  containers:
+    - type: table
+      source:
+        class: Project
+        filter: children
+        filterBy:
+          statut: "En cours"
+          priorite: "Haute"
+          archived: false
+          score: 5
+      columns:
+        - name: "Name"
+          propertyName: name
+`;
+
+            vault.app.getFile = jest.fn().mockResolvedValue({ 
+                path: 'Project.yaml',
+                extension: 'yaml',
+                name: 'Project.yaml'
+            });
+            vault.app.readFile = jest.fn().mockResolvedValue(yamlContent);
+
+            const config = await configLoader.loadClassConfig('Project');
+
+            const tableContainer = config.display?.containers?.[0];
+            expect(tableContainer?.source?.filterBy).toBeDefined();
+            expect(tableContainer?.source?.filterBy?.statut).toBe('En cours');
+            expect(tableContainer?.source?.filterBy?.priorite).toBe('Haute');
+            expect(tableContainer?.source?.filterBy?.archived).toBe(false);
+            expect(tableContainer?.source?.filterBy?.score).toBe(5);
+        });
     });
 });

@@ -5,7 +5,8 @@ import { IApp } from '../interfaces/IApp';
 /**
  * PopulateManager handles prompting users for property values during file creation.
  * It supports FileProperty (selectFile), SelectProperty (selectFromList), 
- * MultiSelectProperty (selectFromList with multiple), and TextProperty (promptText).
+ * MultiSelectProperty (selectFromList with multiple), BooleanProperty (Oui/Non),
+ * and ObjectProperty (uses first FileProperty or SelectProperty found).
  */
 export class PopulateManager {
     private vault: Vault;
@@ -80,6 +81,9 @@ export class PopulateManager {
 
             case 'BooleanProperty':
                 return this.populateBooleanProperty(propertyConfig, title);
+
+            case 'ObjectProperty':
+                return this.populateObjectProperty(propertyConfig, title);
 
             default:
                 console.warn(`Populate not supported for property type: ${propertyConfig.type}`);
@@ -205,6 +209,58 @@ export class PopulateManager {
             this.app.sendNotice('Erreur lors de la sélection');
             return null;
         }
+    }
+
+    /**
+     * Populate an ObjectProperty by using the first FileProperty or SelectProperty found
+     * in its properties structure.
+     */
+    private async populateObjectProperty(
+        propertyConfig: PropertyConfig,
+        title: string
+    ): Promise<any[] | null> {
+        if (!propertyConfig.properties || Object.keys(propertyConfig.properties).length === 0) {
+            console.error('ObjectProperty must have properties defined');
+            return null;
+        }
+
+        // Find the first FileProperty or SelectProperty
+        for (const [propName, subPropConfig] of Object.entries(propertyConfig.properties)) {
+            if (subPropConfig.type === 'FileProperty') {
+                const fileValue = await this.populateFileProperty(subPropConfig, title);
+                if (fileValue === null) {
+                    return null; // User cancelled
+                }
+                
+                // Return an array with one object containing the property
+                const obj: any = {};
+                // Initialize all properties with empty values
+                for (const [key, config] of Object.entries(propertyConfig.properties)) {
+                    obj[key] = config.defaultValue || '';
+                }
+                // Set the populated value
+                obj[propName] = fileValue;
+                return [obj];
+            } else if (subPropConfig.type === 'SelectProperty') {
+                const selectValue = await this.populateSelectProperty(subPropConfig, title);
+                if (selectValue === null) {
+                    return null; // User cancelled
+                }
+                
+                // Return an array with one object containing the property
+                const obj: any = {};
+                // Initialize all properties with empty values
+                for (const [key, config] of Object.entries(propertyConfig.properties)) {
+                    obj[key] = config.defaultValue || '';
+                }
+                // Set the populated value
+                obj[propName] = selectValue;
+                return [obj];
+            }
+        }
+
+        console.warn('ObjectProperty must contain at least one FileProperty or SelectProperty for populate');
+        return null;
     }
 
     /**

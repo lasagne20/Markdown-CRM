@@ -118,6 +118,8 @@ display:
       source:
         class: Personne
         filter: children
+        filterBy:
+          statut: ["Actif", "En congé"]
       columns:
         - name: "Fichier"
           propertyName: _fileName
@@ -129,6 +131,10 @@ display:
           sort: true
         - name: "Poste"
           propertyName: poste
+          filter: select
+          sort: true
+        - name: "Statut"
+          propertyName: statut
           filter: select
           sort: true
         - name: "Email"

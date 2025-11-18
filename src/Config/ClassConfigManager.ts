@@ -258,11 +258,14 @@ export class ClassConfigManager {
                     return [];
                 }
                 
+                let files: Classe[] = [];
+                
                 switch (source.filter) {
                     case 'all':
                         // Get all instances of the class
                         console.warn('filter: all not yet implemented');
-                        return [];
+                        files = [];
+                        break;
                     
                     case 'children':
                         // Get files where parent = current file
@@ -270,7 +273,7 @@ export class ClassConfigManager {
                         
                         // Filter by target class if specified
                         if (source.class) {
-                            const filtered = children.filter((child: Classe) => {
+                            files = children.filter((child: Classe) => {
                                 const constructorName = child.constructor.name;
                                 const staticClassName = (child.constructor as any).className;
                                 const instanceClassName = (child as any).className;
@@ -283,31 +286,91 @@ export class ClassConfigManager {
                                        childName === source.class ||
                                        (child as any).name === source.class;
                             });
-                            return filtered;
+                        } else {
+                            files = children;
                         }
-                        
-                        return children;
+                        break;
                     
                     case 'parent':
                         // Get the parent file
                         const parentFile = await (instance as any).getParentFile();
-                        return parentFile ? [parentFile as any] : [];
+                        files = parentFile ? [parentFile as any] : [];
+                        break;
                     
                     case 'siblings':
                         // Get files with the same parent
                         const parent = await (instance as any).getParentFile();
-                        if (!parent) return [];
-                        console.warn('filter: siblings not yet fully implemented');
-                        return [];
+                        if (!parent) {
+                            files = [];
+                        } else {
+                            console.warn('filter: siblings not yet fully implemented');
+                            files = [];
+                        }
+                        break;
                     
                     case 'roots':
                         // Get files without a parent
                         console.warn('filter: roots not yet implemented');
-                        return [];
+                        files = [];
+                        break;
                     
                     default:
-                        return [];
+                        files = [];
                 }
+                
+                // Apply property value filters if specified
+                if (source.filterBy && Object.keys(source.filterBy).length > 0) {
+                    files = await this.filterFilesByPropertyValues(files, source.filterBy);
+                }
+                
+                return files;
+            }
+            
+            private async filterFilesByPropertyValues(files: Classe[], filters: { [propertyName: string]: string | string[] | number | boolean }): Promise<Classe[]> {
+                const filteredFiles: Classe[] = [];
+                
+                for (const file of files) {
+                    let includeFile = true;
+                    
+                    // Check each filter condition
+                    for (const [propertyName, expectedValue] of Object.entries(filters)) {
+                        const actualValue = await file.getPropertyValue(propertyName);
+                        
+                        // Handle array of acceptable values (OR condition)
+                        if (Array.isArray(expectedValue)) {
+                            const matchesAny = expectedValue.some(val => {
+                                if (typeof actualValue === 'string' && typeof val === 'string') {
+                                    return actualValue.toLowerCase() === val.toLowerCase();
+                                }
+                                return actualValue === val;
+                            });
+                            
+                            if (!matchesAny) {
+                                includeFile = false;
+                                break;
+                            }
+                        } else {
+                            // Single value comparison
+                            if (typeof actualValue === 'string' && typeof expectedValue === 'string') {
+                                // Case-insensitive string comparison
+                                if (actualValue.toLowerCase() !== expectedValue.toLowerCase()) {
+                                    includeFile = false;
+                                    break;
+                                }
+                            } else if (actualValue !== expectedValue) {
+                                // Direct comparison for numbers and booleans
+                                includeFile = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (includeFile) {
+                        filteredFiles.push(file);
+                    }
+                }
+                
+                return filteredFiles;
             }
             
             private getFormulaFunction(formula: string): (values: any[]) => any {

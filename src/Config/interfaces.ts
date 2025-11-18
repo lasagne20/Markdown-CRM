@@ -44,6 +44,7 @@ export interface TableColumnConfig {
 export interface TableSourceConfig {
     class: string;
     filter: 'all' | 'children' | 'parent' | 'siblings' | 'roots';
+    filterBy?: { [propertyName: string]: string | string[] | number | boolean }; // Filter by property values
 }
 
 export interface TableTotalConfig {
