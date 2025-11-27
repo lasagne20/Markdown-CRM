@@ -151,7 +151,8 @@ export class ObjectProperty extends Property{
      // Méthode principale pour obtenir l'affichage
      override fillDisplay(values: any, update: (value: any) => Promise<void>) {
         const container = document.createElement("div");
-        container.classList.add("metadata-object-container-"+this.name.toLowerCase());
+        container.classList.add("metadata-object-container");
+        container.classList.add("metadata-object-container-" + this.name.toLowerCase().replace(/\s+/g, '-'));
 
         // Créer l'en-tête
         this.createHeader(values, update, container);

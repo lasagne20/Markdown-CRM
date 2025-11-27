@@ -8,35 +8,35 @@ template: ComplexEntity.md
 properties:
   texte:
     type: TextProperty
-    name: Texte
+    title: Texte
     icon: 📝
     required: false
     defaultValue: "Texte par défaut"
     
   nombre:
     type: NumberProperty
-    name: Nombre
+    title: Nombre
     icon: 🔢
     required: false
     defaultValue: 42
     
   boolean:
     type: BooleanProperty
-    name: Boolean
+    title: Boolean
     icon: ✓
     required: false
     defaultValue: true
     
   date:
     type: DateProperty
-    name: Date
+    title: Date
     icon: 📅
     required: false
     defaultValue: "2024-01-01"
     
   fichier:
     type: FileProperty
-    name: Fichier
+    title: Fichier
     icon: 📎
     required: false
     defaultValue: ""
@@ -45,7 +45,7 @@ properties:
       
   select:
     type: SelectProperty
-    name: Select
+    title: Select
     icon: 🏷️
     required: false
     defaultValue: "Option 1"
@@ -56,7 +56,7 @@ properties:
       
   multiSelect:
     type: MultiSelectProperty
-    name: Multi-Select
+    title: Multi-Select
     icon: 🏷️
     required: false
     defaultValue: ["Tag1", "Tag2"]
@@ -68,7 +68,7 @@ properties:
       
   objet:
     type: ObjectProperty
-    name: Objet
+    title: Objet
     icon: 📦
     required: false
     defaultValue:

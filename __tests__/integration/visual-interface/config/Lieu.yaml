@@ -14,13 +14,13 @@ data:
 properties:
   nom:
     type: NameProperty
-    name: Nom du lieu
+    title: Nom du lieu
     icon: 📝
     required: true
     
   type:
     type: SelectProperty
-    name: Type de territoire
+    title: Type de territoire
     icon: 🗺️
     required: true
     static: true
@@ -33,30 +33,30 @@ properties:
         
   code_postal:
     type: Property
-    name: Code postal
+    title: Code postal
     icon: 📮
     
   code_insee:
     type: Property
-    name: Code INSEE
+    title: Code INSEE
     icon: 🔢
     
   population:
     type: NumberProperty
-    name: Population
+    title: Population
     icon: 👥
     format: '0,0'
     
   superficie:
     type: NumberProperty
-    name: Superficie
+    title: Superficie
     icon: 📏
     format: '0,0.00'
     unit: km²
     
   parent:
     type: FileProperty
-    name: Territoire parent
+    title: Territoire parent
     icon: 📂
     static: true
     classes:
@@ -64,54 +64,54 @@ properties:
       
   adresse:
     type: AdressProperty
-    name: Adresse
+    title: Adresse
     icon: 📍
     
   contacts:
     type: MultiFileProperty
-    name: Contacts
+    title: Contacts
     icon: 👤
     classes:
       - Personne
       
   institutions:
     type: MultiFileProperty
-    name: Institutions
+    title: Institutions
     icon: 🏢
     classes:
       - Institution
       
   projets:
     type: MultiFileProperty
-    name: Projets
+    title: Projets
     icon: 📊
     classes:
       - Projet
       
   site_web:
     type: LinkProperty
-    name: Site web
+    title: Site web
     icon: 🌐
     
   email:
     type: EmailProperty
-    name: Email
+    title: Email
     icon: 📧
     
   telephone:
     type: PhoneProperty
-    name: Téléphone
+    title: Téléphone
     icon: 📞
     
   description:
     type: TextProperty
-    name: Description
+    title: Description
     icon: 📋
     multiline: true
     
   date_creation:
     type: DateProperty
-    name: Date de création
+    title: Date de création
     icon: 📅
 
 display:

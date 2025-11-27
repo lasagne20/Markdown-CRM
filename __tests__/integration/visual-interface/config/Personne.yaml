@@ -21,21 +21,21 @@ populate:
 properties:
   nom:
     type: Property
-    name: Nom complet
+    title: Nom complet
     icon: 📝
     required: true
     defaultValue: ""
     
   prenom:
     type: TextProperty
-    name: Prénom
+    title: Prénom
     icon: 👤
     required: false
     defaultValue: ""
     
   institution:
     type: FileProperty
-    name: Institution
+    title: Institution
     icon: 🏢
     required: false
     defaultValue: ""
@@ -44,14 +44,14 @@ properties:
     
   poste:
     type: TextProperty
-    name: Poste/Fonction
+    title: Poste/Fonction
     icon: 💼
     required: false
     defaultValue: ""
     
   email:
     type: EmailProperty
-    name: Email professionnel
+    title: Email professionnel
     icon: 📧
     required: false
     defaultValue: ""
@@ -61,21 +61,21 @@ properties:
     
   telephone:
     type: PhoneProperty
-    name: Téléphone
+    title: Téléphone
     icon: 📞
     required: false
     defaultValue: ""
     
   dateEntree:
     type: DateProperty
-    name: Date d'entrée
+    title: Date d'entrée
     icon: 📅
     required: false
     defaultValue: ""
     
   statut:
     type: SelectProperty
-    name: Statut
+    title: Statut
     icon: 🏷️
     required: false
     defaultValue: "Actif"
@@ -87,7 +87,7 @@ properties:
     
   competences:
     type: MultiSelectProperty
-    name: Compétences
+    title: Compétences
     icon: 🎯
     required: false
     defaultValue: []
@@ -103,7 +103,7 @@ properties:
     
   notes:
     type: TextProperty
-    name: Notes
+    title: Notes
     icon: 📋
     required: false
     defaultValue: ""

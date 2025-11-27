@@ -15,7 +15,7 @@ tempsPasse: 8
 avancement: 50
 dateCreation: []
 dateCompletion: []
-difficulte: []
+difficulte: ++++
 tags: []
 dependances: []
 checklist: []

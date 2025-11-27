@@ -3,6 +3,7 @@ import { PopulateManager } from "../Config/PopulateManager";
 import { IApp, IFile } from "../interfaces/IApp";
 import { Classe } from "./Classe";
 import { File } from "./File";
+import * as yaml from 'js-yaml';
 
 export interface Settings {
   templateFolder: string;
@@ -216,7 +217,12 @@ export class Vault {
                         return undefined;
                     }
                     
-                    populatedValues = values;
+                    // Merge populated values with default values
+                    populatedValues = populateManager.mergeWithDefaults(classConfig, values);
+                } else if (classConfig) {
+                    // No populate configured, but we still need to apply default values
+                    const populateManager = new PopulateManager(this);
+                    populatedValues = populateManager.mergeWithDefaults(classConfig, {});
                 }
             } catch (error) {
                 console.warn(`Could not load populate config for ${classeType.name}:`, error);
@@ -247,21 +253,34 @@ export class Vault {
             // Parse frontmatter and inject values
             const frontmatterMatch = templateContent.match(/^---\n([\s\S]*?)\n---/);
             if (frontmatterMatch) {
-                let frontmatter = frontmatterMatch[1];
-                
-                // Inject each populated value into frontmatter
-                for (const [propName, value] of Object.entries(populatedValues)) {
-                    // Check if property exists in frontmatter
-                    const propRegex = new RegExp(`^${propName}:\\s*.*$`, 'm');
-                    if (propRegex.test(frontmatter)) {
-                        // Replace existing value
-                        frontmatter = frontmatter.replace(propRegex, `${propName}: ${value}`);
-                        console.log(`  ✓ ${propName} injecté dans le template`);
-                    }
+                // Parse existing frontmatter as YAML
+                let frontmatterObj: any;
+                try {
+                    frontmatterObj = yaml.load(frontmatterMatch[1]) || {};
+                } catch (error) {
+                    console.error("Error parsing frontmatter YAML:", error);
+                    frontmatterObj = {};
                 }
                 
+                // Merge populated values into frontmatter object
+                for (const [propName, value] of Object.entries(populatedValues)) {
+                    frontmatterObj[propName] = value;
+                    console.log(`  ✓ ${propName}:`, value);
+                }
+                
+                // Serialize back to YAML
+                const newFrontmatter = yaml.dump(frontmatterObj, {
+                    lineWidth: -1, // Don't wrap lines
+                    noRefs: true,  // Don't use references
+                    flowLevel: -1, // Use block style
+                    styles: {
+                        '!!null': 'canonical' // Represent null as ~
+                    },
+                    sortKeys: false // Keep original order
+                });
+                
                 // Reconstruct template with updated frontmatter
-                templateContent = `---\n${frontmatter}\n---` + templateContent.substring(frontmatterMatch[0].length);
+                templateContent = `---\n${newFrontmatter}---` + templateContent.substring(frontmatterMatch[0].length);
             }
         }
         
@@ -271,13 +290,15 @@ export class Vault {
             console.log("Nouveau fichier créé : " + newFilePath);
         } catch (error) {
             // Modifier le fichier s'il existe déjà
-            const file = await this.app.getFile(newFilePath);
-            if (!file) {
+            const existingFile = await this.app.getFile(newFilePath);
+            if (!existingFile) {
                 throw Error("Le fichier n'a pas pu être créé ou modifié : " + newFilePath);
             }
-            if (file && 'extension' in file && this.app.isFile(file as IFile)) {
-                await this.app.writeFile(file as IFile, templateContent);
+            if (existingFile && 'extension' in existingFile && this.app.isFile(existingFile as IFile)) {
+                await this.app.writeFile(existingFile as IFile, templateContent);
                 console.log("Fichier modifié : " + newFilePath);
+                // Récupérer le fichier après modification
+                file = new File(this, existingFile as IFile);
             } else {
                 throw Error("Le fichier n'a pas pu être créé ou modifié : " + newFilePath);
             }
@@ -296,17 +317,8 @@ export class Vault {
                 return;
             }
             
-            // Apply populated values to the classe
-            if (Object.keys(populatedValues).length > 0) {
-                console.log("🎨 Application des valeurs pré-remplies...");
-                for (const [propName, value] of Object.entries(populatedValues)) {
-                    const property = classe.getProperty(propName);
-                    if (property) {
-                        await classe.updatePropertyValue(propName, value);
-                        console.log(`  ✓ ${propName}: ${value}`);
-                    }
-                }
-            }
+            // Note: populated values have already been injected into the template
+            // before file creation, so we don't need to update them here
             
             await classe.onCreate();
             await classe.onUpdate();

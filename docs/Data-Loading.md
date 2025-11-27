@@ -21,9 +21,10 @@ data:
     dynamic: true  # Optional: enables automatic reloading
 
 properties:
-  - name: name
+  name:
     type: NameProperty
-    # ... other properties
+    title: Name
+    # ... other property configuration
 ```
 
 ### 2. Create the JSON File
@@ -107,11 +108,11 @@ data:
     dynamic: true
 
 properties:
-  - name: name
+  name:
     type: NameProperty
     title: Territory Name
     
-  - name: type
+  type:
     type: SelectProperty
     title: Type
     static: true
@@ -122,7 +123,7 @@ properties:
       - EPCI
       - Commune
       
-  - name: parent
+  parent:
     type: FileProperty
     title: Parent Territory
     static: true
@@ -142,14 +143,20 @@ When reloading data:
 
 ### Automatic Mapping
 
-Property names in JSON must match property names in the class configuration:
+Property keys in JSON must match property keys in the class configuration:
 
 **YAML Configuration:**
 ```yaml
 properties:
-  - name: name
-  - name: population
-  - name: code_insee
+  name:
+    type: NameProperty
+    title: Name
+  population:
+    type: NumberProperty
+    title: Population
+  code_insee:
+    type: TextProperty
+    title: INSEE Code
 ```
 
 **JSON:**

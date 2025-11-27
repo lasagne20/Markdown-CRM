@@ -7,15 +7,9 @@ poste: ''
 email: ''
 telephone: ''
 dateEntree: ''
-statut: Inactif
-competences:
-  - Management
-  - Technique
-  - Communication
+statut: En congé
+competences: []
 notes: ''
+Statut: Inactif
 
 ---
-
-# {{prenom}} {{nom}}
-
-Informations sur la personne...

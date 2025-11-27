@@ -8,14 +8,14 @@ template: Institution.md
 properties:
   nom:
     type: Property
-    name: Nom de l'institution
+    title: Nom de l'institution
     icon: 🏢
     required: true
     defaultValue: ""
     
   type:
     type: SelectProperty
-    name: Type d'institution
+    title: Type d'institution
     icon: 🏷️
     required: false
     defaultValue: "Entreprise"
@@ -28,49 +28,49 @@ properties:
     
   secteur:
     type: TextProperty
-    name: Secteur d'activité
+    title: Secteur d'activité
     icon: 💼
     required: false
     defaultValue: ""
     
   siteWeb:
     type: LinkProperty
-    name: Site web
+    title: Site web
     icon: 🌐
     required: false
     defaultValue: ""
     
   adresse:
     type: AdressProperty
-    name: Adresse
+    title: Adresse
     icon: 📍
     required: false
     defaultValue: ""
     
   telephonePrincipal:
     type: PhoneProperty
-    name: Téléphone principal
+    title: Téléphone principal
     icon: 📞
     required: false
     defaultValue: ""
     
   email:
     type: EmailProperty
-    name: Email principal
+    title: Email principal
     icon: 📧
     required: false
     defaultValue: ""
     
   dateCreation:
     type: DateProperty
-    name: Date de création
+    title: Date de création
     icon: 📅
     required: false
     defaultValue: ""
     
   nombreEmployes:
     type: NumberProperty
-    name: Nombre d'employés
+    title: Nombre d'employés
     icon: 👥
     required: false
     defaultValue: 0
@@ -79,7 +79,7 @@ properties:
     
   description:
     type: TextProperty
-    name: Description
+    title: Description
     icon: 📋
     required: false
     defaultValue: ""

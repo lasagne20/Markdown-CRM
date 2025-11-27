@@ -2,7 +2,9 @@
 Classe: Personne
 nom: ''
 prenom: ''
-institution: '[[/Institutions/TechCorp Solutions/TechCorp Solutions.md|TechCorp Solutions]]'
+institution: >-
+  [[/Institutions/Université Paris Tech/Université Paris Tech.md|Université
+  Paris Tech]]
 poste: ''
 email: ''
 telephone: ''
@@ -12,10 +14,7 @@ competences:
   - Management
   - Technique
   - Communication
+  - Marketing
 notes: ''
 
 ---
-
-# {{prenom}} {{nom}}
-
-Informations sur la personne...

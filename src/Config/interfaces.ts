@@ -1,6 +1,6 @@
 export interface PropertyConfig {
     type: string;
-    name: string;
+    title?: string; // Display name for the property
     classes?: string[];
     icon?: string;
     options?: SelectOption[];

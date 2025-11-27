@@ -132,8 +132,9 @@ export class ClassConfigManager {
             
             private async addPropertiesToContainer(container: HTMLElement, propertyNames?: string[]): Promise<void> {
                 if (propertyNames) {
-                    for (const propName of propertyNames) {
-                        const property = this.getProperty(propName);
+                    for (const propKey of propertyNames) {
+                        // Get property by key from static Properties map
+                        const property = (this.constructor as typeof Classe).Properties[propKey];
                         if (property) {
                             container.appendChild(await property.getDisplay(this));
                         }
@@ -413,6 +414,8 @@ export class ClassConfigManager {
 
         // Initialize all properties
         for (const [key, propConfig] of Object.entries(config.properties)) {
+                // Pass the key as propertyKey so it becomes the property name
+                (propConfig as any).propertyKey = key;
                 DynamicClasseBase.Properties[key] = this.configLoader.createProperty(propConfig);
         }
 

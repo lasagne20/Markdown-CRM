@@ -109,15 +109,23 @@ export class ConfigLoader {
             options.staticProperty = config.static;
         }
         
+        // Add title from config.title
+        if (config.title) {
+            options.title = config.title;
+        }
+        
+        // Use propertyKey as the name (metadata key)
+        const propertyName = (config as any).propertyKey;
+        
         switch (config.type) {
             case 'Property':
-                return new Property(config.name, this.vault, options);
+                return new Property(propertyName, this.vault, options);
             
             case 'FileProperty':
-                return new FileProperty(config.name, this.vault, config.classes || [], options);
+                return new FileProperty(propertyName, this.vault, config.classes || [], options);
             
             case 'MultiFileProperty':
-                return new MultiFileProperty(config.name, this.vault, config.classes || [], options);
+                return new MultiFileProperty(propertyName, this.vault, config.classes || [], options);
             
             case 'SelectProperty':
                 const selectOptions = (config.options || []).map(opt => 
@@ -125,7 +133,7 @@ export class ConfigLoader {
                         ? { name: opt, color: '' }
                         : { name: opt.name, color: opt.color || '' }
                 );
-                return new SelectProperty(config.name, this.vault, selectOptions, options);
+                return new SelectProperty(propertyName, this.vault, selectOptions, options);
             
             case 'MultiSelectProperty':
                 const multiSelectOptions = (config.options || []).map(opt =>
@@ -133,16 +141,16 @@ export class ConfigLoader {
                         ? { name: opt, color: '' }
                         : { name: opt.name, color: opt.color || '' }
                 );
-                return new MultiSelectProperty(config.name, this.vault, multiSelectOptions, options);
+                return new MultiSelectProperty(propertyName, this.vault, multiSelectOptions, options);
             
             case 'EmailProperty':
-                return new EmailProperty(config.name, this.vault, options);
+                return new EmailProperty(propertyName, this.vault, options);
             
             case 'PhoneProperty':
-                return new PhoneProperty(config.name, this.vault, options);
+                return new PhoneProperty(propertyName, this.vault, options);
             
             case 'LinkProperty':
-                return new LinkProperty(config.name, this.vault, options);
+                return new LinkProperty(propertyName, this.vault, options);
             
             case 'ObjectProperty':
                 const objProperties: { [key: string]: Property } = {};
@@ -166,52 +174,52 @@ export class ConfigLoader {
                 if (config.display) {
                     objOptions.display = config.display;
                 }
-                return new ObjectProperty(config.name, this.vault, objProperties, objOptions);
+                return new ObjectProperty(propertyName, this.vault, objProperties, objOptions);
             
             case 'RatingProperty':
-                return new RatingProperty(config.name, this.vault, options);
+                return new RatingProperty(propertyName, this.vault, options);
             
             case 'DateProperty':
                 const defaultValues = config.defaultValue ? [config.defaultValue] : [];
-                return new DateProperty(config.name,  this.vault, defaultValues, options);
+                return new DateProperty(propertyName,  this.vault, defaultValues, options);
             
             case 'RangeDateProperty':
-                return new RangeDateProperty(config.name, this.vault, options);
+                return new RangeDateProperty(propertyName, this.vault, options);
             
             case 'AdressProperty':
-                return new AdressProperty(config.name, this.vault, options);
+                return new AdressProperty(propertyName, this.vault, options);
             
             case 'ClasseProperty':
-                return new ClasseProperty(config.name, this.vault, config.icon || 'box');
+                return new ClasseProperty(propertyName, this.vault, config.icon || 'box');
             
             case 'NameProperty':
                 return new NameProperty(this.vault);
             
             case 'TextProperty':
-                return new TextProperty(config.name, this.vault, options);
+                return new TextProperty(propertyName, this.vault, options);
             
             case 'BooleanProperty':
-                return new BooleanProperty(config.name, this.vault, options);
+                return new BooleanProperty(propertyName, this.vault, options);
             
             case 'NumberProperty':
-                return new NumberProperty(config.name, this.vault, config.unit || '', { icon: config.icon || '', static: config.static || false });
+                return new NumberProperty(propertyName, this.vault, config.unit || '', { icon: config.icon || '', static: config.static || false });
             
             case 'SubClassProperty':
                 // This will be handled separately in createSubClassProperty
-                return new Property(config.name, this.vault, options); // Placeholder
+                return new Property(propertyName, this.vault, options); // Placeholder
 
 
             case 'MediaProperty':
-                return new MediaProperty(config.name, this.vault, options);
+                return new MediaProperty(propertyName, this.vault, options);
 
             case 'FormulaProperty':
                 const formula = config.formula || config.defaultValue || '';
                 const formulaOptions = config.icon ? { icon: config.icon, static: true, write: true } : { icon: '', static: true, write: true };
-                return new FormulaProperty(config.name, this.vault, formula, formulaOptions);
+                return new FormulaProperty(propertyName, this.vault, formula, formulaOptions);
             
             default:
                 console.warn(`Unknown property type: ${config.type}, falling back to Property`);
-                return new Property(config.name, this.vault, options);
+                return new Property(propertyName, this.vault, options);
         }
     }
 
@@ -287,7 +295,7 @@ export class ConfigLoader {
     private parseTableRowToPropertyConfig(row: PropertyTableRow): PropertyConfig {
         const config: PropertyConfig = {
             type: row.type,
-            name: row.name,
+            title: row.name,
             icon: row.icon,
             defaultValue: row.default
         };

@@ -34,7 +34,7 @@ name: Lieu
 icon: 📍
 description: Gestion des lieux
 properties:
-  - name: nom
+  nom:
     type: Property
 `;
 
@@ -57,7 +57,7 @@ name: Personne
 icon: 👤
 description: Gestion des personnes
 properties:
-  - name: nom
+  nom:
     type: Property
 `;
 
@@ -81,7 +81,7 @@ classIcon: map-pin
 name: LieuAlternate
 icon: 📍
 properties:
-  - name: nom
+  nom:
     type: Property
 `;
 
@@ -105,7 +105,7 @@ className: Institution
 classIcon: building
 description: Gestion des institutions
 properties:
-  - name: nom
+  nom:
     type: Property
 `;
 
@@ -147,12 +147,12 @@ properties:
                 .rejects.toThrow('Configuration not found for class: Lieu');
         });
 
-        it('should handle both formats in display configuration', async () => {
+        it('should handle object format with display configuration', async () => {
             const yamlContent = `
 name: Lieu
 icon: 📍
 properties:
-  - name: nom
+  nom:
     type: Property
 display:
   containers:
@@ -181,7 +181,7 @@ display:
     });
 
     describe('backward compatibility', () => {
-        it('should work with documentation format (name/icon)', async () => {
+        it('should work with object format (name/icon with object properties)', async () => {
             const docFormatYaml = `
 name: Personne
 icon: 👤
@@ -190,13 +190,13 @@ parent:
   property: institution
   folder: Personnes
 properties:
-  - name: nom
+  nom:
     type: Property
-    title: Nom complet
+    name: Nom complet
     icon: 📝
-  - name: email
+  email:
     type: EmailProperty
-    title: Email professionnel
+    name: Email professionnel
     icon: 📧
 display:
   containers:
@@ -221,19 +221,21 @@ display:
             expect(config.properties).toHaveProperty('email');
         });
 
-        it('should work with code format (className/classIcon)', async () => {
+        it('should work with code format (className/classIcon with object properties)', async () => {
             const codeFormatYaml = `
 className: Institution
 classIcon: building
 description: Gestion des institutions
 properties:
-  - name: nom
+  nom:
     type: Property
-  - name: secteur
+  secteur:
     type: SelectProperty
     options:
-      - Public
-      - Privé
+      - name: Public
+        color: blue
+      - name: Privé
+        color: green
 `;
 
             mockApp.getFile.mockResolvedValue({

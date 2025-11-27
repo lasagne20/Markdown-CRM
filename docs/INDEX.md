@@ -31,6 +31,7 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 - **[System Architecture](./Architecture.md)** - System design and components
 - **[Property Types](./Property-Types.md)** - Complete property type reference
 - **[Data Loading](./Data-Loading.md)** - How data is loaded and managed
+- **[YAML Configuration Format](./YAML-Configuration-Format.md)** - Property naming and configuration guide
 
 ### Feature Guides
 - **[Static Properties](./Static-Properties.md)** - Non-editable fields guide
@@ -53,6 +54,7 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 
 ### Configuration
 - [Display Configuration](./Display-Configuration.md) - Visual display setup
+- [YAML Configuration Format](./YAML-Configuration-Format.md) - Property naming and configuration
 - [Static Properties](./Static-Properties.md) - Non-editable fields
 - [Populate Feature](./Populate-Feature.md) - Interactive file creation
 - [Property Types](./Property-Types.md) - Available property types
@@ -112,9 +114,9 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 
 ### Documentation Coverage
 - **User Guides**: 3 documents
-- **Technical Docs**: 4 documents
+- **Technical Docs**: 5 documents
 - **Release Docs**: 4 documents
-- **Total**: 11+ comprehensive documents
+- **Total**: 12+ comprehensive documents
 
 ### Code Quality
 - **Tests**: 1081/1081 passing ✅
@@ -137,6 +139,7 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 #### Guides & Tutorials
 - [Installation Guide](./Installation.md)
 - [Display Configuration](./Display-Configuration.md)
+- [YAML Configuration Format](./YAML-Configuration-Format.md)
 - [Static Properties Guide](./Static-Properties.md)
 - [Populate Feature Guide](./Populate-Feature.md)
 - [Migration Guide](../MIGRATION-GUIDE.md)
@@ -194,6 +197,7 @@ docs/
 ├── Architecture.md                       # System architecture
 ├── Data-Loading.md                       # Data management
 ├── Display-Configuration.md              # Display setup
+├── YAML-Configuration-Format.md          # Property naming system
 ├── Property-Types.md                     # Property reference
 ├── Static-Properties.md                  # Static properties guide
 ├── Populate-Feature.md                   # Populate feature guide

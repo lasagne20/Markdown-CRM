@@ -465,17 +465,17 @@ display:
         - custom_fields
 
 properties:
-  - name: name
+  name:
     type: NameProperty
     title: Full Name
     required: true
     
-  - name: email
+  email:
     type: EmailProperty
     title: Email
     required: true
     
-  - name: phone
+  phone:
     type: PhoneProperty
     title: Phone Number
     

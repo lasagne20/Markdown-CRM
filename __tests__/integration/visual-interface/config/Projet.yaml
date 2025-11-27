@@ -12,14 +12,14 @@ parent:
 properties:
   nom:
     type: TextProperty
-    name: Nom du projet
+    title: Nom du projet
     icon: 📝
     required: true
     defaultValue: ""
     
   description:
     type: TextProperty
-    name: Description du projet
+    title: Description du projet
     icon: 📄
     required: false
     defaultValue: ""
@@ -27,7 +27,7 @@ properties:
     
   statut:
     type: SelectProperty
-    name: Statut du projet
+    title: Statut du projet
     icon: 🔄
     required: true
     defaultValue: "En cours"
@@ -40,7 +40,7 @@ properties:
     
   priorite:
     type: RatingProperty
-    name: Priorité (1-5)
+    title: Priorité (1-5)
     icon: ⭐
     required: false
     defaultValue: 3
@@ -49,21 +49,21 @@ properties:
     
   dateDebut:
     type: RangeDateProperty
-    name: Date de début
+    title: Date de début
     icon: 🚀
     required: false
     defaultValue: ""
     
   dateFinReelle:
     type: DateProperty
-    name: Date de fin réelle
+    title: Date de fin réelle
     icon: ✅
     required: false
     defaultValue: ""
     
   responsable:
     type: FileProperty
-    name: Responsable du projet
+    title: Responsable du projet
     icon: 👤
     required: false
     defaultValue: ""
@@ -71,7 +71,7 @@ properties:
     
   equipe:
     type: MultiFileProperty
-    name: Équipe projet
+    title: Équipe projet
     icon: 👥
     required: false
     defaultValue: []
@@ -79,7 +79,7 @@ properties:
     
   budget:
     type: NumberProperty
-    name: Budget alloué (€)
+    title: Budget alloué (€)
     unit : "€"
     icon: 💰
     required: false
@@ -88,7 +88,7 @@ properties:
     
   budgetUtilise:
     type: NumberProperty
-    name: Budget utilisé (€)
+    title: Budget utilisé (€)
     icon: 💸
     required: false
     defaultValue: 0
@@ -96,7 +96,7 @@ properties:
     
   pourcentageCompletion:
     type: NumberProperty
-    name: Progression (%)
+    title: Progression (%)
     icon: 📊
     required: false
     defaultValue: 0
@@ -105,7 +105,7 @@ properties:
     
   client:
     type: LinkProperty
-    name: Client
+    title: Client
     icon: 🏢
     required: false
     defaultValue: ""
@@ -113,7 +113,7 @@ properties:
     
   tags:
     type: MultiSelectProperty
-    name: Tags du projet
+    title: Tags du projet
     icon: 🏷️
     required: false
     defaultValue: []
@@ -128,7 +128,7 @@ properties:
     
   fichiers:
     type: MultiFileProperty
-    name: Fichiers du projet
+    title: Fichiers du projet
     icon: 📎
     required: false
     defaultValue: []

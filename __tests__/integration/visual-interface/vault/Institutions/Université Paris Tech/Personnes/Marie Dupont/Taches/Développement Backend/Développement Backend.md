@@ -31,6 +31,8 @@ tempsRestant: null
 enRetard: null
 efficacite: '4.00'
 joursRestants: null
+Statut de la tâche: À faire
+Priorité: Critique
 
 ---
 

@@ -8,8 +8,9 @@ Markdown CRM provides 20+ built-in property types to model any business domain. 
 Basic single-line text input.
 
 ```yaml
-- name: company
+company:
   type: TextProperty
+  title: Company Name
   required: true
   placeholder: "Company name"
 ```
@@ -28,8 +29,9 @@ Basic single-line text input.
 Special text field for person names with formatting.
 
 ```yaml
-- name: fullName
+fullName:
   type: NameProperty
+  title: Full Name
   required: true
 ```
 
@@ -46,8 +48,9 @@ Special text field for person names with formatting.
 Email addresses with validation.
 
 ```yaml
-- name: email
+email:
   type: EmailProperty
+  title: Email Address
   required: true
 ```
 
@@ -64,8 +67,9 @@ Email addresses with validation.
 Phone numbers with international format support.
 
 ```yaml
-- name: phone
+phone:
   type: PhoneProperty
+  title: Phone Number
   format: "international" # or "national", "e164"
 ```
 
@@ -83,8 +87,9 @@ Phone numbers with international format support.
 URLs with validation and display.
 
 ```yaml
-- name: website
+website:
   type: LinkProperty
+  title: Website
   placeholder: "https://example.com"
 ```
 
@@ -102,8 +107,9 @@ URLs with validation and display.
 Physical addresses with structured format.
 
 ```yaml
-- name: address
+address:
   type: AdressProperty
+  title: Address
 ```
 
 **Features:**
@@ -121,8 +127,9 @@ Physical addresses with structured format.
 Numeric values with units and validation.
 
 ```yaml
-- name: price
+price:
   type: NumberProperty
+  title: Price
   unit: "$"
   min: 0
   max: 1000000
@@ -143,8 +150,9 @@ Numeric values with units and validation.
 Star ratings or numeric ratings.
 
 ```yaml
-- name: satisfaction
+satisfaction:
   type: RatingProperty
+  title: Satisfaction
   max: 5
   style: stars # or "numbers"
 ```
@@ -163,8 +171,9 @@ Star ratings or numeric ratings.
 Calculated fields based on other properties.
 
 ```yaml
-- name: total
+total:
   type: FormulaProperty
+  title: Total
   formula: "price * quantity * (1 - discount/100)"
   decimals: 2
 ```
@@ -185,8 +194,9 @@ Calculated fields based on other properties.
 Single dates with calendar picker.
 
 ```yaml
-- name: birthday
+birthday:
   type: DateProperty
+  title: Birthday
   format: "YYYY-MM-DD"
 ```
 
@@ -204,8 +214,9 @@ Single dates with calendar picker.
 Time values (hours and minutes).
 
 ```yaml
-- name: meetingTime
+meetingTime:
   type: TimeProperty
+  title: Meeting Time
   format: "24h" # or "12h"
 ```
 
@@ -222,8 +233,9 @@ Time values (hours and minutes).
 Date ranges (start and end dates).
 
 ```yaml
-- name: projectTimeline
+projectTimeline:
   type: RangeDateProperty
+  title: Project Timeline
 ```
 
 **Features:**
@@ -242,8 +254,9 @@ Date ranges (start and end dates).
 True/false checkboxes.
 
 ```yaml
-- name: isActive
+isActive:
   type: BooleanProperty
+  title: Is Active
   default: true
 ```
 
@@ -260,8 +273,9 @@ True/false checkboxes.
 Single selection from predefined options.
 
 ```yaml
-- name: status
+status:
   type: SelectProperty
+  title: Status
   options:
     - name: Active
       color: green
@@ -285,8 +299,9 @@ Single selection from predefined options.
 Multiple selections from predefined options (tags).
 
 ```yaml
-- name: tags
+tags:
   type: MultiSelectProperty
+  title: Tags
   options: [Client, Partner, Vendor, VIP, Inactive]
 ```
 
@@ -306,9 +321,10 @@ Multiple selections from predefined options (tags).
 Link to another class instance (one-to-one).
 
 ```yaml
-- name: assignedTo
+assignedTo:
   type: ClasseProperty
-  linkClass: Contact
+  title: Assigned To
+  classes: [Contact]
 ```
 
 **Features:**
@@ -325,9 +341,10 @@ Link to another class instance (one-to-one).
 Embed child records inline (one-to-many composition).
 
 ```yaml
-- name: addresses
+addresses:
   type: SubClassProperty
-  linkClass: Address
+  title: Addresses
+  classes: [Address]
 ```
 
 **Features:**
@@ -344,9 +361,10 @@ Embed child records inline (one-to-many composition).
 Link to multiple files/records (many-to-many).
 
 ```yaml
-- name: teamMembers
+teamMembers:
   type: MultiFileProperty
-  linkClass: Contact
+  title: Team Members
+  classes: [Contact]
 ```
 
 **Features:**
@@ -365,16 +383,20 @@ Link to multiple files/records (many-to-many).
 Nested object with multiple fields.
 
 ```yaml
-- name: socialMedia
+socialMedia:
   type: ObjectProperty
+  title: Social Media
   display: inline # or "block"
   properties:
-    - name: linkedin
+    linkedin:
       type: LinkProperty
-    - name: twitter
+      title: LinkedIn
+    twitter:
       type: TextProperty
-    - name: github
+      title: Twitter
+    github:
       type: LinkProperty
+      title: GitHub
 ```
 
 **Features:**
@@ -391,8 +413,9 @@ Nested object with multiple fields.
 Single file attachment.
 
 ```yaml
-- name: resume
+resume:
   type: FileProperty
+  title: Resume
   accept: ".pdf,.doc,.docx"
 ```
 
@@ -410,8 +433,9 @@ Single file attachment.
 Multiple file attachments.
 
 ```yaml
-- name: documents
+documents:
   type: MultiFileProperty
+  title: Documents
   accept: ".pdf,.doc,.docx"
   maxFiles: 10
 ```
@@ -430,8 +454,9 @@ Multiple file attachments.
 Single image/video with preview.
 
 ```yaml
-- name: profilePhoto
+profilePhoto:
   type: MediaProperty
+  title: Profile Photo
   accept: "image/*"
 ```
 
@@ -449,8 +474,9 @@ Single image/video with preview.
 Multiple images/videos with gallery.
 
 ```yaml
-- name: productPhotos
+productPhotos:
   type: MultiMediaProperty
+  title: Product Photos
   accept: "image/*"
   maxFiles: 20
 ```
@@ -469,8 +495,9 @@ Multiple images/videos with gallery.
 3D models with viewer.
 
 ```yaml
-- name: productModel
+productModel:
   type: 3DModelProperty
+  title: Product Model
   accept: ".obj,.fbx,.gltf"
 ```
 
@@ -488,8 +515,9 @@ Multiple images/videos with gallery.
 Visual section headers (non-data).
 
 ```yaml
-- name: personalInfo
+personalInfo:
   type: HeaderProperty
+  title: Personal Information
   level: 2 # h1, h2, h3, etc.
 ```
 
@@ -503,13 +531,52 @@ Visual section headers (non-data).
 
 ---
 
+## 🔑 Property Naming System
+
+**Important:** Properties use a two-part naming system:
+
+1. **Property Key** (YAML object key): The internal name used in metadata
+   - Written as the YAML object key (e.g., `nom:`, `email:`, `prenom:`)
+   - Used for storing/reading values in file frontmatter
+   - Should be concise and technical (camelCase recommended)
+
+2. **Display Title** (`title` field): The label shown in the user interface
+   - Defined with the `title:` field in the property config
+   - Can be localized and user-friendly
+   - Can contain spaces and special characters
+
+**Example:**
+```yaml
+properties:
+  nom:                    # ← Property key (used in metadata)
+    type: Property
+    title: Nom complet    # ← Display title (shown in UI)
+    icon: 📝
+  
+  prenom:
+    type: TextProperty
+    title: Prénom
+    icon: 👤
+```
+
+In the file's frontmatter:
+```yaml
+---
+nom: Dupont             # ← Uses property key
+prenom: Marie
+---
+```
+
+In the UI, users see "Nom complet" and "Prénom" (the display titles).
+
 ## 🛠️ Property Configuration Options
 
 All properties support these common options:
 
 ```yaml
-- name: fieldName
+fieldName:
   type: PropertyType
+  title: Display Name      # Display name shown in UI
   required: true           # Field must have a value
   default: "value"         # Default value when creating
   placeholder: "hint"      # UI placeholder text

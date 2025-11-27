@@ -3,19 +3,12 @@ Classe: Personne
 nom: ''
 prenom: ''
 institution: '[[/Institutions/TechCorp Solutions/TechCorp Solutions.md|TechCorp Solutions]]'
-poste: ''
+poste: fghgk
 email: ''
 telephone: ''
 dateEntree: ''
-statut: Inactif
-competences:
-  - Management
-  - Technique
-  - Communication
+statut: En congé
+competences: []
 notes: ''
 
 ---
-
-# {{prenom}} {{nom}}
-
-Informations sur la personne...

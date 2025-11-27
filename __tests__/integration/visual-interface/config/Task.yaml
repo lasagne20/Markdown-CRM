@@ -8,14 +8,14 @@ template: Task.md
 properties:
   titre:
     type: Property
-    name: Titre
+    title: Titre
     icon: 📝
     required: true
     defaultValue: ""
     
   description:
     type: TextProperty
-    name: Description
+    title: Description
     icon: 📋
     required: false
     defaultValue: ""
@@ -23,7 +23,7 @@ properties:
     
   statut:
     type: SelectProperty
-    name: Statut
+    title: Statut
     icon: 🏷️
     required: false
     defaultValue: "À faire"
@@ -34,7 +34,7 @@ properties:
       
   priorite:
     type: SelectProperty
-    name: Priorité
+    title: Priorité
     icon: ⚡
     required: false
     defaultValue: "Moyenne"
@@ -45,14 +45,14 @@ properties:
       
   dateEcheance:
     type: DateProperty
-    name: Date d'échéance
+    title: Date d'échéance
     icon: 📅
     required: false
     defaultValue: ""
     
   assignee:
     type: FileProperty
-    name: Assigné à
+    title: Assigné à
     icon: 👤
     required: false
     defaultValue: ""
@@ -61,7 +61,7 @@ properties:
       
   projet:
     type: ObjectProperty
-    name: Projet
+    title: Projet
     icon: 📁
     required: false
     defaultValue:

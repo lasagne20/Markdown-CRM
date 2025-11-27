@@ -12,14 +12,14 @@ parent:
 properties:
   titre:
     type: TextProperty
-    name: Titre de la tâche
+    title: Titre de la tâche
     icon: 📝
     required: true
     defaultValue: ""
     
   description:
     type: TextProperty
-    name: Description détaillée
+    title: Description détaillée
     icon: 📄
     required: false
     defaultValue: ""
@@ -27,7 +27,7 @@ properties:
     
   statut:
     type: SelectProperty
-    name: Statut de la tâche
+    title: Statut de la tâche
     icon: 🔄
     required: true
     defaultValue: "À faire"
@@ -40,7 +40,7 @@ properties:
     
   priorite:
     type: SelectProperty
-    name: Priorité
+    title: Priorité
     icon: 🚨
     required: false
     defaultValue: "Normale"
@@ -52,7 +52,7 @@ properties:
     
   assignee:
     type: LinkProperty
-    name: Assigné à
+    title: Assigné à
     icon: 👤
     required: false
     defaultValue: ""
@@ -60,7 +60,7 @@ properties:
     
   projet:
     type: FileProperty
-    name: Projet parent
+    title: Projet parent
     icon: 📋
     required: false
     defaultValue: ""
@@ -68,7 +68,7 @@ properties:
     
   dateCreation:
     type: DateProperty
-    name: Date de création
+    title: Date de création
     icon: 📅
     required: false
     defaultValue: "today"
@@ -76,21 +76,21 @@ properties:
     
   dateEcheance:
     type: DateProperty
-    name: Date d'échéance
+    title: Date d'échéance
     icon: ⏰
     required: false
     defaultValue: ""
     
   dateCompletion:
     type: DateProperty
-    name: Date de completion
+    title: Date de completion
     icon: ✅
     required: false
     defaultValue: ""
     
   tempsEstime:
     type: NumberProperty
-    name: Temps estimé (heures)
+    title: Temps estimé (heures)
     icon: ⏱️
     required: false
     defaultValue: 0
@@ -99,7 +99,7 @@ properties:
     
   tempsPasse:
     type: NumberProperty
-    name: Temps passé (heures)
+    title: Temps passé (heures)
     icon: ⏰
     required: false
     defaultValue: 0
@@ -108,7 +108,7 @@ properties:
     
   avancement:
     type: NumberProperty
-    name: Avancement (%)
+    title: Avancement (%)
     icon: 📊
     required: false
     defaultValue: 0
@@ -117,14 +117,14 @@ properties:
     
   efficacite:
     type: FormulaProperty
-    name: Efficacité
+    title: Efficacité
     icon: 🎯
     required: false
     formula: "tempsPasse > 0 ? (avancement / tempsPasse).toFixed(2) : 0"
     
   difficulte:
     type: RatingProperty
-    name: Difficulté (1-5)
+    title: Difficulté (1-5)
     icon: 💪
     required: false
     defaultValue: 3
@@ -133,7 +133,7 @@ properties:
     
   tags:
     type: MultiSelectProperty
-    name: Tags
+    title: Tags
     icon: 🏷️
     required: false
     defaultValue: []
@@ -149,7 +149,7 @@ properties:
     
   dependances:
     type: MultiSelectProperty
-    name: Dépendances
+    title: Dépendances
     icon: 🔗
     required: false
     defaultValue: []
@@ -157,7 +157,7 @@ properties:
 
   checklist:
     type: TextProperty
-    name: Checklist
+    title: Checklist
     icon: ☑️
     required: false
     defaultValue: ""
@@ -165,14 +165,14 @@ properties:
     
   fichiers:
     type: MultiFileProperty
-    name: Fichiers attachés
+    title: Fichiers attachés
     icon: 📎
     required: false
     defaultValue: []
     
   commentaires:
     type: TextProperty
-    name: Commentaires
+    title: Commentaires
     icon: 💬
     required: false
     defaultValue: ""
