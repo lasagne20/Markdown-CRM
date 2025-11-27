@@ -83,15 +83,9 @@ export class ConfigLoader {
                 config.classIcon = config.icon;
             }
             
-            // Convertir properties array → object si nécessaire
+            // Vérifier que properties est un objet (le format liste n'est plus supporté)
             if (config.properties && Array.isArray(config.properties)) {
-                const propertiesObj: { [key: string]: any } = {};
-                for (const prop of config.properties) {
-                    if (prop.name) {
-                        propertiesObj[prop.name] = prop;
-                    }
-                }
-                config.properties = propertiesObj;
+                throw new Error(`Configuration error for ${className}: properties must be an object, not an array. Please update your YAML configuration file.`);
             }
             
             console.log("Parent config:", config.parent);

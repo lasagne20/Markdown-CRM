@@ -449,4 +449,130 @@ describe('PopulateManager - ObjectProperty Support', () => {
             });
         });
     });
+
+    describe('ObjectProperty without populate template', () => {
+        it('should write ObjectProperty even without populate template', async () => {
+            // Test case: ObjectProperty exists in class config but NOT in populate array
+            // Only a SelectProperty is in the populate array
+            const mockFile = {
+                path: 'persons/Jane.md',
+                name: 'Jane',
+                basename: 'Jane',
+                extension: 'md',
+                parent: { path: 'persons' },
+                vault: vault,
+                getLink: () => '[[Jane]]'
+            };
+
+            app.selectFromList.mockResolvedValue('Actif');
+
+            const classConfig: any = {
+                className: 'Task',
+                classIcon: '📋',
+                properties: {
+                    responsable: {
+                        name: 'responsable',
+                        type: 'ObjectProperty',
+                        defaultValue: [], // ObjectProperty with default value
+                        properties: {
+                            personne: {
+                                name: 'personne',
+                                type: 'FileProperty',
+                                classes: ['Personne'],
+                                defaultValue: ''
+                            },
+                            role: {
+                                name: 'role',
+                                type: 'TextProperty',
+                                defaultValue: ''
+                            }
+                        }
+                    },
+                    statut: {
+                        name: 'statut',
+                        type: 'SelectProperty',
+                        options: [
+                            { name: 'Actif', value: 'Actif' },
+                            { name: 'Inactif', value: 'Inactif' }
+                        ],
+                        defaultValue: 'Actif'
+                    }
+                },
+                populate: [
+                    // Only populate statut, NOT responsable
+                    {
+                        property: 'statut',
+                        title: 'Choisir le statut',
+                        required: true
+                    }
+                ]
+            };
+
+            // This test verifies that:
+            // 1. populateProperties only returns populated values (statut)
+            // 2. responsable is NOT in the populated values
+            // 3. But when merging with defaults, responsable should still be written with its default value
+            
+            const result = await populateManager.populateProperties(classConfig);
+
+            // Should only contain the populated property (statut)
+            expect(result).not.toBeNull();
+            expect(result).toEqual({ statut: 'Actif' });
+            expect(result).not.toHaveProperty('responsable');
+            
+            // But when we check mergeWithDefaults, responsable should be included with its default value
+            if (result !== null) {
+                const merged = populateManager.mergeWithDefaults(classConfig, result);
+                expect(merged).toHaveProperty('statut');
+                expect(merged.statut).toBe('Actif');
+                expect(merged).toHaveProperty('responsable');
+                expect(merged.responsable).toEqual([]); // Default value
+            }
+        });
+
+        it('should include ObjectProperty with defaultValue in merged result', async () => {
+            const classConfig: any = {
+                className: 'Task',
+                classIcon: '📋',
+                properties: {
+                    responsable: {
+                        name: 'responsable',
+                        type: 'ObjectProperty',
+                        defaultValue: [], // Empty array as default
+                        properties: {
+                            personne: {
+                                name: 'personne',
+                                type: 'FileProperty',
+                                classes: ['Personne'],
+                                defaultValue: ''
+                            },
+                            role: {
+                                name: 'role',
+                                type: 'TextProperty',
+                                defaultValue: ''
+                            }
+                        }
+                    },
+                    titre: {
+                        name: 'titre',
+                        type: 'TextProperty',
+                        defaultValue: ''
+                    }
+                },
+                populate: []
+            };
+
+            const result = await populateManager.populateProperties(classConfig);
+
+            expect(result).not.toBeNull();
+            expect(result).toEqual({});
+
+            // With defaultValue, it should be included in merged result
+            const merged = populateManager.mergeWithDefaults(classConfig, result!);
+            expect(merged).toHaveProperty('responsable');
+            expect(merged.responsable).toEqual([]);
+            expect(merged).toHaveProperty('titre');
+            expect(merged.titre).toEqual('');
+        });
+    });
 });

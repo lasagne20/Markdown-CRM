@@ -10,24 +10,24 @@ parent:
 
 # Configuration des propriétés
 properties:
-  - name: titre
+  titre:
     type: TextProperty
-    title: Titre de la tâche
+    name: Titre de la tâche
     icon: 📝
     required: true
     defaultValue: ""
     
-  - name: description
+  description:
     type: TextProperty
-    title: Description détaillée
+    name: Description détaillée
     icon: 📄
     required: false
     defaultValue: ""
     multiline: true
     
-  - name: statut
+  statut:
     type: SelectProperty
-    title: Statut de la tâche
+    name: Statut de la tâche
     icon: 🔄
     required: true
     defaultValue: "À faire"
@@ -38,9 +38,9 @@ properties:
       - "Terminée"
       - "Annulée"
     
-  - name: priorite
+  priorite:
     type: SelectProperty
-    title: Priorité
+    name: Priorité
     icon: 🚨
     required: false
     defaultValue: "Normale"
@@ -50,90 +50,90 @@ properties:
       - "Normale"
       - "Basse"
     
-  - name: assignee
+  assignee:
     type: LinkProperty
-    title: Assigné à
+    name: Assigné à
     icon: 👤
     required: false
     defaultValue: ""
     linkClass: "Contact"
     
-  - name: projet
+  projet:
     type: FileProperty
-    title: Projet parent
+    name: Projet parent
     icon: 📋
     required: false
     defaultValue: ""
     linkClass: "Projet"
     
-  - name: dateCreation
+  dateCreation:
     type: DateProperty
-    title: Date de création
+    name: Date de création
     icon: 📅
     required: false
     defaultValue: "today"
     readonly: true
     
-  - name: dateEcheance
+  dateEcheance:
     type: DateProperty
-    title: Date d'échéance
+    name: Date d'échéance
     icon: ⏰
     required: false
     defaultValue: ""
     
-  - name: dateCompletion
+  dateCompletion:
     type: DateProperty
-    title: Date de completion
+    name: Date de completion
     icon: ✅
     required: false
     defaultValue: ""
     
-  - name: tempsEstime
+  tempsEstime:
     type: NumberProperty
-    title: Temps estimé (heures)
+    name: Temps estimé (heures)
     icon: ⏱️
     required: false
     defaultValue: 0
     min: 0
     step: 0.5
     
-  - name: tempsPasse
+  tempsPasse:
     type: NumberProperty
-    title: Temps passé (heures)
+    name: Temps passé (heures)
     icon: ⏰
     required: false
     defaultValue: 0
     min: 0
     step: 0.25
     
-  - name: avancement
+  avancement:
     type: NumberProperty
-    title: Avancement (%)
+    name: Avancement (%)
     icon: 📊
     required: false
     defaultValue: 0
     min: 0
     max: 100
     
-  - name: efficacite
+  efficacite:
     type: FormulaProperty
-    title: Efficacité
+    name: Efficacité
     icon: 🎯
     required: false
     formula: "tempsPasse > 0 ? (avancement / tempsPasse).toFixed(2) : 0"
     
-  - name: difficulte
+  difficulte:
     type: RatingProperty
-    title: Difficulté (1-5)
+    name: Difficulté (1-5)
     icon: 💪
     required: false
     defaultValue: 3
     min: 1
     max: 5
     
-  - name: tags
+  tags:
     type: MultiSelectProperty
-    title: Tags
+    name: Tags
     icon: 🏷️
     required: false
     defaultValue: []
@@ -147,34 +147,32 @@ properties:
       - "Deploy"
       - "Meeting"
     
-  - name: dependances
+  dependances:
     type: MultiSelectProperty
-    title: Dépendances
+    name: Dépendances
     icon: 🔗
     required: false
     defaultValue: []
     linkClass: "Tache"
 
-  
-    
-  - name: checklist
+  checklist:
     type: TextProperty
-    title: Checklist
+    name: Checklist
     icon: ☑️
     required: false
     defaultValue: ""
     multiline: true
     
-  - name: fichiers
+  fichiers:
     type: MultiFileProperty
-    title: Fichiers attachés
+    name: Fichiers attachés
     icon: 📎
     required: false
     defaultValue: []
     
-  - name: commentaires
+  commentaires:
     type: TextProperty
-    title: Commentaires
+    name: Commentaires
     icon: 💬
     required: false
     defaultValue: ""

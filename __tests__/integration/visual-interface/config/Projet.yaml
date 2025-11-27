@@ -10,24 +10,24 @@ parent:
 
 # Configuration des propriétés
 properties:
-  - name: nom
+  nom:
     type: TextProperty
-    title: Nom du projet
+    name: Nom du projet
     icon: 📝
     required: true
     defaultValue: ""
     
-  - name: description
+  description:
     type: TextProperty
-    title: Description du projet
+    name: Description du projet
     icon: 📄
     required: false
     defaultValue: ""
     multiline: true
     
-  - name: statut
+  statut:
     type: SelectProperty
-    title: Statut du projet
+    name: Statut du projet
     icon: 🔄
     required: true
     defaultValue: "En cours"
@@ -38,82 +38,82 @@ properties:
       - "Terminé"
       - "Annulé"
     
-  - name: priorite
+  priorite:
     type: RatingProperty
-    title: Priorité (1-5)
+    name: Priorité (1-5)
     icon: ⭐
     required: false
     defaultValue: 3
     min: 1
     max: 5
     
-  - name: dateDebut
+  dateDebut:
     type: RangeDateProperty
-    title: Date de début
+    name: Date de début
     icon: 🚀
     required: false
     defaultValue: ""
     
-  - name: dateFinReelle
+  dateFinReelle:
     type: DateProperty
-    title: Date de fin réelle
+    name: Date de fin réelle
     icon: ✅
     required: false
     defaultValue: ""
     
-  - name: responsable
+  responsable:
     type: FileProperty
-    title: Responsable du projet
+    name: Responsable du projet
     icon: 👤
     required: false
     defaultValue: ""
     linkClass: "Contact"
     
-  - name: equipe
+  equipe:
     type: MultiFileProperty
-    title: Équipe projet
+    name: Équipe projet
     icon: 👥
     required: false
     defaultValue: []
     linkClass: "Contact"
     
-  - name: budget
+  budget:
     type: NumberProperty
-    title: Budget alloué (€)
+    name: Budget alloué (€)
     unit : "€"
     icon: 💰
     required: false
     defaultValue: 0
     min: 0
     
-  - name: budgetUtilise
+  budgetUtilise:
     type: NumberProperty
-    title: Budget utilisé (€)
+    name: Budget utilisé (€)
     icon: 💸
     required: false
     defaultValue: 0
     min: 0
     
-  - name: pourcentageCompletion
+  pourcentageCompletion:
     type: NumberProperty
-    title: Progression (%)
+    name: Progression (%)
     icon: 📊
     required: false
     defaultValue: 0
     min: 0
     max: 100
     
-  - name: client
+  client:
     type: LinkProperty
-    title: Client
+    name: Client
     icon: 🏢
     required: false
     defaultValue: ""
     linkClass: "Contact"
     
-  - name: tags
+  tags:
     type: MultiSelectProperty
-    title: Tags du projet
+    name: Tags du projet
     icon: 🏷️
     required: false
     defaultValue: []
@@ -126,9 +126,9 @@ properties:
       - "Marketing"
       - "Formation"
     
-  - name: fichiers
+  fichiers:
     type: MultiFileProperty
-    title: Fichiers du projet
+    name: Fichiers du projet
     icon: 📎
     required: false
     defaultValue: []

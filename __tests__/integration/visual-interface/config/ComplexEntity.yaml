@@ -1,0 +1,77 @@
+# Configuration de la classe ComplexEntity
+name: ComplexEntity
+icon: 🔧
+description: Entité complexe avec tous les types de propriétés
+template: ComplexEntity.md
+
+# Configuration des propriétés
+properties:
+  texte:
+    type: TextProperty
+    name: Texte
+    icon: 📝
+    required: false
+    defaultValue: "Texte par défaut"
+    
+  nombre:
+    type: NumberProperty
+    name: Nombre
+    icon: 🔢
+    required: false
+    defaultValue: 42
+    
+  boolean:
+    type: BooleanProperty
+    name: Boolean
+    icon: ✓
+    required: false
+    defaultValue: true
+    
+  date:
+    type: DateProperty
+    name: Date
+    icon: 📅
+    required: false
+    defaultValue: "2024-01-01"
+    
+  fichier:
+    type: FileProperty
+    name: Fichier
+    icon: 📎
+    required: false
+    defaultValue: ""
+    classes:
+      - Personne
+      
+  select:
+    type: SelectProperty
+    name: Select
+    icon: 🏷️
+    required: false
+    defaultValue: "Option 1"
+    options:
+      - "Option 1"
+      - "Option 2"
+      - "Option 3"
+      
+  multiSelect:
+    type: MultiSelectProperty
+    name: Multi-Select
+    icon: 🏷️
+    required: false
+    defaultValue: ["Tag1", "Tag2"]
+    options:
+      - "Tag1"
+      - "Tag2"
+      - "Tag3"
+      - "Tag4"
+      
+  objet:
+    type: ObjectProperty
+    name: Objet
+    icon: 📦
+    required: false
+    defaultValue:
+      propriete1: "valeur1"
+      propriete2: 123
+      propriete3: true

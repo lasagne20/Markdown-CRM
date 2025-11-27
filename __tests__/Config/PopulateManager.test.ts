@@ -482,4 +482,426 @@ describe('PopulateManager', () => {
             ).rejects.toThrow('Network error');
         });
     });
+
+    describe('Properties without populate template', () => {
+        let populateManager: any;
+        let vault: any;
+        let app: any;
+
+        beforeEach(() => {
+            const { PopulateManager } = require('../../src/Config/PopulateManager');
+            const { mockApp } = require('../utils/mocks');
+            const { Vault } = require('../../src/vault/Vault');
+            
+            app = mockApp();
+            vault = new Vault(app, { configPath: 'test-config' } as any);
+            populateManager = new PopulateManager(vault);
+        });
+
+        it('should write TextProperty with defaultValue even without populate', async () => {
+            const classConfig: any = {
+                className: 'Task',
+                properties: {
+                    titre: {
+                        name: 'titre',
+                        type: 'TextProperty',
+                        defaultValue: ''
+                    },
+                    description: {
+                        name: 'description',
+                        type: 'TextProperty',
+                        defaultValue: 'Description par défaut'
+                    },
+                    statut: {
+                        name: 'statut',
+                        type: 'SelectProperty',
+                        options: ['Todo', 'Done'],
+                        defaultValue: 'Todo'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'statut',
+                        title: 'Statut',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('Done');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ statut: 'Done' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('titre', '');
+            expect(merged).toHaveProperty('description', 'Description par défaut');
+            expect(merged).toHaveProperty('statut', 'Done');
+        });
+
+        it('should write NumberProperty with defaultValue even without populate', async () => {
+            const classConfig: any = {
+                className: 'Product',
+                properties: {
+                    prix: {
+                        name: 'prix',
+                        type: 'NumberProperty',
+                        defaultValue: 0
+                    },
+                    quantite: {
+                        name: 'quantite',
+                        type: 'NumberProperty',
+                        defaultValue: 1
+                    },
+                    categorie: {
+                        name: 'categorie',
+                        type: 'SelectProperty',
+                        options: ['A', 'B'],
+                        defaultValue: 'A'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'categorie',
+                        title: 'Catégorie',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('B');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ categorie: 'B' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('prix', 0);
+            expect(merged).toHaveProperty('quantite', 1);
+            expect(merged).toHaveProperty('categorie', 'B');
+        });
+
+        it('should write BooleanProperty with defaultValue even without populate', async () => {
+            const classConfig: any = {
+                className: 'Task',
+                properties: {
+                    actif: {
+                        name: 'actif',
+                        type: 'BooleanProperty',
+                        defaultValue: true
+                    },
+                    archive: {
+                        name: 'archive',
+                        type: 'BooleanProperty',
+                        defaultValue: false
+                    },
+                    statut: {
+                        name: 'statut',
+                        type: 'SelectProperty',
+                        options: ['Open', 'Closed'],
+                        defaultValue: 'Open'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'statut',
+                        title: 'Statut',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('Closed');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ statut: 'Closed' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('actif', true);
+            expect(merged).toHaveProperty('archive', false);
+            expect(merged).toHaveProperty('statut', 'Closed');
+        });
+
+        it('should write DateProperty with defaultValue even without populate', async () => {
+            const classConfig: any = {
+                className: 'Event',
+                properties: {
+                    dateCreation: {
+                        name: 'dateCreation',
+                        type: 'DateProperty',
+                        defaultValue: '2025-01-01'
+                    },
+                    dateEcheance: {
+                        name: 'dateEcheance',
+                        type: 'DateProperty',
+                        defaultValue: ''
+                    },
+                    priorite: {
+                        name: 'priorite',
+                        type: 'SelectProperty',
+                        options: ['Low', 'High'],
+                        defaultValue: 'Low'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'priorite',
+                        title: 'Priorité',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('High');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ priorite: 'High' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('dateCreation', '2025-01-01');
+            expect(merged).toHaveProperty('dateEcheance', '');
+            expect(merged).toHaveProperty('priorite', 'High');
+        });
+
+        it('should write FileProperty with defaultValue even without populate', async () => {
+            const classConfig: any = {
+                className: 'Task',
+                properties: {
+                    responsable: {
+                        name: 'responsable',
+                        type: 'FileProperty',
+                        classes: ['Personne'],
+                        defaultValue: ''
+                    },
+                    institution: {
+                        name: 'institution',
+                        type: 'FileProperty',
+                        classes: ['Institution'],
+                        defaultValue: ''
+                    },
+                    statut: {
+                        name: 'statut',
+                        type: 'SelectProperty',
+                        options: ['Todo', 'Done'],
+                        defaultValue: 'Todo'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'statut',
+                        title: 'Statut',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('Done');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ statut: 'Done' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('responsable', '');
+            expect(merged).toHaveProperty('institution', '');
+            expect(merged).toHaveProperty('statut', 'Done');
+        });
+
+        it('should write SelectProperty with defaultValue even without populate', async () => {
+            const classConfig: any = {
+                className: 'Task',
+                properties: {
+                    priorite: {
+                        name: 'priorite',
+                        type: 'SelectProperty',
+                        options: ['Low', 'Medium', 'High'],
+                        defaultValue: 'Medium'
+                    },
+                    categorie: {
+                        name: 'categorie',
+                        type: 'SelectProperty',
+                        options: ['A', 'B', 'C'],
+                        defaultValue: 'A'
+                    },
+                    statut: {
+                        name: 'statut',
+                        type: 'SelectProperty',
+                        options: ['Open', 'Closed'],
+                        defaultValue: 'Open'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'statut',
+                        title: 'Statut',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('Closed');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ statut: 'Closed' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('priorite', 'Medium');
+            expect(merged).toHaveProperty('categorie', 'A');
+            expect(merged).toHaveProperty('statut', 'Closed');
+        });
+
+        it('should write MultiSelectProperty with defaultValue even without populate', async () => {
+            const classConfig: any = {
+                className: 'Task',
+                properties: {
+                    tags: {
+                        name: 'tags',
+                        type: 'MultiSelectProperty',
+                        options: ['urgent', 'important', 'normal'],
+                        defaultValue: []
+                    },
+                    competences: {
+                        name: 'competences',
+                        type: 'MultiSelectProperty',
+                        options: ['dev', 'design', 'marketing'],
+                        defaultValue: ['dev']
+                    },
+                    statut: {
+                        name: 'statut',
+                        type: 'SelectProperty',
+                        options: ['Todo', 'Done'],
+                        defaultValue: 'Todo'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'statut',
+                        title: 'Statut',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('Done');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ statut: 'Done' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('tags');
+            expect(merged.tags).toEqual([]);
+            expect(merged).toHaveProperty('competences');
+            expect(merged.competences).toEqual(['dev']);
+            expect(merged).toHaveProperty('statut', 'Done');
+        });
+
+        it('should write mixed property types with defaultValues', async () => {
+            const classConfig: any = {
+                className: 'ComplexTask',
+                properties: {
+                    nom: {
+                        name: 'nom',
+                        type: 'TextProperty',
+                        defaultValue: ''
+                    },
+                    priorite: {
+                        name: 'priorite',
+                        type: 'NumberProperty',
+                        defaultValue: 1
+                    },
+                    actif: {
+                        name: 'actif',
+                        type: 'BooleanProperty',
+                        defaultValue: true
+                    },
+                    tags: {
+                        name: 'tags',
+                        type: 'MultiSelectProperty',
+                        options: ['a', 'b'],
+                        defaultValue: []
+                    },
+                    responsable: {
+                        name: 'responsable',
+                        type: 'ObjectProperty',
+                        defaultValue: [],
+                        properties: {
+                            personne: {
+                                name: 'personne',
+                                type: 'FileProperty',
+                                classes: ['Personne'],
+                                defaultValue: ''
+                            }
+                        }
+                    },
+                    statut: {
+                        name: 'statut',
+                        type: 'SelectProperty',
+                        options: ['Todo', 'Done'],
+                        defaultValue: 'Todo'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'statut',
+                        title: 'Statut',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('Done');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ statut: 'Done' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('nom', '');
+            expect(merged).toHaveProperty('priorite', 1);
+            expect(merged).toHaveProperty('actif', true);
+            expect(merged).toHaveProperty('tags');
+            expect(merged.tags).toEqual([]);
+            expect(merged).toHaveProperty('responsable');
+            expect(merged.responsable).toEqual([]);
+            expect(merged).toHaveProperty('statut', 'Done');
+        });
+
+        it('should not include properties without defaultValue', async () => {
+            const classConfig: any = {
+                className: 'Task',
+                properties: {
+                    withDefault: {
+                        name: 'withDefault',
+                        type: 'TextProperty',
+                        defaultValue: 'value'
+                    },
+                    withoutDefault: {
+                        name: 'withoutDefault',
+                        type: 'TextProperty'
+                        // No defaultValue
+                    },
+                    statut: {
+                        name: 'statut',
+                        type: 'SelectProperty',
+                        options: ['A', 'B'],
+                        defaultValue: 'A'
+                    }
+                },
+                populate: [
+                    {
+                        property: 'statut',
+                        title: 'Statut',
+                        required: true
+                    }
+                ]
+            };
+
+            app.selectFromList.mockResolvedValue('B');
+
+            const result = await populateManager.populateProperties(classConfig);
+            expect(result).toEqual({ statut: 'B' });
+
+            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            expect(merged).toHaveProperty('withDefault', 'value');
+            expect(merged).not.toHaveProperty('withoutDefault');
+            expect(merged).toHaveProperty('statut', 'B');
+        });
+    });
 });

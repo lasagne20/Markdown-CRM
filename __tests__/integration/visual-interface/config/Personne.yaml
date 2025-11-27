@@ -12,45 +12,46 @@ parent:
 populate:
   - property: institution
     title: "Choisir une institution"
+    required: true
 
   - property: statut
     title: "Choisir un statut"
 
 # Configuration des propriétés
 properties:
-  - name: nom
+  nom:
     type: Property
-    title: Nom complet
+    name: Nom complet
     icon: 📝
     required: true
     defaultValue: ""
     
-  - name: prenom
+  prenom:
     type: TextProperty
-    title: Prénom
+    name: Prénom
     icon: 👤
     required: false
     defaultValue: ""
     
-  - name: institution
+  institution:
     type: FileProperty
-    title: Institution
+    name: Institution
     icon: 🏢
     required: false
     defaultValue: ""
     classes:
       - Institution
     
-  - name: poste
+  poste:
     type: TextProperty
-    title: Poste/Fonction
+    name: Poste/Fonction
     icon: 💼
     required: false
     defaultValue: ""
     
-  - name: email
+  email:
     type: EmailProperty
-    title: Email professionnel
+    name: Email professionnel
     icon: 📧
     required: false
     defaultValue: ""
@@ -58,23 +59,23 @@ properties:
       pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
       message: "Veuillez entrer une adresse e-mail valide"
     
-  - name: telephone
+  telephone:
     type: PhoneProperty
-    title: Téléphone
+    name: Téléphone
     icon: 📞
     required: false
     defaultValue: ""
     
-  - name: dateEntree
+  dateEntree:
     type: DateProperty
-    title: Date d'entrée
+    name: Date d'entrée
     icon: 📅
     required: false
     defaultValue: ""
     
-  - name: statut
+  statut:
     type: SelectProperty
-    title: Statut
+    name: Statut
     icon: 🏷️
     required: false
     defaultValue: "Actif"
@@ -84,9 +85,9 @@ properties:
       - "En congé"
       - "Parti"
     
-  - name: competences
+  competences:
     type: MultiSelectProperty
-    title: Compétences
+    name: Compétences
     icon: 🎯
     required: false
     defaultValue: []
@@ -100,9 +101,9 @@ properties:
       - "RH"
       - "Juridique"
     
-  - name: notes
+  notes:
     type: TextProperty
-    title: Notes
+    name: Notes
     icon: 📋
     required: false
     defaultValue: ""

@@ -6,16 +6,16 @@ template: Institution.md
 
 # Configuration des propriétés
 properties:
-  - name: nom
+  nom:
     type: Property
-    title: Nom de l'institution
+    name: Nom de l'institution
     icon: 🏢
     required: true
     defaultValue: ""
     
-  - name: type
+  type:
     type: SelectProperty
-    title: Type d'institution
+    name: Type d'institution
     icon: 🏷️
     required: false
     defaultValue: "Entreprise"
@@ -26,60 +26,60 @@ properties:
       - "École/Université"
       - "Autre"
     
-  - name: secteur
+  secteur:
     type: TextProperty
-    title: Secteur d'activité
+    name: Secteur d'activité
     icon: 💼
     required: false
     defaultValue: ""
     
-  - name: siteWeb
+  siteWeb:
     type: LinkProperty
-    title: Site web
+    name: Site web
     icon: 🌐
     required: false
     defaultValue: ""
     
-  - name: adresse
+  adresse:
     type: AdressProperty
-    title: Adresse
+    name: Adresse
     icon: 📍
     required: false
     defaultValue: ""
     
-  - name: telephonePrincipal
+  telephonePrincipal:
     type: PhoneProperty
-    title: Téléphone principal
+    name: Téléphone principal
     icon: 📞
     required: false
     defaultValue: ""
     
-  - name: email
+  email:
     type: EmailProperty
-    title: Email principal
+    name: Email principal
     icon: 📧
     required: false
     defaultValue: ""
     
-  - name: dateCreation
+  dateCreation:
     type: DateProperty
-    title: Date de création
+    name: Date de création
     icon: 📅
     required: false
     defaultValue: ""
     
-  - name: nombreEmployes
+  nombreEmployes:
     type: NumberProperty
-    title: Nombre d'employés
+    name: Nombre d'employés
     icon: 👥
     required: false
     defaultValue: 0
     validation:
       min: 0
     
-  - name: description
+  description:
     type: TextProperty
-    title: Description
+    name: Description
     icon: 📋
     required: false
     defaultValue: ""

@@ -12,15 +12,15 @@ data:
     dynamic: true
 
 properties:
-  - name: nom
+  nom:
     type: NameProperty
-    title: Nom du lieu
+    name: Nom du lieu
     icon: 📝
     required: true
     
-  - name: type
+  type:
     type: SelectProperty
-    title: Type de territoire
+    name: Type de territoire
     icon: 🗺️
     required: true
     static: true
@@ -31,87 +31,87 @@ properties:
       - EPCI
       - Commune
         
-  - name: code_postal
+  code_postal:
     type: Property
-    title: Code postal
+    name: Code postal
     icon: 📮
     
-  - name: code_insee
+  code_insee:
     type: Property
-    title: Code INSEE
+    name: Code INSEE
     icon: 🔢
     
-  - name: population
+  population:
     type: NumberProperty
-    title: Population
+    name: Population
     icon: 👥
     format: '0,0'
     
-  - name: superficie
+  superficie:
     type: NumberProperty
-    title: Superficie
+    name: Superficie
     icon: 📏
     format: '0,0.00'
     unit: km²
     
-  - name: parent
+  parent:
     type: FileProperty
-    title: Territoire parent
+    name: Territoire parent
     icon: 📂
     static: true
     classes:
       - Lieu
       
-  - name: adresse
+  adresse:
     type: AdressProperty
-    title: Adresse
+    name: Adresse
     icon: 📍
     
-  - name: contacts
+  contacts:
     type: MultiFileProperty
-    title: Contacts
+    name: Contacts
     icon: 👤
     classes:
       - Personne
       
-  - name: institutions
+  institutions:
     type: MultiFileProperty
-    title: Institutions
+    name: Institutions
     icon: 🏢
     classes:
       - Institution
       
-  - name: projets
+  projets:
     type: MultiFileProperty
-    title: Projets
+    name: Projets
     icon: 📊
     classes:
       - Projet
       
-  - name: site_web
+  site_web:
     type: LinkProperty
-    title: Site web
+    name: Site web
     icon: 🌐
     
-  - name: email
+  email:
     type: EmailProperty
-    title: Email
+    name: Email
     icon: 📧
     
-  - name: telephone
+  telephone:
     type: PhoneProperty
-    title: Téléphone
+    name: Téléphone
     icon: 📞
     
-  - name: description
+  description:
     type: TextProperty
-    title: Description
+    name: Description
     icon: 📋
     multiline: true
     
-  - name: date_creation
+  date_creation:
     type: DateProperty
-    title: Date de création
+    name: Date de création
     icon: 📅
 
 display:

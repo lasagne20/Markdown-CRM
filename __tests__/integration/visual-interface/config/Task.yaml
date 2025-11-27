@@ -1,0 +1,69 @@
+# Configuration de la classe Task
+name: Task
+icon: ✅
+description: Gestion des tâches
+template: Task.md
+
+# Configuration des propriétés
+properties:
+  titre:
+    type: Property
+    name: Titre
+    icon: 📝
+    required: true
+    defaultValue: ""
+    
+  description:
+    type: TextProperty
+    name: Description
+    icon: 📋
+    required: false
+    defaultValue: ""
+    multiline: true
+    
+  statut:
+    type: SelectProperty
+    name: Statut
+    icon: 🏷️
+    required: false
+    defaultValue: "À faire"
+    options:
+      - "À faire"
+      - "En cours"
+      - "Terminé"
+      
+  priorite:
+    type: SelectProperty
+    name: Priorité
+    icon: ⚡
+    required: false
+    defaultValue: "Moyenne"
+    options:
+      - "Basse"
+      - "Moyenne"
+      - "Haute"
+      
+  dateEcheance:
+    type: DateProperty
+    name: Date d'échéance
+    icon: 📅
+    required: false
+    defaultValue: ""
+    
+  assignee:
+    type: FileProperty
+    name: Assigné à
+    icon: 👤
+    required: false
+    defaultValue: ""
+    classes:
+      - Personne
+      
+  projet:
+    type: ObjectProperty
+    name: Projet
+    icon: 📁
+    required: false
+    defaultValue:
+      nom: ""
+      code: ""
