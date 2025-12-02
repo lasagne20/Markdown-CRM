@@ -586,7 +586,15 @@ export class Classe {
     
     // Lifecycle hooks
     async onCreate(): Promise<void> {
-        // Override in subclasses for post-creation logic
+        // Check if parent folder should be set up on creation
+        const parentProperty = this.getParentProperty();
+        if (parentProperty) {
+            const parentValue = await this.getPropertyValue(parentProperty.name);
+            if (parentValue) {
+                // Parent property has a value, set up folder structure
+                await this.updateParentFolder();
+            }
+        }
     }
     
     async onUpdate(): Promise<void> {

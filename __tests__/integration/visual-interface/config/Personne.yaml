@@ -6,7 +6,7 @@ template: Personne.md
 
 # Propriété parent pour organisation automatique des fichiers
 parent:
-    property: institution
+    property: postes
     folder: Personnes
 
 populate:

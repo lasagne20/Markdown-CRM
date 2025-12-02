@@ -102,7 +102,7 @@ export class ObjectProperty extends Property{
     /**
      * Extract the parent File from an ObjectProperty value
      * Looks for the first FileProperty or MultiFileProperty in the object's properties
-     * @param value The property value (array of objects)
+     * @param value The property value (array of objects or single object)
      * @returns The File instance if found, undefined otherwise
      */
     async getParentFile(value: any): Promise<File | undefined> {
@@ -120,8 +120,19 @@ export class ObjectProperty extends Property{
             }
         }
 
+        // Normalize value to array format
+        if (!Array.isArray(values)) {
+            // If it's an object (not an array), wrap it in an array
+            if (typeof values === 'object' && Object.keys(values).length > 0) {
+                values = [values];
+            } else {
+                // Empty object {} or other invalid value
+                return undefined;
+            }
+        }
+
         // Take the first object from the array
-        if (Array.isArray(values) && values.length > 0) {
+        if (values.length > 0) {
             const firstObj = values[0];
             
             // Look for first FileProperty or MultiFileProperty

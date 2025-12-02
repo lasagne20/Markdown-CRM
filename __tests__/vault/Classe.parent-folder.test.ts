@@ -3,6 +3,8 @@ import { Classe } from '../../src/vault/Classe';
 import { File } from '../../src/vault/File';
 import { IApp, IFile, IFolder } from '../../src/interfaces/IApp';
 import { FileProperty } from '../../src/properties/FileProperty';
+import { ObjectProperty } from '../../src/properties/ObjectProperty';
+import { TextProperty } from '../../src/properties/TextProperty';
 
 describe('Classe - Parent Folder Configuration', () => {
     let mockApp: IApp;
@@ -450,6 +452,173 @@ describe('Classe - Parent Folder Configuration', () => {
             expect(mockApp.writeFile).toHaveBeenCalled();
             const writeCall = (mockApp.writeFile as jest.Mock).mock.calls[0];
             expect(writeCall[1]).toMatch(/status:\s*"?published"?/); // Handle both quoted and unquoted values
+        });
+    });
+
+    describe('ObjectProperty as parent property', () => {
+        class TestClasseWithObjectParent extends Classe {
+            static override parentPropertyName = 'postes'; // ObjectProperty
+            static override parentFolderName = 'Personnes';
+
+            static override create(vault: Vault): TestClasseWithObjectParent {
+                return new TestClasseWithObjectParent(vault);
+            }
+        }
+
+        test('should extract first FileProperty from ObjectProperty and use it as parent', async () => {
+            // Create Institution file (parent)
+            const institutionFile: IFile = {
+                path: 'Institutions/TechCorp.md',
+                name: 'TechCorp.md',
+                basename: 'TechCorp',
+                extension: 'md'
+            };
+            files.set(institutionFile.path, institutionFile);
+            metadata.set(institutionFile.path, { Classe: 'Institution' });
+
+            // Create Personne file with ObjectProperty value
+            const personneFile: IFile = {
+                path: 'Personnes/John.md',
+                name: 'John.md',
+                basename: 'John',
+                extension: 'md'
+            };
+            files.set(personneFile.path, personneFile);
+            
+            // ObjectProperty value: array with object containing institution (FileProperty) and poste (TextProperty)
+            const postesValue = [
+                {
+                    institution: '[[Institutions/TechCorp.md|TechCorp]]',
+                    poste: 'CEO'
+                }
+            ];
+            metadata.set(personneFile.path, { 
+                Classe: 'Personne',
+                postes: postesValue 
+            });
+
+            // Create ObjectProperty with institution (FileProperty) and poste (TextProperty)
+            const institutionProp = new FileProperty('institution', vault, ['Institution'], {});
+            const posteProp = new TextProperty('poste', vault, {});
+            const postesObjectProp = new ObjectProperty('postes', vault, {
+                institution: institutionProp,
+                poste: posteProp
+            });
+
+            // Create Personne class instance
+            const personneClasse = new TestClasseWithObjectParent(vault);
+            personneClasse.addProperty(postesObjectProp);
+            personneClasse.setFile(new File(vault, personneFile));
+
+            // Mock getParentFile on ObjectProperty to return the Institution file
+            jest.spyOn(postesObjectProp, 'getParentFile').mockResolvedValue(new File(vault, institutionFile));
+            jest.spyOn(vault, 'createClasse').mockResolvedValue(personneClasse);
+
+            // Call onCreate (which should trigger updateParentFolder)
+            await personneClasse.onCreate();
+
+            // Verify that Institution dedicated folder was created
+            const createFolderCalls = (mockApp.createFolder as jest.Mock).mock.calls;
+            expect(createFolderCalls.some((call: any[]) => 
+                call[0].includes('TechCorp')
+            )).toBe(true);
+
+            // Verify that Personnes subfolder was created
+            expect(createFolderCalls.some((call: any[]) => 
+                call[0].endsWith('/Personnes')
+            )).toBe(true);
+
+            // Verify that Personne file was moved to Institution/TechCorp/Personnes/John.md
+            const moveCalls = (mockApp.move as jest.Mock).mock.calls;
+            const personneMove = moveCalls.find((call: any[]) => call[0].basename === 'John');
+            expect(personneMove).toBeDefined();
+            expect(personneMove[1]).toMatch(/TechCorp\/Personnes\/John\.md$/);
+        });
+
+        test('should handle empty ObjectProperty value gracefully', async () => {
+            // Create Personne file with empty ObjectProperty
+            const personneFile: IFile = {
+                path: 'Personnes/Jane.md',
+                name: 'Jane.md',
+                basename: 'Jane',
+                extension: 'md'
+            };
+            files.set(personneFile.path, personneFile);
+            metadata.set(personneFile.path, { 
+                Classe: 'Personne',
+                postes: [] // Empty array
+            });
+
+            const postesObjectProp = new ObjectProperty('postes', vault, {
+                institution: new FileProperty('institution', vault, ['Institution'], {}),
+                poste: new TextProperty('poste', vault, {})
+            });
+
+            const personneClasse = new TestClasseWithObjectParent(vault);
+            personneClasse.addProperty(postesObjectProp);
+            personneClasse.setFile(new File(vault, personneFile));
+
+            jest.spyOn(vault, 'createClasse').mockResolvedValue(personneClasse);
+
+            // Call onCreate - should not crash with empty array
+            await expect(personneClasse.onCreate()).resolves.not.toThrow();
+
+            // Verify no folder operations occurred (no parent to organize by)
+            expect(mockApp.createFolder).not.toHaveBeenCalled();
+            expect(mockApp.move).not.toHaveBeenCalled();
+        });
+
+        test('should handle ObjectProperty with object instead of array', async () => {
+            // Create Institution file
+            const institutionFile: IFile = {
+                path: 'Institutions/StartupCo.md',
+                name: 'StartupCo.md',
+                basename: 'StartupCo',
+                extension: 'md'
+            };
+            files.set(institutionFile.path, institutionFile);
+            metadata.set(institutionFile.path, { Classe: 'Institution' });
+
+            // Create Personne file with ObjectProperty as single object (not array)
+            const personneFile: IFile = {
+                path: 'Personnes/Alice.md',
+                name: 'Alice.md',
+                basename: 'Alice',
+                extension: 'md'
+            };
+            files.set(personneFile.path, personneFile);
+            
+            // ObjectProperty value as object (should be normalized to array internally)
+            const postesValue = {
+                institution: '[[Institutions/StartupCo.md|StartupCo]]',
+                poste: 'CTO'
+            };
+            metadata.set(personneFile.path, { 
+                Classe: 'Personne',
+                postes: postesValue 
+            });
+
+            const postesObjectProp = new ObjectProperty('postes', vault, {
+                institution: new FileProperty('institution', vault, ['Institution'], {}),
+                poste: new TextProperty('poste', vault, {})
+            });
+
+            const personneClasse = new TestClasseWithObjectParent(vault);
+            personneClasse.addProperty(postesObjectProp);
+            personneClasse.setFile(new File(vault, personneFile));
+
+            // Mock getParentFile to handle object normalization
+            jest.spyOn(postesObjectProp, 'getParentFile').mockResolvedValue(new File(vault, institutionFile));
+            jest.spyOn(vault, 'createClasse').mockResolvedValue(personneClasse);
+
+            // Call onCreate
+            await personneClasse.onCreate();
+
+            // Verify that file was moved to correct location
+            const moveCalls = (mockApp.move as jest.Mock).mock.calls;
+            const personneMove = moveCalls.find((call: any[]) => call[0].basename === 'Alice');
+            expect(personneMove).toBeDefined();
+            expect(personneMove[1]).toMatch(/StartupCo\/Personnes\/Alice\.md$/);
         });
     });
 });
