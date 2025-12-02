@@ -270,13 +270,13 @@ export class Vault {
                 
                 // Serialize back to YAML
                 const newFrontmatter = yaml.dump(frontmatterObj, {
-                    lineWidth: -1, // Don't wrap lines
-                    noRefs: true,  // Don't use references
-                    flowLevel: -1, // Use block style
-                    styles: {
-                        '!!null': 'canonical' // Represent null as ~
-                    },
-                    sortKeys: false // Keep original order
+                    flowLevel: -1,     // Force le format multi-ligne pour les tableaux
+                    lineWidth: -1,     // Pas de limite de largeur de ligne (empêche le folding)
+                    noRefs: true,      // Pas de références YAML
+                    sortKeys: false,   // Garder l'ordre des clés
+                    forceQuotes: true, // Forcer les guillemets pour éviter les problèmes avec les crochets
+                    quotingType: '"',  // Utiliser des guillemets doubles
+                    noCompatMode: true // Mode moderne (pas de wrap automatique)
                 });
                 
                 // Reconstruct template with updated frontmatter

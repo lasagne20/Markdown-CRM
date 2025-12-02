@@ -150,13 +150,13 @@ export class ObjectProperty extends Property{
 
      // Méthode principale pour obtenir l'affichage
      override fillDisplay(values: any, update: (value: any) => Promise<void>) {
+        console.log("Fill display ObjectProperty ", this.name)
         const container = document.createElement("div");
         container.classList.add("metadata-object-container");
         container.classList.add("metadata-object-container-" + this.name.toLowerCase().replace(/\s+/g, '-'));
 
         // Créer l'en-tête
         this.createHeader(values, update, container);
-
         if (this.display == "table") {
             this.createTable(values, update, container);
         }
@@ -296,10 +296,6 @@ export class ObjectProperty extends Property{
                 propertyContainer.style.gridColumn = "span "+property.flexSpan;
             }
 
-            const title = document.createElement("div");
-            title.textContent = property.name;
-            title.classList.add("metadata-title");
-            propertyContainer.appendChild(title);
             propertyContainer.appendChild(property.fillDisplay(value,
                 async (value: any) => await this.updateObject(values, update, index, property, value)));
             row.appendChild(propertyContainer);
@@ -318,26 +314,26 @@ export class ObjectProperty extends Property{
           return deleteButton;
       }
   
-      // Gère le glisser-déposer pour réordonner les objets
-      enableDragAndDrop(values : any, update : (value: any) => Promise<void>, container: HTMLDivElement) {
-          let draggedElement: HTMLElement | null = null;
+    // Gère le glisser-déposer pour réordonner les objets
+    enableDragAndDrop(values : any, update : (value: any) => Promise<void>, container: HTMLDivElement) {
+        let draggedElement: HTMLElement | null = null;
 
-          let isEditing = false;
+        let isEditing = false;
 
-          // Lorsque l'utilisateur clique dans un champ d'édition (input), on active l'édition
-          document.addEventListener("focus", (event) => {
-              const input = event.target as HTMLElement;
-              if (input?.classList.contains('field-input')) {
-                  isEditing = true;  // Le champ est en mode édition
-              }
-          }, true);
+        // Lorsque l'utilisateur clique dans un champ d'édition (input), on active l'édition
+        document.addEventListener("focus", (event) => {
+            const input = event.target as HTMLElement;
+            if (input?.classList?.contains('field-input')) {
+                isEditing = true;  // Le champ est en mode édition
+            }
+        }, true);
 
-          // Lorsque l'utilisateur quitte un champ d'édition (blur), on désactive l'édition
-          document.addEventListener("blur", (event) => {
-              const input = event.target as HTMLElement;
-              if (input?.classList.contains('field-input')) {
-                  isEditing = false;  // Le champ n'est plus en mode édition
-              }
+        // Lorsque l'utilisateur quitte un champ d'édition (blur), on désactive l'édition
+        document.addEventListener("blur", (event) => {
+            const input = event.target as HTMLElement;
+            if (input?.classList?.contains('field-input')) {
+                isEditing = false;  // Le champ n'est plus en mode édition
+            }
           }, true);
 
           container.addEventListener("dragstart", (event) => {
@@ -407,22 +403,18 @@ export class ObjectProperty extends Property{
   
       // Fonction pour ajouter un objet
       async addProperty(values : any, update : (value: any) => Promise<void>, container: HTMLDivElement) {
-          console.log("Add new")
           let newObject: any = {};
           for (let prop of Object.values(this.properties)) {
             let defaultValue = prop.getDefaultValue()
-            console.log("Default value : ", defaultValue)
             if (Object.values(this.properties)[0] == prop && (prop instanceof FileProperty)) {
                 prop.vault = this.vault; // Assurez-vous que vault est défini pour le premier FileProperty
                 const fileProp = prop as any; // Cast pour accéder à handleIconClick
                 defaultValue = await new Promise(async (resolve) => {
                     await fileProp.handleIconClick(async (value: any) => {
                         resolve(value);
-                        console.log("Default value after click : ", value);
                     }, new MouseEvent("click"));
                 });
             }
-            console.log("Default value after click : ", defaultValue);
 
             if (defaultValue == "like-precedent"){
                 if (values && values.length){
@@ -445,6 +437,7 @@ export class ObjectProperty extends Property{
         } else {
             values.push(newObject);
         }
+        console.log("New Values : ", values)
           await update(values);
           await this.reloadObjects(values, update)
       }

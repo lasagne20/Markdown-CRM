@@ -10,7 +10,7 @@ parent:
     folder: Personnes
 
 populate:
-  - property: institution
+  - property: postes
     title: "Choisir une institution"
     required: true
 
@@ -42,12 +42,26 @@ properties:
     classes:
       - Institution
     
-  poste:
-    type: TextProperty
+  postes:
+    type: ObjectProperty
     title: Poste/Fonction
     icon: 💼
     required: false
-    defaultValue: ""
+    defaultValue: {}
+    properties:
+      institution:
+        type: FileProperty
+        title: Institution
+        icon: 🏢
+        required: false
+        classes:
+          - Institution
+      poste:
+        type: TextProperty
+        title: Poste
+        icon: 💼
+        required: false
+        defaultValue: ""
     
   email:
     type: EmailProperty
@@ -126,7 +140,7 @@ display:
       tabs:
         - name: "Professionnel"
           properties:
-            - poste
+            - postes
             - dateEntree
             - statut
             - competences

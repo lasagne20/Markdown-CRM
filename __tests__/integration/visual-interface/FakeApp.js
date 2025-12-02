@@ -17,98 +17,60 @@ export class FakeApp {
     }
 
     parseYamlFrontmatter(frontmatterText) {
+        try {
+            // Utiliser js-yaml si disponible (chargé depuis le CDN)
+            if (typeof jsyaml !== 'undefined') {
+                const metadata = jsyaml.load(frontmatterText);
+                console.log('📋 YAML parsé avec js-yaml:', metadata);
+                return metadata || {};
+            }
+            
+            // Fallback: parser simple si js-yaml n'est pas disponible
+            console.warn('⚠️ js-yaml non disponible, utilisation du parser simple');
+            return this.parseYamlSimple(frontmatterText);
+        } catch (error) {
+            console.error('❌ Erreur lors du parsing YAML:', error);
+            console.error('Contenu YAML:', frontmatterText);
+            
+            // En cas d'erreur, essayer le parser simple
+            return this.parseYamlSimple(frontmatterText);
+        }
+    }
+    
+    parseYamlSimple(frontmatterText) {
+        // Parser YAML simple pour fallback
         const metadata = {};
         const lines = frontmatterText.split('\n');
         let currentKey = null;
-        let currentArray = null;
-        let currentFoldedScalar = null; // Pour gérer les >- et |-
-        let foldedLines = [];
+        let currentValue = '';
         
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
+        for (const line of lines) {
             const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine.startsWith('#')) continue;
             
-            // Si on est dans un folded scalar, continuer à collecter les lignes indentées
-            if (currentFoldedScalar !== null) {
-                // Si la ligne est indentée, c'est la continuation du scalar
-                if (line.startsWith('  ') && trimmedLine !== '') {
-                    foldedLines.push(trimmedLine);
-                    continue;
-                } else {
-                    // Fin du folded scalar - joindre les lignes
-                    const foldedValue = foldedLines.join(' ');
-                    metadata[currentFoldedScalar] = foldedValue;
-                    currentFoldedScalar = null;
-                    foldedLines = [];
-                    // Ne pas continuer, traiter cette ligne normalement
-                }
-            }
-            
-            if (!trimmedLine) continue;
-            
-            // Check if this is an array item (starts with -)
-            if (trimmedLine.startsWith('-')) {
-                if (currentArray !== null) {
-                    // Extract the value after the dash
-                    let arrayValue = trimmedLine.substring(1).trim();
-                    
-                    // Remove quotes if present
-                    if ((arrayValue.startsWith('"') && arrayValue.endsWith('"')) || 
-                        (arrayValue.startsWith("'") && arrayValue.endsWith("'"))) {
-                        arrayValue = arrayValue.slice(1, -1);
-                    }
-                    
-                    currentArray.push(arrayValue);
-                }
-                continue;
-            }
-            
-            // Check if this is a key:value pair
             const colonIndex = trimmedLine.indexOf(':');
-            if (colonIndex === -1) continue;
-            
-            const key = trimmedLine.substring(0, colonIndex).trim();
-            let value = trimmedLine.substring(colonIndex + 1).trim();
-            
-            // Check for folded scalar (>- or |-)
-            if (value === '>-' || value === '|-' || value === '>' || value === '|') {
-                currentFoldedScalar = key;
-                foldedLines = [];
-                continue;
+            if (colonIndex !== -1 && !line.startsWith(' ')) {
+                // Sauvegarder la clé précédente si elle existe
+                if (currentKey !== null) {
+                    metadata[currentKey] = currentValue.trim();
+                }
+                
+                currentKey = trimmedLine.substring(0, colonIndex).trim();
+                currentValue = trimmedLine.substring(colonIndex + 1).trim();
+                
+                // Valeurs simples
+                if (currentValue === 'true') currentValue = true;
+                else if (currentValue === 'false') currentValue = false;
+                else if (currentValue === '[]') currentValue = [];
+                else if (!isNaN(currentValue) && currentValue !== '') {
+                    currentValue = Number(currentValue);
+                }
             }
-            
-            // If value is empty, this might be the start of an array
-            if (value === '' || value === '[]') {
-                currentKey = key;
-                currentArray = [];
-                metadata[key] = currentArray;
-                continue;
-            }
-            
-            // Reset array context when we encounter a new key:value
-            currentKey = null;
-            currentArray = null;
-            
-            // Remove quotes
-            if ((value.startsWith('"') && value.endsWith('"')) || 
-                (value.startsWith("'") && value.endsWith("'"))) {
-                value = value.slice(1, -1);
-            }
-            
-            // Parse special values
-            if (value === 'true') value = true;
-            else if (value === 'false') value = false;
-            else if (value === '[]') value = [];
-            else if (!isNaN(value) && value !== '') {
-                value = Number(value);
-            }
-            
-            metadata[key] = value;
         }
         
-        // Si on termine avec un folded scalar en cours
-        if (currentFoldedScalar !== null && foldedLines.length > 0) {
-            metadata[currentFoldedScalar] = foldedLines.join(' ');
+        // Sauvegarder la dernière clé
+        if (currentKey !== null) {
+            metadata[currentKey] = currentValue;
         }
         
         return metadata;

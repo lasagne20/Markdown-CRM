@@ -2,8 +2,9 @@
 Classe: Personne
 nom: Martin
 prenom: Thomas
-institution: '[[/Institutions/TechCorp Solutions/TechCorp Solutions.md|TechCorp Solutions]]'
-poste: Développeur Senior
+institution: >-
+  [[/Institutions/Université Paris Tech/Université Paris Tech.md|Université
+  Paris Tech]]
 email: thomas.martin@techcorp-solutions.example
 telephone: +33 6 98 76 54 32
 dateEntree: 2019-09-15T00:00:00.000Z
@@ -14,6 +15,7 @@ competences:
 notes: |
   Spécialiste backend et bases de données.
   Mentor pour les nouveaux développeurs.
+postes: null
 
 ---
 

@@ -72,7 +72,6 @@ export class ConfigLoader {
                 });
             }
             
-            console.log("YAML content loaded:", fileContent);
             const config = yaml.load(fileContent) as any;
             
             // Normaliser name → className et icon → classIcon pour compatibilité
@@ -155,18 +154,11 @@ export class ConfigLoader {
             case 'ObjectProperty':
                 const objProperties: { [key: string]: Property } = {};
                 if (config.properties) {
-                    // Vérifier si c'est un format tableau ou objet
-                    if (Array.isArray(config.properties)) {
-                        // Format tableau
-                        for (const row of config.properties) {
-                            const propConfig = this.parseTableRowToPropertyConfig(row);
-                            objProperties[row.name] = this.createProperty(propConfig);
-                        }
-                    } else {
-                        // Format objet classique
-                        for (const [key, propConfig] of Object.entries(config.properties)) {
-                            objProperties[key] = this.createProperty(propConfig);
-                        }
+                    // Les propriétés sont toujours définies sous forme d'objet
+                    for (const [key, propConfig] of Object.entries(config.properties)) {
+                        // IMPORTANT: Passer le key comme propertyKey pour que la propriété ait un nom
+                        (propConfig as any).propertyKey = key;
+                        objProperties[key] = this.createProperty(propConfig);
                     }
                 }
                 // Ajouter le mode d'affichage si spécifié

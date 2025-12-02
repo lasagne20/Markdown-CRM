@@ -16,7 +16,6 @@ export class LinkProperty extends Property{
     iconContainer.style.cursor = "pointer";
 
     if (!this.static) {
-      console.log("Adding click event to iconContainer for property:", this.name);
       iconContainer.addEventListener("click", (event) => this.modifyField(event));
     }
 

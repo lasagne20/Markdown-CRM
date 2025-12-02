@@ -13,7 +13,6 @@ export class SelectProperty extends Property {
 
     override fillDisplay(value : any, update: (value: string) => Promise<void>) {
         const field = this.createFieldContainer();
-        console.log("Options :", this.options);
         const fieldContainer = document.createElement("div");
         fieldContainer.classList.add("field-container-column");
 

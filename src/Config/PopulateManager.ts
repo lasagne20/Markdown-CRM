@@ -276,7 +276,18 @@ export class PopulateManager {
         // First, apply default values
         for (const [propName, propConfig] of Object.entries(classConfig.properties)) {
             if (propConfig.defaultValue !== undefined) {
-                finalValues[propName] = propConfig.defaultValue;
+                // Pour ObjectProperty, normaliser {} en []
+                if (propConfig.type === 'ObjectProperty') {
+                    if (propConfig.defaultValue && !Array.isArray(propConfig.defaultValue) && typeof propConfig.defaultValue === 'object') {
+                        finalValues[propName] = [propConfig.defaultValue];
+                    } else if (!propConfig.defaultValue) {
+                        finalValues[propName] = [];
+                    } else {
+                        finalValues[propName] = propConfig.defaultValue;
+                    }
+                } else {
+                    finalValues[propName] = propConfig.defaultValue;
+                }
             }
         }
 

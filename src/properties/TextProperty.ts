@@ -31,8 +31,6 @@ export class TextProperty extends Property {
   }
 
   override createFieldLink(value: string) {
-    console.log("Name of the property:", this.name);
-    console.log("Creating field link with value:", value);
     const link = document.createElement("div");
     
     // Ensure value is a string - handle arrays or other types
@@ -241,7 +239,6 @@ export class TextProperty extends Property {
   }
 
   insertSuggestion(textarea: HTMLTextAreaElement, suggestion: string, startIndex: number, queryLength: number) {
-    console.log(textarea, suggestion, startIndex, queryLength);
     const before = textarea.value.substring(0, startIndex);
     const after = textarea.value.substring(startIndex + queryLength);
     textarea.value = `${before}${suggestion}${after}`;

@@ -99,14 +99,16 @@ export class FileProperty extends LinkProperty{
         if (selectedFileObj){
           const selectedFile = selectedFileObj.getLink();
           await update(selectedFile);
-          const link = (event.target as HTMLElement).closest('.metadata-field')?.querySelector('.field-link') as HTMLAnchorElement;
-            if (link) {
-              // Utiliser getPretty pour extraire le nom à afficher correctement
-              link.textContent = this.getPretty(selectedFile);
-              // Mettre à jour l'URL du lien
-              link.href = this.getLink(selectedFile);
-            }
-        }
+          if (event.target) {
+            const link = (event.target as HTMLElement).closest('.metadata-field')?.querySelector('.field-link') as HTMLAnchorElement;
+              if (link) {
+                // Utiliser getPretty pour extraire le nom à afficher correctement
+                link.textContent = this.getPretty(selectedFile);
+                // Mettre à jour l'URL du lien
+                link.href = this.getLink(selectedFile);
+              }
+          }
+          }
     }
 
     // Fonction pour gérer le clic sur l'icône
