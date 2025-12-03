@@ -1,5 +1,5 @@
 ---
-Classe: Lieu
+classe: Lieu
 nom: Nice
 type: Commune
 code_postal: 6000

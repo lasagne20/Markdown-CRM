@@ -284,8 +284,9 @@ export class DynamicClassFactory {
             const fileInstance = new File(vault, file as IFile);
             
             // Extract frontmatter data (exclude parent and filter by defined properties)
+            const classePropertyName = vault.app.getSettings().classePropertyName || "Classe";
             const frontmatter: Record<string, any> = {
-                Classe: className // Always add the class name
+                [classePropertyName]: className
             };
             const definedProperties = Object.keys(config.properties || {});
             
@@ -452,6 +453,7 @@ export class DynamicClassFactory {
      */
     async getAllInstancesForClass(className: string, vault: Vault): Promise<Classe[]> {
         try {
+            console.log(`Getting all instances for class: ${className}`);
             const ClassConstructor = await this.getClass(className);
             const config = await this.configManager.getClassConfig(className);
             const instances: Classe[] = [];
@@ -466,7 +468,8 @@ export class DynamicClassFactory {
                 if ('extension' in file && file.extension === 'md') {
                     // Check if file is of this class
                     const metadata = await vault.app.getMetadata(file as IFile);
-                    if (metadata.Classe === className || metadata.classe === className) {
+                    const classePropertyName = vault.app.getSettings().classePropertyName || "Classe";
+                    if (metadata[classePropertyName] === className) {
                         const fileInstance = new File(vault, file as IFile);
                         const instance = new ClassConstructor(vault, fileInstance);
                         instances.push(instance);

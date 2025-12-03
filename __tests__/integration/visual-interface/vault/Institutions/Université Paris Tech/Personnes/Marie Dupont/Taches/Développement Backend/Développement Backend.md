@@ -1,5 +1,5 @@
 ---
-Classe: Tache
+classe: Tache
 titre: Développement Backend
 description: Mise en place de l'API REST et de la base de données
 statut: En cours

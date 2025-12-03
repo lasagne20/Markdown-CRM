@@ -473,7 +473,7 @@ export class FakeApp {
     }
 
     // Méthode helper pour créer un objet file complet avec toutes les méthodes
-    createFileObject(path, fileName, baseName, extension) {
+    createFileObject(path, fileName, baseName, extension, tempContent = null) {
         const app = this;
         return {
             path: path,
@@ -483,6 +483,10 @@ export class FakeApp {
             
             // Méthode getContent pour compatibilité avec File
             getContent: async function() {
+                // Use temp content if available (for config files not in fileSystem)
+                if (tempContent !== null) {
+                    return tempContent;
+                }
                 return await app.readFile({ path: path });
             },
             
@@ -610,14 +614,9 @@ export class FakeApp {
                     const baseName = fileName.replace(/\.[^/.]+$/, '');
                     const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
                     
-                    // Store the file in the local file system for future access
-                    this.fileSystem.set(filePath, {
-                        content: content,
-                        metadata: {},
-                        isFolder: false
-                    });
-                    
-                    return this.createFileObject(filePath, fileName, baseName, extension);
+                    // DON'T store config files in fileSystem to avoid showing them in vault listing
+                    // Return file object with content directly
+                    return this.createFileObject(filePath, fileName, baseName, extension, content);
                 }
             } catch (error) {
                 console.warn(`⚠️ Impossible de lire le fichier local ${fileName}:`, error.message);
@@ -643,14 +642,17 @@ export class FakeApp {
                 const baseName = fileName.replace(/\.[^/.]+$/, '');
                 const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
                 
-                // Store the file in the local file system for future access
-                this.fileSystem.set(filePath, {
-                    content: content,
-                    metadata: {},
-                    isFolder: false
-                });
+                // Only store non-config files in fileSystem
+                const isConfigFile = filePath.includes('config/') || filePath.endsWith('.yaml') || filePath.endsWith('.yml');
+                if (!isConfigFile) {
+                    this.fileSystem.set(filePath, {
+                        content: content,
+                        metadata: {},
+                        isFolder: false
+                    });
+                }
                 
-                return this.createFileObject(filePath, fileName, baseName, extension);
+                return this.createFileObject(filePath, fileName, baseName, extension, isConfigFile ? content : null);
             } else {
                 console.warn(`⚠️ Fichier non trouvé avec l'URL: ${fetchUrl} (${response.status})`);
                 
@@ -665,14 +667,17 @@ export class FakeApp {
                         const baseName = fileName.replace(/\.[^/.]+$/, '');
                         const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
                         
-                        // Store the file in the local file system for future access
-                        this.fileSystem.set(filePath, {
-                            content: content,
-                            metadata: {},
-                            isFolder: false
-                        });
+                        // Only store non-config files in fileSystem
+                        const isConfigFile = filePath.includes('config/') || filePath.endsWith('.yaml') || filePath.endsWith('.yml');
+                        if (!isConfigFile) {
+                            this.fileSystem.set(filePath, {
+                                content: content,
+                                metadata: {},
+                                isFolder: false
+                            });
+                        }
                         
-                        return this.createFileObject(filePath, fileName, baseName, extension);
+                        return this.createFileObject(filePath, fileName, baseName, extension, isConfigFile ? content : null);
                     } else {
                         console.warn(`⚠️ Accès direct également échoué: ${filePath} (${directResponse.status})`);
                     }
@@ -1532,7 +1537,8 @@ export class FakeApp {
             timeFormat: this.settings.get('timeFormat') || '24h',
             timezone: this.settings.get('timezone') || 'Europe/Paris',
             numberLocale: this.settings.get('numberLocale') || 'fr-FR',
-            currencySymbol: this.settings.get('currencySymbol') || '€'
+            currencySymbol: this.settings.get('currencySymbol') || '€',
+            classePropertyName: this.settings.get('classePropertyName') || 'classe',
         };
     }
     

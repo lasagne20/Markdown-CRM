@@ -238,7 +238,8 @@ export class Vault {
         let templatePath = this.settings.templateFolder + "/" + classeType.name + ".md";
         const templateFile = await this.app.getFile(templatePath);
         const newFilePath = name.includes(".md") ? name : `${name}.md`;
-        let templateContent = "---\nClasse: " + classeType.name + "\n---\n";
+        const classePropertyName = this.app.getSettings().classePropertyName || "Classe";
+        let templateContent = `---\n${classePropertyName}: ` + classeType.name + "\n---\n";
 
         if (templateFile && 'extension' in templateFile && (await this.app.isFile(templateFile as IFile))) {
             templateContent = await this.app.readFile(templateFile as IFile);
@@ -376,8 +377,8 @@ export class Vault {
             console.error("Pas de metadata pour le fichier:", fileInstance.getPath());
             return;
         }
-        
-        const className = metadata["Classe"];
+        const classePropertyName = this.app.getSettings().classePropertyName || "Classe";
+        const className = metadata[classePropertyName];
         if (!className) {
             console.error("Pas de classe définie dans les métadonnées pour:", fileInstance.getPath());
             console.error("Métadonnées disponibles:", Object.keys(metadata));

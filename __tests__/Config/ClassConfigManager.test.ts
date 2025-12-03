@@ -20,7 +20,9 @@ describe('ClassConfigManager', () => {
         // Create mock config loader with correct methods
         mockConfigLoader = {
             loadClassConfig: jest.fn(),
-            getAllClassNames: jest.fn()
+            getAllClassNames: jest.fn(),
+            createProperty: jest.fn(),
+            vault: undefined
         } as any;
 
         // Mock the constructor

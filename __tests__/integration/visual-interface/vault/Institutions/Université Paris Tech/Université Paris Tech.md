@@ -1,5 +1,5 @@
 ---
-Classe: Institution
+classe: Institution
 nom: Université Paris Tech
 type: École/Université
 secteur: Éducation

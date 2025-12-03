@@ -1,5 +1,5 @@
 ---
-Classe: Personne
+classe: Personne
 nom: ''
 prenom: ''
 institution: '[[/Institutions/TechCorp Solutions/TechCorp Solutions.md|TechCorp Solutions]]'

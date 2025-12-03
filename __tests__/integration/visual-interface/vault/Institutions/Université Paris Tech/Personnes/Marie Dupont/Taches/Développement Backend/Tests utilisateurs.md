@@ -1,5 +1,5 @@
 ---
-Classe: Tache
+classe: Tache
 titre: Tests utilisateurs
 description: Recueillir les retours des utilisateurs beta
 statut: A faire

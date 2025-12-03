@@ -53,3 +53,4 @@ logs/
 
 # Cache files
 .jest-cache/
+__tests__/integration/visual-interface/vault/*

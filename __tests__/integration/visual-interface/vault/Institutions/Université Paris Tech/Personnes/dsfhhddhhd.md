@@ -1,5 +1,5 @@
 ---
-Classe: Personne
+classe: Personne
 nom: null
 prenom: null
 institution: >-

@@ -474,7 +474,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(institutionFile.path, institutionFile);
-            metadata.set(institutionFile.path, { Classe: 'Institution' });
+            metadata.set(institutionFile.path, { classe: 'Institution' });
 
             // Create Personne file with ObjectProperty value
             const personneFile: IFile = {
@@ -493,7 +493,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 }
             ];
             metadata.set(personneFile.path, { 
-                Classe: 'Personne',
+                classe: 'Personne',
                 postes: postesValue 
             });
 
@@ -545,7 +545,7 @@ describe('Classe - Parent Folder Configuration', () => {
             };
             files.set(personneFile.path, personneFile);
             metadata.set(personneFile.path, { 
-                Classe: 'Personne',
+                classe: 'Personne',
                 postes: [] // Empty array
             });
 
@@ -577,7 +577,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(institutionFile.path, institutionFile);
-            metadata.set(institutionFile.path, { Classe: 'Institution' });
+            metadata.set(institutionFile.path, { classe: 'Institution' });
 
             // Create Personne file with ObjectProperty as single object (not array)
             const personneFile: IFile = {
@@ -594,7 +594,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 poste: 'CTO'
             };
             metadata.set(personneFile.path, { 
-                Classe: 'Personne',
+                classe: 'Personne',
                 postes: postesValue 
             });
 

@@ -11,9 +11,11 @@ describe('DataLoader', () => {
     let configPath: string;
     let vaultPath: string;
     let dataPath: string;
+    let testConfigPath: string;
 
     beforeEach(async () => {
         configPath = path.join(__dirname, '../integration/visual-interface/config');
+        testConfigPath = path.join(__dirname, 'test-configs');
         vaultPath = path.join(__dirname, '../integration/visual-interface/vault');
         dataPath = path.join(__dirname, '../integration/visual-interface/data');
 
@@ -42,12 +44,17 @@ describe('DataLoader', () => {
             
             // Handle config files
             if (filePath.includes('/config/') || filePath.endsWith('.yaml')) {
-                fullPath = path.join(configPath, path.basename(filePath));
+                const basename = path.basename(filePath);
+                fullPath = path.join(testConfigPath, basename);
             }
             // Handle data files
             else if (filePath.includes('/data/') || filePath.endsWith('.json')) {
-                const relativePath = filePath.split('/data/')[1] || path.basename(filePath);
-                fullPath = path.join(dataPath, relativePath);
+                const basename = path.basename(filePath);
+                // Try test-configs first, then fall back to data folder
+                fullPath = path.join(testConfigPath, basename);
+                if (!fs.existsSync(fullPath)) {
+                    fullPath = path.join(dataPath, basename);
+                }
             }
             // Handle vault files
             else {
@@ -76,11 +83,16 @@ describe('DataLoader', () => {
             let fullPath: string;
             
             if (file.path.includes('/config/') || file.extension === 'yaml') {
-                fullPath = path.join(configPath, path.basename(file.path));
+                const basename = path.basename(file.path);
+                fullPath = path.join(testConfigPath, basename);
             }
             else if (file.path.includes('/data/') || file.extension === 'json') {
-                const relativePath = file.path.split('/data/')[1] || path.basename(file.path);
-                fullPath = path.join(dataPath, relativePath);
+                const basename = path.basename(file.path);
+                // Try test-configs first, then fall back to data folder
+                fullPath = path.join(testConfigPath, basename);
+                if (!fs.existsSync(fullPath)) {
+                    fullPath = path.join(dataPath, basename);
+                }
             }
             else {
                 fullPath = path.join(vaultPath, file.path.replace(/^\.\/vault\//, ''));
@@ -111,7 +123,7 @@ describe('DataLoader', () => {
         });
 
         vault = new Vault(mockApp, { vaultPath } as any);
-        factory = new DynamicClassFactory(configPath, vault);
+        factory = new DynamicClassFactory(testConfigPath, vault);
     });
 
     describe('loadClassData', () => {
@@ -179,12 +191,11 @@ describe('DataLoader', () => {
         it('should create instances with correct names', async () => {
             const instances = await factory.loadDataForClass('Lieu', vault);
 
-            // We have 36,360 territories in geo.json
-            expect(instances.length).toBeGreaterThan(100);
+            // We have 12 territories in geo-test.json
+            expect(instances.length).toBe(12);
             
-            // Check a sample of instances have files
-            const sampleSize = Math.min(10, instances.length);
-            for (let i = 0; i < sampleSize; i++) {
+            // Check all instances have files
+            for (let i = 0; i < instances.length; i++) {
                 expect(instances[i].getFile()).toBeDefined();
             }
         });
@@ -193,11 +204,10 @@ describe('DataLoader', () => {
             const instances = await factory.loadDataForClass('Lieu', vault);
 
             // All instances should have files
-            expect(instances.length).toBeGreaterThan(100);
+            expect(instances.length).toBe(12);
             
-            // Check a sample
-            const sampleSize = Math.min(10, instances.length);
-            for (let i = 0; i < sampleSize; i++) {
+            // Check all instances
+            for (let i = 0; i < instances.length; i++) {
                 expect(instances[i].getFile()).toBeDefined();
             }
         });
@@ -205,12 +215,11 @@ describe('DataLoader', () => {
         it('should handle all administrative levels', async () => {
             const instances = await factory.loadDataForClass('Lieu', vault);
 
-            // We should have many instances (36,360 territories in geo.json)
-            expect(instances.length).toBeGreaterThan(1000);
+            // We should have 12 instances in test dataset
+            expect(instances.length).toBe(12);
             
-            // Check a sample have valid files
-            const sampleSize = Math.min(20, instances.length);
-            for (let i = 0; i < sampleSize; i++) {
+            // Check all have valid files
+            for (let i = 0; i < instances.length; i++) {
                 const file = instances[i].getFile();
                 expect(file).toBeDefined();
                 expect(file?.getPath()).toBeDefined();
@@ -219,20 +228,20 @@ describe('DataLoader', () => {
     });
 
     describe('data file integration', () => {
-        it('should read geo.json file', async () => {
-            const geoJsonPath = path.join(dataPath, 'geo.json');
+        it('should read geo-test.json file', async () => {
+            const geoJsonPath = path.join(dataPath, 'geo-test.json');
             expect(fs.existsSync(geoJsonPath)).toBe(true);
 
             const content = fs.readFileSync(geoJsonPath, 'utf-8');
             const data = JSON.parse(content);
 
             expect(Array.isArray(data)).toBe(true);
-            // We now have 36,360 French territories
-            expect(data.length).toBeGreaterThan(30000);
+            // We have 12 test territories
+            expect(data.length).toBe(12);
         });
 
-        it('should have correct structure in geo.json', async () => {
-            const geoJsonPath = path.join(dataPath, 'geo.json');
+        it('should have correct structure in geo-test.json', async () => {
+            const geoJsonPath = path.join(dataPath, 'geo-test.json');
             const content = fs.readFileSync(geoJsonPath, 'utf-8');
             const data = JSON.parse(content);
 
@@ -241,25 +250,24 @@ describe('DataLoader', () => {
             expect(france.nom).toBe('France');
             expect(france.type).toBe('National');
 
-            // Check for regions
+            // Check for regions (we have 2 in test data)
             const regions = data.filter((item: any) => item.type === 'Région');
-            expect(regions.length).toBeGreaterThan(0);
+            expect(regions.length).toBe(2);
 
-            // Check for departments
+            // Check for departments (we have 3 in test data)
             const departments = data.filter((item: any) => item.type === 'Département');
-            expect(departments.length).toBeGreaterThan(0);
+            expect(departments.length).toBe(3);
 
-            // Check for communes (should be the majority)
+            // Check for communes (we have 4 in test data)
             const communes = data.filter((item: any) => item.type === 'Commune');
-            expect(communes.length).toBeGreaterThan(1000);
+            expect(communes.length).toBe(4);
 
-            // Check a specific commune if it exists
-            const paris = data.find((item: any) => item.nom === 'Paris' && item.type === 'Commune');
-            if (paris) {
-                expect(paris.type).toBe('Commune');
-                expect(paris.parent).toBeDefined();
-                expect(paris.code_postal).toBeDefined();
-            }
+            // Check Lyon exists in test data
+            const lyon = data.find((item: any) => item.nom === 'Lyon' && item.type === 'Commune');
+            expect(lyon).toBeDefined();
+            expect(lyon.type).toBe('Commune');
+            expect(lyon.parent).toBe('Métropole de Lyon');
+            expect(lyon.code_postal).toBe('69000');
         });
     });
 

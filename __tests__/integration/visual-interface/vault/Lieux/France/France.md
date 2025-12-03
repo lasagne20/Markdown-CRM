@@ -1,5 +1,5 @@
 ---
-Classe: Lieu
+classe: Lieu
 nom: France
 type: National
 code_postal: 

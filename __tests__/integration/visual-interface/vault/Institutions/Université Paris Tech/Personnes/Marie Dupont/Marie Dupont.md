@@ -1,5 +1,5 @@
 ---
-Classe: Personne
+classe: Personne
 nom: Dupont
 prenom: Marie
 institution: >-

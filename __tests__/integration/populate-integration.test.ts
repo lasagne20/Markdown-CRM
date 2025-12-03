@@ -39,7 +39,7 @@ describe('Populate Feature Integration Test', () => {
             // Template files
             if (filePath.includes('Personne.md')) {
                 return `---
-Classe: Personne
+classe: Personne
 nom: ""
 prenom: ""
 institution: ""
@@ -57,7 +57,7 @@ notes: ""
 Informations sur la personne...`;
             } else if (filePath.includes('Institution.md')) {
                 return `---
-Classe: Institution
+classe: Institution
 nom: ""
 ---
 
@@ -144,7 +144,7 @@ nom: ""
 
         // Mock metadata reading
         app.getMetadata.mockResolvedValue({
-            Classe: 'Personne',
+            classe: 'Personne',
             institution: '[[TechCorp]]',
             statut: 'Actif'
         });
@@ -238,7 +238,7 @@ nom: ""
         });
 
         app.getMetadata.mockResolvedValue({
-            Classe: 'Personne',
+            classe: 'Personne',
             institution: '[[TechCorp]]'
         });
 
@@ -290,7 +290,7 @@ nom: ""
         });
 
         app.getMetadata.mockResolvedValue({
-            Classe: 'Personne',
+            classe: 'Personne',
             institution: '[[TechCorp]]',
             statut: 'Actif'
         });
@@ -321,7 +321,7 @@ nom: ""
         });
 
         app.getMetadata.mockResolvedValue({
-            Classe: 'Institution'
+            classe: 'Institution'
         });
 
         await vault.createFile(
@@ -401,7 +401,7 @@ nom: ""
             const path = file.path || file;
             if (path.includes('Task.md')) {
                 return `---
-Classe: Task
+classe: Task
 responsable: []
 statut: En cours
 description: ""
@@ -430,7 +430,7 @@ description: ""
         });
 
         app.getMetadata.mockResolvedValue({
-            Classe: 'Task',
+            classe: 'Task',
             responsable: [],
             statut: 'En cours',
             description: ''
@@ -568,7 +568,7 @@ description: ""
             const path = file.path || file;
             if (path.includes('ComplexEntity.md')) {
                 return `---
-Classe: ComplexEntity
+classe: ComplexEntity
 nom: ""
 description: "Description par défaut"
 prix: 0
@@ -614,7 +614,7 @@ statut: Actif
         });
 
         app.getMetadata.mockResolvedValue({
-            Classe: 'ComplexEntity',
+            classe: 'ComplexEntity',
             nom: '',
             description: 'Description par défaut',
             prix: 0,

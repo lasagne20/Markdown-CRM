@@ -135,6 +135,7 @@ export class ClassConfigManager {
                     for (const propKey of propertyNames) {
                         // Get property by key from static Properties map
                         const property = (this.constructor as typeof Classe).Properties[propKey];
+                        console.log("Adding property to container:", propKey, property);
                         if (property) {
                             container.appendChild(await property.getDisplay(this));
                         }
@@ -411,6 +412,19 @@ export class ClassConfigManager {
         console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasseBase.parentPropertyName);
         console.log(`📁 Dossier parent pour ${className}:`, DynamicClasseBase.parentFolderName);
         console.log("Propriétés : ", config.properties);
+
+        // Add default classe property if not already defined
+        const classePropertyName = this.configLoader.vault?.app?.getSettings?.()?.classePropertyName || "Classe";
+        if (!config.properties[classePropertyName]) {
+            const classePropConfig: any = {
+                type: "ClasseProperty",
+                title: classePropertyName,
+                defaultValue: className,
+                icon: config.classIcon || '🏷️'
+            };
+            classePropConfig.propertyKey = classePropertyName;
+            DynamicClasseBase.Properties[classePropertyName] = this.configLoader.createProperty(classePropConfig);
+        }
 
         // Initialize all properties
         for (const [key, propConfig] of Object.entries(config.properties)) {

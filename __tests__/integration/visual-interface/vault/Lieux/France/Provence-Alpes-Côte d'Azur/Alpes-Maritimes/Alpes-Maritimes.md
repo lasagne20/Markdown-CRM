@@ -1,5 +1,5 @@
 ---
-Classe: Lieu
+classe: Lieu
 nom: Alpes-Maritimes
 type: Département
 parent: [[/Lieux/France/Provence-Alpes-Côte d''Azur/Provence-Alpes-Côte d''Azur.md]]

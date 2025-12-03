@@ -1,5 +1,5 @@
 ---
-Classe: Tache
+classe: Tache
 titre: Design de la maquette
 description: Création des wireframes et maquettes haute fidélité
 statut: En cours

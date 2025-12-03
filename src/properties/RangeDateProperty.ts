@@ -55,6 +55,11 @@ export class RangeDateProperty extends DateProperty {
 
     // Formate la plage de dates pour l'affichage : "26 février 2025" ou "26 février 2025 au 28 février 2025"
     formatDateRangeForDisplay(dateRange: string): string {
+        // Vérifier que dateRange est une chaîne
+        if (!dateRange || typeof dateRange !== 'string') {
+            return "Aucune date sélectionnée";
+        }
+        
         const [startDate, endDate] = dateRange.split(" to ");
         const formattedStartDate = new Date(startDate).toLocaleDateString("fr-FR", { 
             weekday: "long",

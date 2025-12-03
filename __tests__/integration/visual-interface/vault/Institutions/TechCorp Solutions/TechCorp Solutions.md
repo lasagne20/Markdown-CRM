@@ -1,5 +1,5 @@
 ---
-Classe: Institution
+classe: Institution
 nom: TechCorp Solutions
 type: Entreprise
 secteur: Technologies de l'information

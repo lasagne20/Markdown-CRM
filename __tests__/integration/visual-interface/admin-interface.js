@@ -380,6 +380,7 @@ class AdminInterface {
                 // Utiliser createClasse pour créer correctement l'instance avec File wrappé
                 const classInstance = await this.fakeEnvironment.vault.createClasse(file);
                 if (classInstance) {
+                    console.log('🔧 Instance de classe créée via DynamicFactory');
                     classDisplay = await classInstance.getDisplay();
                     console.log('✅ Affichage réel généré via DynamicFactory');
                 } else {
@@ -1098,7 +1099,7 @@ class AdminInterface {
             const metadata = await this.fakeEnvironment.app.getMetadata(file);
             
             // Déterminer la classe du fichier
-            const className = metadata.Classe || 'Unknown';
+            const className = metadata.classe || 'Unknown';
             
             // Récupérer le contenu brut
             // Si file est une instance File du vault, utiliser file.file pour obtenir IFile

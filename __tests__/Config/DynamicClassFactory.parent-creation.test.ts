@@ -24,7 +24,8 @@ describe('DynamicClassFactory - Parent Creation from Data', () => {
             setIcon: jest.fn(),
             getUrl: jest.fn((path: string) => `http://localhost/${path}`),
             selectFile: jest.fn(),
-            open: jest.fn()
+            open: jest.fn(),
+            getSettings: jest.fn().mockReturnValue({ classePropertyName: 'Classe' })
         };
 
         vault = new Vault(mockApp, { vaultPath: './test-vault' } as any);

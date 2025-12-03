@@ -64,7 +64,7 @@ describe('TextProperty', () => {
                 },
                 metadataCache: {
                     getFileCache: jest.fn(() => ({
-                        frontmatter: { Classe: 'TestClass' }
+                        frontmatter: { classe: 'TestClass' }
                     }))
                 },
                 workspace: {

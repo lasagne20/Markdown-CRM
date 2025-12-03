@@ -27,6 +27,9 @@ export interface ISettings {
     // Number formatting
     numberLocale?: string;
     currencySymbol?: string;
+
+    // Classe property name 
+    classePropertyName?: string;
     
     // Other settings can be added here
     [key: string]: any; // Allow custom settings

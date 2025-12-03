@@ -135,6 +135,14 @@ describe('RangeDateProperty', () => {
                 rangeDateProperty.formatDateRangeForDisplay('invalid-date');
             }).not.toThrow();
         });
+
+        test('should handle non-string values gracefully', () => {
+            expect(rangeDateProperty.formatDateRangeForDisplay(null as any)).toBe('Aucune date sélectionnée');
+            expect(rangeDateProperty.formatDateRangeForDisplay(undefined as any)).toBe('Aucune date sélectionnée');
+            expect(rangeDateProperty.formatDateRangeForDisplay({} as any)).toBe('Aucune date sélectionnée');
+            expect(rangeDateProperty.formatDateRangeForDisplay([] as any)).toBe('Aucune date sélectionnée');
+            expect(rangeDateProperty.formatDateRangeForDisplay(123 as any)).toBe('Aucune date sélectionnée');
+        });
     });
 
     describe('createFieldLink', () => {

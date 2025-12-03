@@ -1,5 +1,5 @@
 ---
-Classe: Lieu
+classe: Lieu
 nom: Provence-Alpes-Côte d'Azur
 type: Région
 parent: [[/Lieux/France/France.md]]

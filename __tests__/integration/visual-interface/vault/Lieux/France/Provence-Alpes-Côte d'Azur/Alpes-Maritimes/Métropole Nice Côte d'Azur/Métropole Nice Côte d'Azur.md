@@ -1,5 +1,5 @@
 ---
-Classe: Lieu
+classe: Lieu
 nom: Métropole Nice Côte d'Azur
 type: EPCI
 parent: [[/Lieux/France/Provence-Alpes-Côte d'Azur/Alpes-Maritimes/Alpes-Maritimes.md]]

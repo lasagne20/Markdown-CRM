@@ -130,6 +130,7 @@ display:
       title: "Identité"
       className: "personne-identity-section"
       properties:
+        - classe
         - nom
         - prenom
         - institution

@@ -1,10 +1,10 @@
 ---
-Classe: Projet
+classe: Projet
 nom: Site Web Entreprise
 description: Refonte complète du site web corporate avec nouveau design moderne
 statut: Planifié
 priorite: +++++
-dateDebut: 2025-10-01T00:00:00.000Z
+dateDebut: 2025-10-01 to 2025-10-02
 dateFin: 2025-12-15T00:00:00.000Z
 responsable: >-
   [[/Institutions/Université Paris Tech/Personnes/Sophie Bernard/Sophie
@@ -13,7 +13,7 @@ budget: '25000'
 budgetUtilise: 12000 €
 pourcentageCompletion: '45'
 client: https://exemple.com/client/marie-martin
-dateFinReelle: []
+dateFinReelle: ''
 equipe:
   - '[[/Clients/Entreprises/Jean Dupont.md|Jean Dupont]]'
   - '[[/Clients/Startups/Marie Martin.md|Marie Martin]]'

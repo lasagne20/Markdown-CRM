@@ -28,7 +28,7 @@ import { ClassConfig, PropertyConfig, PropertyTableRow } from './interfaces';
 export class ConfigLoader {
     private configPath: string;
     private loadedConfigs: Map<string, ClassConfig> = new Map();
-    private vault: Vault;
+    public vault: Vault;
 
     constructor(configPath: string, vault: Vault) {
         this.configPath = configPath;

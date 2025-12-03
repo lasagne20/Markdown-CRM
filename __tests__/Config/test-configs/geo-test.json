@@ -1,0 +1,87 @@
+[
+  {
+    "nom": "France",
+    "type": "National",
+    "parent": null
+  },
+  {
+    "nom": "Auvergne-Rhône-Alpes",
+    "type": "Région",
+    "parent": "France",
+    "code": "84"
+  },
+  {
+    "nom": "Nouvelle-Aquitaine",
+    "type": "Région",
+    "parent": "France",
+    "code": "75"
+  },
+  {
+    "nom": "Ain",
+    "type": "Département",
+    "parent": "Auvergne-Rhône-Alpes",
+    "code": "01"
+  },
+  {
+    "nom": "Rhône",
+    "type": "Département",
+    "parent": "Auvergne-Rhône-Alpes",
+    "code": "69"
+  },
+  {
+    "nom": "Gironde",
+    "type": "Département",
+    "parent": "Nouvelle-Aquitaine",
+    "code": "33"
+  },
+  {
+    "nom": "CC de la Dombes",
+    "type": "EPCI",
+    "parent": "Ain"
+  },
+  {
+    "nom": "Métropole de Lyon",
+    "type": "EPCI",
+    "parent": "Rhône"
+  },
+  {
+    "nom": "L'Abergement-Clémenciat",
+    "type": "Commune",
+    "parent": "CC de la Dombes",
+    "code_postal": "01400",
+    "code_insee": "01001",
+    "population": 859,
+    "latitude": 4.9306,
+    "longitude": 46.1517
+  },
+  {
+    "nom": "Baneins",
+    "type": "Commune",
+    "parent": "CC de la Dombes",
+    "code_postal": "01990",
+    "code_insee": "01028",
+    "population": 618,
+    "latitude": 4.9045,
+    "longitude": 46.1117
+  },
+  {
+    "nom": "Lyon",
+    "type": "Commune",
+    "parent": "Métropole de Lyon",
+    "code_postal": "69000",
+    "code_insee": "69123",
+    "population": 516092,
+    "latitude": 4.8357,
+    "longitude": 45.7640
+  },
+  {
+    "nom": "Bordeaux",
+    "type": "Commune",
+    "parent": "Gironde",
+    "code_postal": "33000",
+    "code_insee": "33063",
+    "population": 254436,
+    "latitude": -0.5792,
+    "longitude": 44.8378
+  }
+]

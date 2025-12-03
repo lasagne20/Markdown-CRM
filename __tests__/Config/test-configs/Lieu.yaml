@@ -1,0 +1,54 @@
+# Configuration Lieu pour tests (dataset réduit)
+name: Lieu
+icon: 📍
+description: Gestion des lieux géographiques
+
+parent:
+  property: parent
+
+data:
+  - file: geo-test.json
+    dynamic: true
+
+properties:
+  nom:
+    type: NameProperty
+    title: Nom du lieu
+    icon: 📝
+    required: true
+    
+  type:
+    type: SelectProperty
+    title: Type de territoire
+    icon: 🗺️
+    required: true
+    static: true
+    options:
+      - National
+      - Région
+      - Département
+      - EPCI
+      - Commune
+        
+  code_postal:
+    type: Property
+    title: Code postal
+    icon: 📮
+    
+  code_insee:
+    type: Property
+    title: Code INSEE
+    icon: 🔢
+    
+  population:
+    type: NumberProperty
+    title: Population
+    icon: 👥
+    
+  parent:
+    type: FileProperty
+    title: Territoire parent
+    icon: 📂
+    static: true
+    classes:
+      - Lieu

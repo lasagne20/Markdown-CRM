@@ -1,5 +1,5 @@
 ---
-Classe: Tache
+classe: Tache
 titre: "\\\\\\\\\\\\\\\\\\"Analyse des besoins clientdfxgsdfgsdf"
 description: "\\\\\\\\\\\\\\\\\"- Réunion avec le client pour définir les spécifications détaillées"
 statut: En attente
