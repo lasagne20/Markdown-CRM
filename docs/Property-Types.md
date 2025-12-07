@@ -372,8 +372,11 @@ teamMembers:
 - Autocomplete support
 - Bidirectional tracking
 - Batch operations
+- Can be used as parent property for automatic folder organization
 
 **Use Cases:** Team members, related projects, attached documents
+
+**Note:** When used in `parent.property` or `parent.properties` configuration, files are automatically organized into folders based on the linked record's name.
 
 ---
 
@@ -404,8 +407,11 @@ socialMedia:
 - Inline or block display
 - Reusable property definitions
 - Validation of nested fields
+- Can be used as parent property for automatic folder organization
 
 **Use Cases:** Addresses, social profiles, structured metadata
+
+**Note:** When used in `parent.property` or `parent.properties` configuration, files are automatically organized into folders based on the nested property value.
 
 ---
 

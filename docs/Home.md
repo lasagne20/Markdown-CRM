@@ -128,6 +128,7 @@ Open the admin interface and start managing your data!
 - **[Validation Rules](Validation.md)** - Ensure data quality
 - **[Object Properties](Object-Properties.md)** - Nested data structures
 - **[Multi-File Relations](Multi-File-Relations.md)** - Many-to-many links
+- **[Parent-Child Relationships](YAML-Configuration-Format.md#parent-child-relationships)** - Automatic folder organization
 
 ### Architecture & Development
 - **[System Architecture](Architecture.md)** - How it all works

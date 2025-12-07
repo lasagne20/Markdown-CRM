@@ -320,6 +320,7 @@ query(className: string, filter: Function): Data[]
 - Create new instances
 - Validate instance data
 - Handle file I/O for this class
+- Manage parent-child relationships and automatic folder organization
 
 **Key Methods:**
 ```typescript
@@ -336,6 +337,16 @@ getInstance(name: string): Data | undefined
 
 deleteInstance(name: string): void
   → Deletes instance and file
+
+getParentProperty(): Promise<Property | undefined>
+  → Returns first parent property with valid value
+  → For multi-parent: tries each in priority order
+  → Validates parent file exists
+
+updateParentFolder(oldMetadata, oldParentProperty): Promise<void>
+  → Determines if file needs to move based on parent changes
+  → Creates parent folder structure automatically
+  → Moves file to new location if parent changed
 ```
 
 **Storage:**
@@ -347,6 +358,38 @@ vault/Contacts/
 
 Each file = one Data instance
 ```
+
+**Parent-Child Organization:**
+When a class has parent relationships configured, files are automatically organized in parent-specific folders:
+
+```yaml
+# Config with parent relationship
+parent:
+  property: company  # Files organized by company value
+  folder: Employees  # Optional subfolder name
+```
+
+File structure with parent organization:
+```
+vault/Contacts/
+├── ACME Corp/
+│   └── Employees/
+│       ├── John Doe.md
+│       └── Jane Smith.md
+└── TechCo/
+    └── Employees/
+        └── Bob Johnson.md
+```
+
+**Multi-Parent Fallback:**
+For complex hierarchies, multiple parent properties can be configured with fallback priority:
+
+```yaml
+parent:
+  properties: [position, company]  # Try position first, fall back to company
+```
+
+The system tries each parent property in order and uses the first one with a valid value and existing parent file.
 
 ---
 

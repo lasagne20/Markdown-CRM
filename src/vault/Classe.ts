@@ -7,6 +7,7 @@ import { Data } from './Data';
 export class Classe {
     protected static Properties: { [key: string]: Property } = {};
     public static parentPropertyName?: string;
+    public static parentPropertyNames?: string[]; // Support multiple parent properties with fallback
     public static parentFolderName?: string; // Optional subfolder in parent where to place this file
     protected properties: Property[] = [];
     protected file?: File;
@@ -112,38 +113,29 @@ export class Classe {
     async updateMetadata(metadata: Record<string, any>): Promise<void> {
         if (!this.file) return;
         
-        // Get old metadata to detect property changes
+        // Get old metadata and parent property before update
         const oldMetadata = await this.getMetadata();
-        const parentProperty = this.getParentProperty();
+        const oldParentProperty = await this.getParentProperty();
         
         // Update metadata first
         await this.vault.app.updateMetadata(this.file, metadata);
         
-        // If parent property changed, update folder structure
-        if (parentProperty) {
-            const oldParentValue = oldMetadata[parentProperty.name];
-            const newParentValue = metadata[parentProperty.name];
-            
-            if (oldParentValue !== newParentValue) {
-                await this.updateParentFolder();
-            }
-        }
+        // Let updateParentFolder decide if it needs to do anything
+        await this.updateParentFolder(oldMetadata, oldParentProperty);
     }
     
     async updatePropertyValue(propertyName: string, value: any): Promise<void> {
         if (!this.file) return;
         
-        // Check if this is a parent property change
-        const parentProperty = this.getParentProperty();
-        const isParentPropertyChange = parentProperty && propertyName === parentProperty.name;
+        // Get old metadata and parent property before update
+        const oldMetadata = await this.getMetadata();
+        const oldParentProperty = await this.getParentProperty();
         
         // Update metadata first
         await this.file.updateMetadata(propertyName, value);
         
-        // If parent property changed and new value is not empty, update folder structure
-        if (isParentPropertyChange && value) {
-            await this.updateParentFolder();
-        }
+        // Let updateParentFolder decide if it needs to do anything
+        await this.updateParentFolder(oldMetadata, oldParentProperty);
     }
     
     async getPropertyValue(propertyName: string): Promise<any> {
@@ -157,7 +149,7 @@ export class Classe {
         await this.updateMetadata(metadata);
         
         // If the parent property changed, update folder structure
-        const parentProperty = this.getParentProperty();
+        const parentProperty = await this.getParentProperty();
         if (parentProperty && propertyName === parentProperty.name) {
             await this.updateParentFolder();
         }
@@ -228,11 +220,39 @@ export class Classe {
     // Parent-child relationship management
     /**
      * Get the parent property if configured for this class
+     * Returns the first parent property that has a non-empty value
      */
-    protected getParentProperty(): Property | undefined {
+    protected async getParentProperty(): Promise<Property | undefined> {
         const className = (this.constructor as typeof Classe).name;
+        const parentPropNames = (this.constructor as typeof Classe).parentPropertyNames;
         const parentPropName = (this.constructor as typeof Classe).parentPropertyName;
         
+        // Try multiple parent properties if configured
+        if (parentPropNames && parentPropNames.length > 0) {
+            for (const propName of parentPropNames) {
+                const prop = this.getProperty(propName);
+                if (prop) {
+                    // Check if the property has a non-empty value by trying to get parent file
+                    // This delegates the "emptiness" check to the property itself
+                    const value = await this.getPropertyValue(propName);
+                    console.log(`Checking parent property "${propName}" with value:`, value);
+                    if (value && 'getParentFile' in prop && typeof (prop as any).getParentFile === 'function') {
+                        const parentFile = await (prop as any).getParentFile(value);
+                        if (parentFile) {
+                            console.log(`✅ Parent property "${propName}" has valid parent file`);
+                            return prop; // This property has a valid parent file
+                        }
+                        console.log(`⚠️ Parent property "${propName}" has no valid parent file, trying next...`);
+                    } else if (value) {
+                        // For non-parent properties, just check if value exists
+                        return prop;
+                    }
+                }
+            }
+            return undefined;
+        }
+        
+        // Fallback to single parent property
         if (!parentPropName) {
             return undefined;
         }
@@ -242,9 +262,10 @@ export class Classe {
     
     /**
      * Get the parent file from the parent property value
+     * Tries multiple parent properties with fallback if configured
      */
     protected async getParentFile(): Promise<File | undefined> {
-        const parentProperty = this.getParentProperty();
+        const parentProperty = await this.getParentProperty();
         if (!parentProperty || !this.file) {
             return undefined;
         }
@@ -464,9 +485,47 @@ export class Classe {
      * - Move this (child) file into parent's folder
      * - Recursively move all children of this file to the parent's folder
      */
-    protected async updateParentFolder(): Promise<void> {
+    protected async updateParentFolder(oldMetadata?: Record<string, any>, oldParentProperty?: Property): Promise<void> {
         if (!this.file) {
             return;
+        }
+        console.log(`🔄 Updating parent folder for file: ${this.file.getPath()}`);
+        console.log("Old parent property:", oldParentProperty?.name, "new parent property:", (await this.getParentProperty())?.name);
+        console.log("Old metadata:", oldMetadata);
+        // If called with old values, check if we actually need to update
+        if (oldMetadata && oldParentProperty !== undefined) {
+            const currentParentProperty = await this.getParentProperty();
+            
+            // Case 1: Parent property changed (e.g., from postes to institution)
+            if (oldParentProperty?.name !== currentParentProperty?.name) {
+                console.log(`🔄 Parent property changed from "${oldParentProperty?.name}" to "${currentParentProperty?.name}"`);
+                // Continue with folder update
+            }
+            // Case 2: Same parent property, check if value changed
+            else if (currentParentProperty) {
+                const currentMetadata = await this.getMetadata();
+                const oldValue = oldMetadata[currentParentProperty.name];
+                const newValue = currentMetadata[currentParentProperty.name];
+                
+                if (oldValue === newValue) {
+                    // No change, skip update
+                    console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged, skipping folder update`);
+                    return;
+                }
+                
+                // Value changed, verify it's actually valid before moving
+                if ('getParentFile' in currentParentProperty && typeof (currentParentProperty as any).getParentFile === 'function') {
+                    const parentFile = await (currentParentProperty as any).getParentFile(newValue);
+                    if (!parentFile) {
+                        console.log(`⚠️ New parent value is empty/invalid, skipping folder update`);
+                        return;
+                    }
+                    console.log(`✅ Parent property "${currentParentProperty.name}" value changed and is valid`);
+                }
+            } else {
+                // No parent property, nothing to do
+                return;
+            }
         }
         
         const parentFile = await this.getParentFile();
@@ -587,7 +646,7 @@ export class Classe {
     // Lifecycle hooks
     async onCreate(): Promise<void> {
         // Check if parent folder should be set up on creation
-        const parentProperty = this.getParentProperty();
+        const parentProperty = await this.getParentProperty();
         if (parentProperty) {
             const parentValue = await this.getPropertyValue(parentProperty.name);
             if (parentValue) {

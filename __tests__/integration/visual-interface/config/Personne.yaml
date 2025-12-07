@@ -5,9 +5,12 @@ description: Gestion des personnes liées à des institutions
 template: Personne.md
 
 # Propriété parent pour organisation automatique des fichiers
-parent:
-    property: postes
+parents:
+  - property: postes
     folder: Personnes
+
+  - property: institution
+    folder: Contacts
 
 populate:
   - property: postes
@@ -56,6 +59,8 @@ properties:
         required: false
         classes:
           - Institution
+          - Lieu
+
       poste:
         type: TextProperty
         title: Poste

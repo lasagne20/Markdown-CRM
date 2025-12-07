@@ -20,8 +20,8 @@ class TestableClasse extends Classe {
     async onDelete(): Promise<void> {}
 
     // Public wrappers for protected methods (for testing)
-    public testGetParentProperty() {
-        return this.getParentProperty();
+    public async testGetParentProperty() {
+        return await this.getParentProperty();
     }
 
     public async testGetParentFile() {
@@ -185,21 +185,21 @@ describe('Classe - Parent-Child Relationships', () => {
     });
 
     describe('getParentProperty', () => {
-        it('should return the parent property when configured', () => {
-            const property = childClasse.testGetParentProperty();
+        it('should return the parent property when configured', async () => {
+            const property = await childClasse.testGetParentProperty();
             expect(property).toBe(parentProperty);
             expect(property?.name).toBe('parent');
         });
 
-        it('should return undefined when no parent property configured', () => {
+        it('should return undefined when no parent property configured', async () => {
             TestableClasse.parentPropertyName = undefined;
-            const property = childClasse.testGetParentProperty();
+            const property = await childClasse.testGetParentProperty();
             expect(property).toBeUndefined();
         });
 
-        it('should return undefined when parent property does not exist', () => {
+        it('should return undefined when parent property does not exist', async () => {
             TestableClasse.parentPropertyName = 'nonExistentProperty';
-            const property = childClasse.testGetParentProperty();
+            const property = await childClasse.testGetParentProperty();
             expect(property).toBeUndefined();
         });
     });
@@ -366,8 +366,14 @@ describe('Classe - Parent-Child Relationships', () => {
 
     describe('updatePropertyValue', () => {
         it('should update metadata and trigger parent folder update', async () => {
-            mockApp.getMetadata.mockResolvedValue({ parent: '[[parent]]' });
+            let currentMetadata: any = {};  // Start with empty
+            mockApp.getMetadata.mockImplementation(() => Promise.resolve(currentMetadata));
             mockApp.getFile.mockResolvedValue(null); // Folder doesn't exist
+            
+            // Mock writeFile to update metadata
+            mockApp.writeFile.mockImplementation(async () => {
+                currentMetadata = { parent: '[[parent]]' };
+            });
 
             await childClasse.updatePropertyValue('parent', '[[parent]]');
 
@@ -381,15 +387,14 @@ describe('Classe - Parent-Child Relationships', () => {
         it('should update metadata but not trigger parent folder update for other properties', async () => {
             mockApp.getMetadata.mockResolvedValue({});
 
-            const updateParentFolderSpy = jest.spyOn(childClasse, 'testUpdateParentFolder');
-
             await childClasse.updatePropertyValue('otherProperty', 'someValue');
 
             // Should update metadata via app.writeFile
             expect(mockApp.writeFile).toHaveBeenCalled();
 
-            // Should NOT trigger parent folder update
-            expect(updateParentFolderSpy).not.toHaveBeenCalled();
+            // updateParentFolder is called but should not create any folder since it's not a parent property
+            // The important part is that no folder is created
+            expect(mockApp.createFolder).not.toHaveBeenCalled();
         });
 
         it('should handle no file gracefully', async () => {
@@ -412,11 +417,15 @@ describe('Classe - Parent-Child Relationships', () => {
             newClasse.addProperty(prop);
             newClasse.setFile(newFile as unknown as File);
             
-            mockApp.getMetadata.mockResolvedValue({
-                parent: '[[parent]]'
-            });
+            let currentMetadata: any = {};  // Start with empty
+            mockApp.getMetadata.mockImplementation(() => Promise.resolve(currentMetadata));
             mockApp.getFile.mockResolvedValue(null);
             mockApp.getAbstractFileByPath.mockReturnValue(testParentFile);
+            
+            // Mock writeFile to update metadata
+            mockApp.writeFile.mockImplementation(async () => {
+                currentMetadata = { parent: '[[parent]]' };
+            });
 
             // Mock getFromLink for this test
             (mockVault.getFromLink as jest.Mock).mockImplementation(async (link: string) => {
@@ -520,9 +529,8 @@ describe('Classe - Parent-Child Relationships', () => {
             child.addProperty(prop);
 
             // Mock: initially points to parent1
-            mockApp.getMetadata.mockResolvedValue({
-                parent: '[[parent1]]'
-            });
+            let currentMetadata = { parent: '[[parent1]]' };
+            mockApp.getMetadata.mockImplementation(() => Promise.resolve(currentMetadata));
             mockApp.fileExists.mockResolvedValue(true);
             mockApp.getAbstractFileByPath.mockImplementation((path: string) => {
                 if (path.includes('parent1')) return parent1File;
@@ -546,11 +554,12 @@ describe('Classe - Parent-Child Relationships', () => {
                 return null;
             });
 
-            // Change parent to parent2
-            mockApp.getMetadata.mockResolvedValue({
-                parent: '[[parent2]]'
+            // Mock writeFile to update metadata when called
+            mockApp.writeFile.mockImplementation(async () => {
+                currentMetadata = { parent: '[[parent2]]' };
             });
 
+            // Change parent to parent2
             await child.updatePropertyValue('parent', '[[parent2]]');
 
             // Should move to new parent folder

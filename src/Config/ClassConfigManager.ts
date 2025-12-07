@@ -401,15 +401,22 @@ export class ClassConfigManager {
         }
 
         // Initialize static properties from parent configuration
-        if (config.parent?.property) {
+        // Support both single parent (legacy) and multiple parents (new)
+        if (config.parents && Array.isArray(config.parents) && config.parents.length > 0) {
+            // New format: multiple parents with fallback
+            DynamicClasseBase.parentPropertyNames = config.parents.map((p: any) => p.property);
+            // Use the folder from the first parent
+            DynamicClasseBase.parentFolderName = config.parents[0].folder;
+            console.log(`🔧 Propriétés parentes pour ${className}:`, DynamicClasseBase.parentPropertyNames);
+        } else if (config.parent?.property) {
+            // Legacy format: single parent
             DynamicClasseBase.parentPropertyName = config.parent.property;
+            if (config.parent?.folder) {
+                DynamicClasseBase.parentFolderName = config.parent.folder;
+            }
+            console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasseBase.parentPropertyName);
         }
         
-        if (config.parent?.folder) {
-            DynamicClasseBase.parentFolderName = config.parent.folder;
-        }
-
-        console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasseBase.parentPropertyName);
         console.log(`📁 Dossier parent pour ${className}:`, DynamicClasseBase.parentFolderName);
         console.log("Propriétés : ", config.properties);
 

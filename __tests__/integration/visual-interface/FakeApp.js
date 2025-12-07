@@ -124,11 +124,11 @@ export class FakeApp {
     async ensureAllClassProperties(file) {
         // Récupérer la classe du fichier
         const metadata = this.fileSystem.get(file.path)?.metadata;
-        if (!metadata || !metadata.Classe) {
+        if (!metadata || !metadata.classe) {
             return;
         }
         
-        const className = metadata.Classe;
+        const className = metadata.classe;
         
         try {
             // Charger la configuration de la classe
@@ -975,7 +975,7 @@ export class FakeApp {
             const filteredFiles = classNames && classNames.length > 0 ? 
                 allFiles.filter(file => {
                     const metadata = this.fileSystem.get(file.path)?.metadata;
-                    return metadata && classNames.includes(metadata.Classe);
+                    return metadata && classNames.includes(metadata.classe);
                 }) : allFiles;
             
             if (filteredFiles.length === 0) {
@@ -991,7 +991,7 @@ export class FakeApp {
                     fileItem.style.transition = 'all 0.2s ease';
                     
                     const metadata = this.fileSystem.get(file.path)?.metadata || {};
-                    const className = metadata.Classe || 'Sans classe';
+                    const className = metadata.classe || 'Sans classe';
                     const displayName = file.basename || file.name.replace('.md', '');
                     
                     fileItem.innerHTML = `
@@ -1031,8 +1031,8 @@ export class FakeApp {
                         // Charger la classe dynamique si disponible
                         try {
                             const dynamicFactory = vault.getDynamicClassFactory();
-                            if (dynamicFactory && metadata.Classe) {
-                                const ClassConstructor = await dynamicFactory.getClass(metadata.Classe);
+                            if (dynamicFactory && metadata.classe) {
+                                const ClassConstructor = await dynamicFactory.getClass(metadata.classe);
                                 const classInstance = new ClassConstructor(vault, file);
                                 
                                 // Ajouter les méthodes manquantes pour la compatibilité avec FileProperty
@@ -1134,7 +1134,7 @@ export class FakeApp {
             const filteredFiles = classNames && classNames.length > 0 ? 
                 allFiles.filter(file => {
                     const metadata = this.fileSystem.get(file.path)?.metadata;
-                    return metadata && classNames.includes(metadata.Classe);
+                    return metadata && classNames.includes(metadata.classe);
                 }) : allFiles;
             
             if (filteredFiles.length === 0) {
@@ -1153,7 +1153,7 @@ export class FakeApp {
                     fileItem.style.gap = '10px';
                     
                     const metadata = this.fileSystem.get(file.path)?.metadata || {};
-                    const className = metadata.Classe || 'Sans classe';
+                    const className = metadata.classe || 'Sans classe';
                     const displayName = file.basename || file.name.replace('.md', '');
                     
                     const checkbox = document.createElement('input');
@@ -1271,8 +1271,8 @@ export class FakeApp {
                     };
                     
                     try {
-                        if (dynamicFactory && metadata.Classe) {
-                            const ClassConstructor = await dynamicFactory.getClass(metadata.Classe);
+                        if (dynamicFactory && metadata.classe) {
+                            const ClassConstructor = await dynamicFactory.getClass(metadata.classe);
                             const classInstance = new ClassConstructor(vault, file);
                             
                             // Ajouter les méthodes manquantes pour la compatibilité

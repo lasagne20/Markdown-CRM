@@ -158,7 +158,7 @@ nom: ""
         // Verify populate was called
         expect(app.selectFile).toHaveBeenCalledWith(
             vault,
-            ['Institution'],
+            ['Institution', 'Lieu'],
             expect.objectContaining({
                 hint: expect.stringContaining('Choisir une institution')
             })

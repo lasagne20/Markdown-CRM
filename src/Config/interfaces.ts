@@ -90,6 +90,10 @@ export interface ClassConfig {
         property: string; // Name of the property that defines the parent (FileProperty, ObjectProperty, or MultiFileProperty)
         folder?: string; // Optional subfolder name in parent's folder where this file should be placed
     };
+    parents?: Array<{ // Support multiple parents with fallback
+        property: string;
+        folder?: string;
+    }>;
     subClassesProperty?: {
         name: string;
         subClasses: SubClassConfig[];

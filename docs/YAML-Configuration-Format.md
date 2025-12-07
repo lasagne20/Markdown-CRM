@@ -509,9 +509,15 @@ className: MyClass
 classIcon: 📝
 classDescription: Description of the class
 
-# 2. Parent configuration (if applicable)
+# 2. Parent-child relationships (if applicable)
 parent:
+  # Single parent property
   property: parentField
+  
+  # OR multiple parent properties with fallback
+  properties: [primaryParent, secondaryParent]
+  
+  # Optional: subfolder within parent
   folder: MyFolder
 
 # 3. Data sources (if applicable)
@@ -531,6 +537,125 @@ properties:
     type: PropertyType
     # ...
 ```
+
+---
+
+## Parent-Child Relationships
+
+Markdown CRM supports automatic folder organization based on parent-child relationships between files.
+
+### Single Parent Property
+
+Use `parent.property` to specify which property determines the parent file:
+
+```yaml
+className: Task
+classIcon: ✅
+
+parent:
+  property: project  # Tasks are organized under their project
+
+properties:
+  name:
+    type: Property
+    title: Task Name
+  
+  project:
+    type: FileProperty
+    title: Project
+    classes: [Project]
+```
+
+**Result:** When you set a task's project to "Website Redesign", the task file automatically moves to:
+```
+vault/Projects/Website Redesign/Task Name.md
+```
+
+### Multiple Parent Properties with Fallback
+
+Use `parent.properties` (array) to define multiple parent properties with fallback logic:
+
+```yaml
+className: Person
+classIcon: 👤
+
+parent:
+  properties: [postes, institution]  # Try postes first, fallback to institution
+  folder: Personnes  # Optional: put persons in a subfolder
+
+properties:
+  name:
+    type: Property
+    title: Full Name
+  
+  postes:
+    type: ObjectProperty
+    title: Positions
+    properties:
+      institution:
+        type: FileProperty
+        title: Institution
+        classes: [Institution]
+      role:
+        type: Property
+        title: Role
+  
+  institution:
+    type: FileProperty
+    title: Current Institution
+    classes: [Institution]
+```
+
+**Fallback Logic:**
+1. **First tries `postes`**: If the person has a position with an institution, organizes under that institution
+2. **Falls back to `institution`**: If postes is empty, uses the direct institution property
+3. **Returns undefined**: If both are empty, file stays in root
+
+**Result:**
+- If `postes.institution = "MIT"`: File moves to `vault/Institutions/MIT/Personnes/John Doe.md`
+- If `postes` is empty but `institution = "Harvard"`: File moves to `vault/Institutions/Harvard/Personnes/John Doe.md`
+- If both empty: File stays in `vault/Personnes/John Doe.md`
+
+### Parent Folder Configuration
+
+Use `parent.folder` to organize children in a subfolder:
+
+```yaml
+parent:
+  property: company
+  folder: Employees  # All employees go in an "Employees" subfolder
+```
+
+**Result:**
+```
+vault/
+├── Companies/
+│   └── Acme Corp/
+│       ├── Acme Corp.md
+│       └── Employees/
+│           ├── John Doe.md
+│           └── Jane Smith.md
+```
+
+### How It Works
+
+1. **Automatic Organization**: When you change a parent property, the file automatically moves to the correct folder
+2. **Parent Folder Creation**: If the parent doesn't have its own folder yet, one is created automatically
+3. **Nested Hierarchy**: Children with their own children get dedicated folders
+4. **Clean Structure**: Empty parent properties don't trigger moves
+
+### Best Practices
+
+✅ **Do:**
+- Use `parent.properties` for complex hierarchies (e.g., person → position → institution)
+- Order fallback properties from most specific to most general
+- Use `parent.folder` to group similar children together
+- Test parent changes to verify folder structure
+
+❌ **Don't:**
+- Create circular parent relationships (A → B → A)
+- Use non-File/Object properties as parents
+- Mix `property` and `properties` (use one or the other)
 
 ---
 

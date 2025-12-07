@@ -445,8 +445,11 @@ describe('Classe - Parent Folder Configuration', () => {
             // Update a different property (not parent)
             await childClasse.updatePropertyValue('status', 'published');
 
-            // Verify updateParentFolder was NOT called
-            expect(updateParentFolderSpy).not.toHaveBeenCalled();
+            // Verify updateParentFolder was called (but should not do anything since status is not a parent property)
+            expect(updateParentFolderSpy).toHaveBeenCalled();
+            
+            // Verify no folder was created (the important check)
+            expect(mockApp.createFolder).not.toHaveBeenCalled();
 
             // Verify file content was written (metadata update happens via writeFile)
             expect(mockApp.writeFile).toHaveBeenCalled();

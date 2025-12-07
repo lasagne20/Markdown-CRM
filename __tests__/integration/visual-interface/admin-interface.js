@@ -1791,7 +1791,7 @@ async function loadLieuxData() {
         const lieuFiles = [];
         for (const file of allFiles) {
             const metadata = await vault.app.getMetadata(file);
-            if (metadata && metadata.Classe === 'Lieu') {
+            if (metadata && metadata.classe === 'Lieu') {
                 lieuFiles.push({
                     nom: metadata.nom || file.name.replace('.md', ''),
                     type: metadata.type || 'Inconnu',
@@ -2060,7 +2060,7 @@ async function loadPersonnesData() {
         const personneFiles = [];
         for (const file of allFiles) {
             const metadata = await vault.app.getMetadata(file);
-            if (metadata && metadata.Classe === 'Personne') {
+            if (metadata && metadata.classe === 'Personne') {
                 personneFiles.push({
                     nom: metadata.nom || file.name.replace('.md', ''),
                     prenom: metadata.prenom || '',
