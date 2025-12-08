@@ -418,6 +418,13 @@ export class ClassConfigManager {
         }
         
         console.log(`📁 Dossier parent pour ${className}:`, DynamicClasseBase.parentFolderName);
+        
+        // Initialize autoRename template if configured
+        if (config.autoRename) {
+            DynamicClasseBase.autoRename = config.autoRename;
+            console.log(`🏷️ Template de renommage auto pour ${className}: "${config.autoRename}"`);
+        }
+        
         console.log("Propriétés : ", config.properties);
 
         // Add default classe property if not already defined

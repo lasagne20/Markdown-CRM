@@ -36,6 +36,7 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 ### Feature Guides
 - **[Static Properties](./Static-Properties.md)** - Non-editable fields guide
 - **[Populate Feature](./Populate-Feature.md)** - Interactive file creation with property prompts
+- **[Auto-Rename](./Auto-Rename.md)** - Automatic file renaming based on properties
 - **[Quick Reference: Static Properties](./QUICK-REFERENCE-Static-Properties.md)** - Quick snippets and examples
 
 ---

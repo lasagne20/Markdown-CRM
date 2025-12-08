@@ -105,4 +105,5 @@ export interface ClassConfig {
     };
     data?: DataSourceConfig[]; // Data sources for pre-populating instances
     populate?: PopulateConfig[]; // Properties to prompt for during file creation
+    autoRename?: string; // Template for automatic file renaming (e.g., "{dateEntree} - {current}")
 }

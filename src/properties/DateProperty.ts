@@ -98,8 +98,11 @@ export class DateProperty extends Property {
 
     // Formate la date pour le stockage : "YYYY-MM-DD"
     formatDateForStorage(date: Date): string {
-        // Use toISOString to avoid timezone issues, then extract date part
-        return date.toISOString().split('T')[0];
+        // Format en local pour éviter le décalage de fuseau horaire
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
     
     // Ajoute les options "Aujourd'hui", "Demain", "Semaine prochaine"

@@ -3,6 +3,7 @@ name: Personne
 icon: 👤
 description: Gestion des personnes liées à des institutions
 template: Personne.md
+autoRename: "{statut} - {dateEntree} - {current}"
 
 # Propriété parent pour organisation automatique des fichiers
 parents:
