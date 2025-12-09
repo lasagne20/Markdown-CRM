@@ -849,7 +849,21 @@ export class Classe {
             // Check if this is an ObjectProperty with nested properties
             if (property.type === 'object' && 'properties' in property) {
                 const objectProperty = property as any;
-                const currentValue = metadata[property.name];
+                
+                // Get current value - check both the new property name and its aliases
+                let currentValue = updates[property.name];
+                let foundInAlias: string | null = null;
+                
+                // If property doesn't exist yet, check aliases
+                if (!currentValue && property.aliases) {
+                    for (const alias of property.aliases) {
+                        if (updates[alias]) {
+                            currentValue = updates[alias];
+                            foundInAlias = alias;
+                            break;
+                        }
+                    }
+                }
                 
                 // Only process if the object property has a value
                 if (currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue)) {
@@ -886,11 +900,20 @@ export class Classe {
                         }
                     }
 
-                    if (objectHasChanges) {
+                    // If we have changes OR the property itself was found via an alias
+                    if (objectHasChanges || foundInAlias) {
                         updates[property.name] = objectUpdates;
                         hasChanges = true;
+                        
+                        // If found via alias, delete the old top-level property
+                        if (foundInAlias && deleteAfterMigration) {
+                            delete updates[foundInAlias];
+                        }
                     }
                 }
+                
+                // Skip top-level alias processing for ObjectProperty - already handled above
+                continue;
             }
             
             // Process top-level property aliases

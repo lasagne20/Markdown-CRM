@@ -255,6 +255,11 @@ export class FakeApp {
             return null; // Signal to use multi-line format
         }
         
+        if (typeof value === 'object') {
+            // Handle objects - return null to signal multi-line format needed
+            return null;
+        }
+        
         return String(value);
     }
 
@@ -324,6 +329,23 @@ export class FakeApp {
                                 } else {
                                     yamlContent += `  - ${formattedItem}\n`;
                                 }
+                            }
+                        }
+                    }
+                } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    // Handle plain objects
+                    const entries = Object.entries(value);
+                    if (entries.length === 0) {
+                        yamlContent += `${key}: {}\n`;
+                    } else {
+                        yamlContent += `${key}:\n`;
+                        for (const [subKey, subValue] of entries) {
+                            const formattedSubValue = this.formatYamlValue(subValue);
+                            if (formattedSubValue === null) {
+                                // Nested object - not supported yet, use JSON
+                                yamlContent += `  ${subKey}: ${JSON.stringify(subValue)}\n`;
+                            } else {
+                                yamlContent += `  ${subKey}: ${formattedSubValue}\n`;
                             }
                         }
                     }

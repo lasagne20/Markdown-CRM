@@ -399,5 +399,55 @@ describe('Property Aliases - Object Properties', () => {
             // Object should remain empty
             expect(updatedMetadata.data).toEqual({});
         });
+
+        test('should migrate capitalized aliases to lowercase properties (real world case)', async () => {
+            class TestClasse extends Classe {
+                constructor(vault: Vault, file?: File) {
+                    super(vault, file);
+                    const ObjectProperty = require('../../src/properties/ObjectProperty').ObjectProperty;
+                    const TextProperty = require('../../src/properties/TextProperty').TextProperty;
+                    const FileProperty = require('../../src/properties/FileProperty').FileProperty;
+                    
+                    // Simulate the real "postes" property from Personne.yaml
+                    const postesProperty = new ObjectProperty('postes', vault, {
+                        institution: new FileProperty('institution', vault, ['Institution', 'Lieu'], {
+                            title: 'Institution',
+                            aliases: ['Institution']
+                        }),
+                        poste: new TextProperty('poste', vault, {
+                            title: 'Poste',
+                            aliases: ['Poste']
+                        })
+                    }, { title: 'Poste/Fonction', aliases: ['Postes'] });
+                    this.addProperty(postesProperty);
+                }
+            }
+
+            const file = await mockApp.createFile('test/lucas.md', '');
+            const fileInstance = new File(vault, file);
+            
+            // Real world data from Lucas Moreau
+            await mockApp.updateMetadata(file, {
+                Postes: {
+                    Institution: '[[Global Corp]]',
+                    Poste: 'Développeur Senior'
+                }
+            });
+
+            const instance = new TestClasse(vault, fileInstance);
+            await (instance as any).migratePropertyAliases();
+
+            const updatedMetadata = await mockApp.getMetadata(file);
+            
+            // Should migrate top-level Postes → postes
+            expect(updatedMetadata.postes).toBeDefined();
+            expect(updatedMetadata.Postes).toBeUndefined();
+            
+            // Should migrate nested Institution → institution and Poste → poste
+            expect(updatedMetadata.postes.institution).toBe('[[Global Corp]]');
+            expect(updatedMetadata.postes.poste).toBe('Développeur Senior');
+            expect(updatedMetadata.postes.Institution).toBeUndefined();
+            expect(updatedMetadata.postes.Poste).toBeUndefined();
+        });
     });
 });

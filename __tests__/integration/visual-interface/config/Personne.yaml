@@ -54,10 +54,12 @@ properties:
     icon: 💼
     required: false
     defaultValue: {}
+    aliases: ["Postes"]
     properties:
       institution:
         type: FileProperty
         title: Institution
+        aliases: ["Institution"]
         icon: 🏢
         required: false
         classes:
@@ -67,6 +69,7 @@ properties:
       poste:
         type: TextProperty
         title: Poste
+        aliases: ["Poste"]
         icon: 💼
         required: false
         defaultValue: ""
