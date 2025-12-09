@@ -199,7 +199,7 @@ export class ConfigLoader {
                 return new BooleanProperty(propertyName, this.vault, options);
             
             case 'NumberProperty':
-                return new NumberProperty(propertyName, this.vault, config.unit || '', { icon: config.icon || '', static: config.static || false });
+                return new NumberProperty(propertyName, this.vault, config.unit || '', options);
             
             case 'SubClassProperty':
                 // This will be handled separately in createSubClassProperty
@@ -211,8 +211,7 @@ export class ConfigLoader {
 
             case 'FormulaProperty':
                 const formula = config.formula || config.defaultValue || '';
-                const formulaOptions = config.icon ? { icon: config.icon, static: true, write: true } : { icon: '', static: true, write: true };
-                return new FormulaProperty(propertyName, this.vault, formula, formulaOptions);
+                return new FormulaProperty(propertyName, this.vault, formula, options);
             
             default:
                 console.warn(`Unknown property type: ${config.type}, falling back to Property`);
