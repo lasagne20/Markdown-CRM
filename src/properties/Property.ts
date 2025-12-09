@@ -134,7 +134,7 @@ export class Property {
         let hasChanges = false;
 
         // Check if new property needs migration (doesn't exist or is empty)
-        const needsMigration = !(this.name in metadata) || metadata[this.name] === undefined || metadata[this.name] === '';
+        const needsMigration = !(this.name in metadata);
         let migrated = false;
 
         for (const oldName of this.aliases) {
