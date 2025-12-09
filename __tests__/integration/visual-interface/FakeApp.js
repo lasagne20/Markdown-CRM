@@ -261,7 +261,8 @@ export class FakeApp {
     async updateMetadata(file, metadata) {
         if (this.fileSystem.has(file.path)) {
             const existing = this.fileSystem.get(file.path);
-            existing.metadata = { ...existing.metadata, ...metadata };
+            // Replace metadata completely instead of merging to allow deletion of fields
+            existing.metadata = metadata;
             console.log(`📝 Métadonnées mises à jour en mémoire: ${file.path}`, metadata);
             console.log(`📝 Toutes les métadonnées:`, existing.metadata);
             

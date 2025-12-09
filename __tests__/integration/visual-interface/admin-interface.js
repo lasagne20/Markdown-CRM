@@ -767,6 +767,19 @@ class AdminInterface {
         this.showSuccess('Données actualisées');
     }
 
+    async refreshVault() {
+        console.log('🔄 Refresh complet du vault...');
+        try {
+            // Réinitialiser complètement le vault
+            await this.fakeEnvironment.initializeVault();
+            await this.loadInterface();
+            this.showSuccess('✅ Vault rechargé avec succès');
+        } catch (error) {
+            console.error('❌ Erreur lors du refresh du vault:', error);
+            this.showError('Erreur lors du refresh du vault: ' + error.message);
+        }
+    }
+
     async exportData() {
         try {
             const stats = await this.fakeEnvironment.getStats();

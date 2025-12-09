@@ -1,0 +1,37 @@
+name: PersonneWithAliases
+icon: 👤
+description: Test class with property aliases
+
+properties:
+  nom:
+    type: NameProperty
+    title: Nom
+    icon: 📝
+    
+  dateEntree:
+    type: DateProperty
+    title: "Date d'entrée"
+    icon: 📅
+    aliases:
+      - date_entree
+      - dateDebut
+    
+  statut:
+    type: SelectProperty
+    title: Statut
+    icon: 🏷️
+    aliases:
+      - status
+      - etat
+    options:
+      - Actif
+      - Inactif
+      - En attente
+      
+  email:
+    type: EmailProperty
+    title: Email
+    icon: 📧
+    aliases:
+      - mail
+      - courriel

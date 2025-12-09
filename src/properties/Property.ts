@@ -20,6 +20,7 @@ export class Property {
     public title: string = "";
     public flexSpan = 0;
     public default: any;
+    public aliases?: string[]; // Old property names for automatic migration
 
     public type : string = "text";
 
@@ -34,20 +35,23 @@ export class Property {
      * @param options.staticProperty - If true, the property is static and doesn't change (default: false)
      * @param options.flexSpan - Relative width of the property in the display (default: 1)
      * @param options.defaultValue - Default value of the property (default: "")
+     * @param options.aliases - Array of old property names for automatic migration
      */
     constructor(name: string, vault: Vault, options: { 
         icon?: string, 
         staticProperty?: boolean, 
         flexSpan?: number, 
-        defaultValue?: any, 
+        defaultValue?: any,
+        aliases?: string[],
         [key: string]: any 
     } = {}) {
-        const { icon = "align-left", staticProperty = false, flexSpan = 1, defaultValue = "", ...additionalOptions } = options;
+        const { icon = "align-left", staticProperty = false, flexSpan = 1, defaultValue = "", aliases, ...additionalOptions } = options;
         this.flexSpan = flexSpan;
         this.name = name;
         this.vault = vault;
         this.icon = icon;
         this.default = defaultValue;
+        this.aliases = aliases;
         this.static = staticProperty;
 
         // Assign additional options to the instance

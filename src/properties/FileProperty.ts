@@ -37,6 +37,9 @@ export class FileProperty extends LinkProperty{
     override validate(value: string): string {
       // Expression régulière pour détecter les liens Obsidian au format [[...]]
       const regex = /\[\[([^\]]+)\]\]/;
+      if (typeof value !== "string") {
+        return "";
+      }
       const match = value.match(regex);
       if (match && match[1]) {
           return `[[${match[1]}]]`;

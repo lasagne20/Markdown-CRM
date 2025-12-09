@@ -11,6 +11,7 @@ export interface PropertyConfig {
     display?: string; // Pour mode d'affichage (table, fold, etc.)
     static?: boolean; // Pour rendre une propriété non-modifiable
     unit?: string; // Pour NumberProperty - unité de mesure (€, kg, %, etc.)
+    aliases?: string[]; // Old property names for automatic migration
 }
 
 export interface PropertyTableRow {

@@ -3,7 +3,7 @@ name: Personne
 icon: 👤
 description: Gestion des personnes liées à des institutions
 template: Personne.md
-autoRename: "{statut} - {dateEntree} - {current}"
+autoRename: "{current} - {statut} - {dateEntree}"
 
 # Propriété parent pour organisation automatique des fichiers
 parents:
@@ -40,9 +40,11 @@ properties:
   institution:
     type: FileProperty
     title: Institution
+    aliases: ["Institution"]
     icon: 🏢
     required: false
     defaultValue: ""
+    
     classes:
       - Institution
     

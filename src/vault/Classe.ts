@@ -121,7 +121,6 @@ export class Classe {
         // Update metadata first
         await this.vault.app.updateMetadata(this.file, metadata);
         
-        await this.onUpdate()
         // Let updateParentFolder decide if it needs to do anything
         await this.updateParentFolder(oldMetadata, oldParentProperty);
 
@@ -154,12 +153,6 @@ export class Classe {
         const metadata = await this.getMetadata();
         metadata[propertyName] = value;
         await this.updateMetadata(metadata);
-        
-        // If the parent property changed, update folder structure
-        const parentProperty = await this.getParentProperty();
-        if (parentProperty && propertyName === parentProperty.name) {
-            await this.updateParentFolder();
-        }
     }
     
     private async updateAllPropertiesMetadata(): Promise<void> {
@@ -292,25 +285,7 @@ export class Classe {
         
         // Find all placeholders in the template
         const placeholderRegex = /\{([^}]+)\}/g;
-        const matches = template.matchAll(placeholderRegex);
-        
-        // First pass: collect all property values (not {current})
-        const propertyValues: Record<string, string> = {};
-        for (const match of Array.from(template.matchAll(placeholderRegex))) {
-            const placeholder = match[1];
-            if (placeholder !== 'current') {
-                let value: any;
-                if (placeholder.includes('.')) {
-                    value = this.getNestedPropertyValue(metadata, placeholder);
-                } else {
-                    value = metadata[placeholder];
-                }
-                if (value !== undefined && value !== null && value !== '') {
-                    propertyValues[placeholder] = String(value);
-                }
-            }
-        }
-        
+     
         // Second pass: replace placeholders
         for (const match of Array.from(template.matchAll(placeholderRegex))) {
             const placeholder = match[1];
@@ -363,7 +338,12 @@ export class Classe {
             }
             
             // Convert value to string and sanitize
-            const stringValue = String(value);
+            let stringValue: string;
+            if (value instanceof Date) {
+                stringValue = value.toISOString().split('T')[0]; // YYYY-MM-DD
+            } else {
+                stringValue = String(value);
+            }
             fileName = fileName.replace(`{${placeholder}}`, stringValue);
             console.log(`  ✅ Replaced {${placeholder}} with "${stringValue}"`);
         }
@@ -833,10 +813,13 @@ export class Classe {
                 await this.updateParentFolder();
             }
         }
+        await this.handleAutoRename();
+        await this.migratePropertyAliases();
     }
     
     async onUpdate(): Promise<void> {
         // Let updateParentFolder decide if it needs to do anything
+        console.log(`🔄 onUpdate called for ${this.file?.getPath()}`);
         await this.updateParentFolder();
         
         // Handle automatic renaming if configured
@@ -845,5 +828,56 @@ export class Classe {
     
     async onDelete(): Promise<void> {
         // Override in subclasses for pre-deletion logic
+    }
+
+    /**
+     * Migrate old property names to new ones based on aliases configuration.
+     * This method runs only on onCreate to avoid repeated migrations.
+     */
+    protected async migratePropertyAliases(): Promise<void> {
+        if (!this.file) return;
+
+        const metadata = await this.file.getMetadata();
+        const settings = this.vault.app.getSettings();
+        const deleteAfterMigration = settings.deleteAliasesAfterMigration !== false; // Default: true
+
+        let hasChanges = false;
+        const updates: Record<string, any> = { ...metadata };
+
+        for (const property of this.properties) {
+            if (!property.aliases || property.aliases.length === 0) continue;
+
+            // Check if new property needs migration (doesn't exist or is empty)
+            const needsMigration = !(property.name in metadata) || metadata[property.name] === undefined || metadata[property.name] === '';
+            let migrated = false;
+
+            for (const oldName of property.aliases) {
+                // Check if the old property name exists in metadata
+                if (oldName in metadata) {
+                    console.log(`🔄 Property alias migration: ${oldName} → ${property.name}`);
+
+                    // Migrate value from first found alias only
+                    if (needsMigration && !migrated) {
+                        console.log(`  📝 Migrating value: "${metadata[oldName]}"`);
+                        updates[property.name] = metadata[oldName];
+                        hasChanges = true;
+                        migrated = true;
+                    }
+
+                    // Delete the old property if setting is enabled
+                    if (deleteAfterMigration) {
+                        delete updates[oldName];
+                        hasChanges = true;
+                    }
+                }
+            }
+        }
+        console.log(`✅ Migration completed for ${this.file.getPath()}. Changes made: ${hasChanges}`);
+        console.log(`Updated metadata:`, updates);
+
+        // Apply all changes at once using the app's updateMetadata
+        if (hasChanges) {
+            await this.vault.app.updateMetadata(this.file.getFile(), updates);
+        }
     }
 }

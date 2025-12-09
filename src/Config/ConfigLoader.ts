@@ -113,6 +113,11 @@ export class ConfigLoader {
             options.title = config.title;
         }
         
+        // Add aliases from config.aliases
+        if (config.aliases && Array.isArray(config.aliases)) {
+            options.aliases = config.aliases;
+        }
+        
         // Use propertyKey as the name (metadata key)
         const propertyName = (config as any).propertyKey;
         

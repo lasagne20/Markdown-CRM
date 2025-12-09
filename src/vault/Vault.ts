@@ -179,8 +179,7 @@ export class Vault {
             }
         }
 
-        let existingClass = this.files[file.path];
-        if (existingClass) { return existingClass; }
+        
         
         let classe: Classe | undefined;
         
@@ -366,11 +365,14 @@ export class Vault {
 
     async createClasse(file: IFile) {
         let fileInstance: File;
+        let classe: Classe | undefined = undefined;
         if (!(file instanceof File)){
             fileInstance = new File(this, file);
         } else {
             fileInstance = file;
         }
+        let existingClass = this.files[file.path];
+        if (existingClass) { return existingClass; }
         
         const metadata = await this.app.getMetadata(fileInstance);
         if (!metadata) {
@@ -390,21 +392,23 @@ export class Vault {
             if (Vault.dynamicClassFactory) {
                 const constructor = await Vault.dynamicClassFactory.getClass(className);
                 if (constructor) {
-                    return new constructor(this, fileInstance);
+                    classe =  new constructor(this, fileInstance);
                 }
             }
             
             // Fallback to static classes if dynamic factory is not available
             let constructor = Vault.classes[className];
             if (constructor) {
-                return new constructor(this, fileInstance);
+                classe = new constructor(this, fileInstance);
             }
-            
-            console.error("Type non connue : " + className);
-            return undefined;
+            if (!classe) {
+                console.error("Type non connue : " + className);
+            }
         } catch (error) {
             console.error("Erreur lors de la création de la classe : " + className, error);
-            return undefined;
         }
+        this.files[fileInstance.path] = classe!;
+        await classe?.onCreate();
+        return classe;
     }
 }
