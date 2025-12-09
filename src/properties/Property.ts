@@ -118,6 +118,47 @@ export class Property {
     }
 
     /**
+     * Migrate property aliases in metadata.
+     * Copies value from first found alias to the new property name.
+     * 
+     * @param metadata - Current metadata object
+     * @param deleteAfterMigration - Whether to delete old alias properties after migration
+     * @returns Object with hasChanges flag and updated metadata
+     */
+    migrateAliases(metadata: Record<string, any>, deleteAfterMigration: boolean): { hasChanges: boolean; updates: Record<string, any> } {
+        if (!this.aliases || this.aliases.length === 0) {
+            return { hasChanges: false, updates: metadata };
+        }
+
+        const updates = { ...metadata };
+        let hasChanges = false;
+
+        // Check if new property needs migration (doesn't exist or is empty)
+        const needsMigration = !(this.name in metadata) || metadata[this.name] === undefined || metadata[this.name] === '';
+        let migrated = false;
+
+        for (const oldName of this.aliases) {
+            // Check if the old property name exists in metadata
+            if (oldName in metadata) {
+                // Migrate value from first found alias only
+                if (needsMigration && !migrated) {
+                    updates[this.name] = metadata[oldName];
+                    hasChanges = true;
+                    migrated = true;
+                }
+
+                // Delete the old property if setting is enabled
+                if (deleteAfterMigration) {
+                    delete updates[oldName];
+                    hasChanges = true;
+                }
+            }
+        }
+
+        return { hasChanges, updates };
+    }
+
+    /**
      * Generates the complete display of the property for a given classe.
      * Configures the display mode (static or editable) and title,
      * then delegates DOM creation to fillDisplay.

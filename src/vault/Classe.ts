@@ -833,7 +833,7 @@ export class Classe {
     /**
      * Migrate old property names to new ones based on aliases configuration.
      * This method runs only on onCreate to avoid repeated migrations.
-     * Supports nested properties in ObjectProperty.
+     * Delegates the actual migration logic to Property and ObjectProperty classes.
      */
     protected async migratePropertyAliases(): Promise<void> {
         if (!this.file) return;
@@ -843,102 +843,14 @@ export class Classe {
         const deleteAfterMigration = settings.deleteAliasesAfterMigration !== false; // Default: true
 
         let hasChanges = false;
-        const updates: Record<string, any> = { ...metadata };
+        let updates: Record<string, any> = { ...metadata };
 
+        // Delegate migration to each property
         for (const property of this.properties) {
-            // Check if this is an ObjectProperty with nested properties
-            if (property.type === 'object' && 'properties' in property) {
-                const objectProperty = property as any;
-                
-                // Get current value - check both the new property name and its aliases
-                let currentValue = updates[property.name];
-                let foundInAlias: string | null = null;
-                
-                // If property doesn't exist yet, check aliases
-                if (!currentValue && property.aliases) {
-                    for (const alias of property.aliases) {
-                        if (updates[alias]) {
-                            currentValue = updates[alias];
-                            foundInAlias = alias;
-                            break;
-                        }
-                    }
-                }
-                
-                // Only process if the object property has a value
-                if (currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue)) {
-                    const objectUpdates = { ...currentValue };
-                    let objectHasChanges = false;
-
-                    // Process nested properties
-                    if (objectProperty.properties) {
-                        for (const [nestedPropName, nestedProp] of Object.entries(objectProperty.properties as Record<string, any>)) {
-                            if (!nestedProp.aliases || nestedProp.aliases.length === 0) continue;
-
-                            // Check if nested property needs migration
-                            const needsMigration = !(nestedPropName in objectUpdates) 
-                                || objectUpdates[nestedPropName] === undefined 
-                                || objectUpdates[nestedPropName] === '';
-                            let migrated = false;
-
-                            for (const oldName of nestedProp.aliases) {
-                                if (oldName in objectUpdates) {
-                                    // Migrate value from first found alias only
-                                    if (needsMigration && !migrated) {
-                                        objectUpdates[nestedPropName] = objectUpdates[oldName];
-                                        objectHasChanges = true;
-                                        migrated = true;
-                                    }
-
-                                    // Delete the old property if setting is enabled
-                                    if (deleteAfterMigration) {
-                                        delete objectUpdates[oldName];
-                                        objectHasChanges = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // If we have changes OR the property itself was found via an alias
-                    if (objectHasChanges || foundInAlias) {
-                        updates[property.name] = objectUpdates;
-                        hasChanges = true;
-                        
-                        // If found via alias, delete the old top-level property
-                        if (foundInAlias && deleteAfterMigration) {
-                            delete updates[foundInAlias];
-                        }
-                    }
-                }
-                
-                // Skip top-level alias processing for ObjectProperty - already handled above
-                continue;
-            }
-            
-            // Process top-level property aliases
-            if (!property.aliases || property.aliases.length === 0) continue;
-
-            // Check if new property needs migration (doesn't exist or is empty)
-            const needsMigration = !(property.name in metadata) || metadata[property.name] === undefined || metadata[property.name] === '';
-            let migrated = false;
-
-            for (const oldName of property.aliases) {
-                // Check if the old property name exists in metadata
-                if (oldName in metadata) {
-                    // Migrate value from first found alias only
-                    if (needsMigration && !migrated) {
-                        updates[property.name] = metadata[oldName];
-                        hasChanges = true;
-                        migrated = true;
-                    }
-
-                    // Delete the old property if setting is enabled
-                    if (deleteAfterMigration) {
-                        delete updates[oldName];
-                        hasChanges = true;
-                    }
-                }
+            const result = property.migrateAliases(updates, deleteAfterMigration);
+            if (result.hasChanges) {
+                updates = result.updates;
+                hasChanges = true;
             }
         }
 

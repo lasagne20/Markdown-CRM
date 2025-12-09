@@ -100,6 +100,93 @@ export class ObjectProperty extends Property{
     }
 
     /**
+     * Migrate property aliases for ObjectProperty (including nested properties).
+     * ObjectProperty always stores values as arrays of objects.
+     * 
+     * @param metadata - Current metadata object
+     * @param deleteAfterMigration - Whether to delete old alias properties after migration
+     * @returns Object with hasChanges flag and updated metadata
+     */
+    override migrateAliases(metadata: Record<string, any>, deleteAfterMigration: boolean): { hasChanges: boolean; updates: Record<string, any> } {
+        const updates = { ...metadata };
+        let hasChanges = false;
+
+        // Get current value - check both the new property name and its aliases
+        let currentValue = updates[this.name];
+        let foundInAlias: string | null = null;
+        
+        // If property doesn't exist yet, check aliases
+        if (!currentValue && this.aliases) {
+            for (const alias of this.aliases) {
+                if (updates[alias]) {
+                    currentValue = updates[alias];
+                    foundInAlias = alias;
+                    break;
+                }
+            }
+        }
+        
+        // Only process if the object property has a value (ObjectProperty uses arrays)
+        if (Array.isArray(currentValue) && currentValue.length > 0) {
+            const updatedArray = currentValue.map(item => {
+                if (typeof item !== 'object' || Array.isArray(item)) {
+                    return item;
+                }
+
+                const objectUpdates = { ...item };
+                let objectHasChanges = false;
+
+                // Process nested properties
+                if (this.properties) {
+                    for (const [nestedPropName, nestedProp] of Object.entries(this.properties)) {
+                        if (!nestedProp.aliases || nestedProp.aliases.length === 0) continue;
+
+                        // Check if nested property needs migration
+                        const needsMigration = !(nestedPropName in objectUpdates) 
+                            || objectUpdates[nestedPropName] === undefined 
+                            || objectUpdates[nestedPropName] === '';
+                        let migrated = false;
+
+                        for (const oldName of nestedProp.aliases) {
+                            if (oldName in objectUpdates) {
+                                // Migrate value from first found alias only
+                                if (needsMigration && !migrated) {
+                                    objectUpdates[nestedPropName] = objectUpdates[oldName];
+                                    objectHasChanges = true;
+                                    migrated = true;
+                                }
+
+                                // Delete the old property if setting is enabled
+                                if (deleteAfterMigration) {
+                                    delete objectUpdates[oldName];
+                                    objectHasChanges = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return objectHasChanges ? objectUpdates : item;
+            });
+
+            // Check if array was modified or property was found via alias
+            const arrayHasChanges = updatedArray.some((item, index) => item !== currentValue[index]);
+            
+            if (arrayHasChanges || foundInAlias) {
+                updates[this.name] = updatedArray;
+                hasChanges = true;
+                
+                // If found via alias, delete the old top-level property
+                if (foundInAlias && deleteAfterMigration) {
+                    delete updates[foundInAlias];
+                }
+            }
+        }
+
+        return { hasChanges, updates };
+    }
+
+    /**
      * Extract the parent File from an ObjectProperty value
      * Looks for the first FileProperty or MultiFileProperty in the object's properties
      * @param value The property value (array of objects or single object)

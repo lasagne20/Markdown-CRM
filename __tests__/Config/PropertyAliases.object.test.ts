@@ -215,13 +215,13 @@ describe('Property Aliases - Object Properties', () => {
             const file = await mockApp.createFile('test/contact.md', '');
             const fileInstance = new File(vault, file);
             
-            // Set metadata with old property names (aliases)
+            // Set metadata with old property names (aliases) - ObjectProperty uses arrays
             await mockApp.updateMetadata(file, {
-                adresse: {
+                adresse: [{
                     street: '123 Avenue Test',
                     city: 'Paris',
                     zipCode: '75001'
-                }
+                }]
             });
 
             const instance = new TestClasse(vault, fileInstance);
@@ -230,14 +230,14 @@ describe('Property Aliases - Object Properties', () => {
             const updatedMetadata = await mockApp.getMetadata(file);
             
             // Verify migration happened
-            expect(updatedMetadata.adresse.rue).toBe('123 Avenue Test');
-            expect(updatedMetadata.adresse.ville).toBe('Paris');
-            expect(updatedMetadata.adresse.codePostal).toBe('75001');
+            expect(updatedMetadata.adresse[0].rue).toBe('123 Avenue Test');
+            expect(updatedMetadata.adresse[0].ville).toBe('Paris');
+            expect(updatedMetadata.adresse[0].codePostal).toBe('75001');
 
             // Verify old names were deleted
-            expect(updatedMetadata.adresse.street).toBeUndefined();
-            expect(updatedMetadata.adresse.city).toBeUndefined();
-            expect(updatedMetadata.adresse.zipCode).toBeUndefined();
+            expect(updatedMetadata.adresse[0].street).toBeUndefined();
+            expect(updatedMetadata.adresse[0].city).toBeUndefined();
+            expect(updatedMetadata.adresse[0].zipCode).toBeUndefined();
         });
 
         test('should handle partial migration with mixed old and new names', async () => {
@@ -267,11 +267,11 @@ describe('Property Aliases - Object Properties', () => {
             
             // Mix of old and new property names
             await mockApp.updateMetadata(file, {
-                adresse: {
+                adresse: [{
                     rue: '123 Rue Moderne',    // Already new name
                     city: 'Paris',             // Old name (alias)
                     country: 'France'          // Old name (alias)
-                }
+                }]
             });
 
             const instance = new TestClasse(vault, fileInstance);
@@ -280,13 +280,13 @@ describe('Property Aliases - Object Properties', () => {
             const updatedMetadata = await mockApp.getMetadata(file);
             
             // All should now use new names
-            expect(updatedMetadata.adresse.rue).toBe('123 Rue Moderne');
-            expect(updatedMetadata.adresse.ville).toBe('Paris');
-            expect(updatedMetadata.adresse.pays).toBe('France');
+            expect(updatedMetadata.adresse[0].rue).toBe('123 Rue Moderne');
+            expect(updatedMetadata.adresse[0].ville).toBe('Paris');
+            expect(updatedMetadata.adresse[0].pays).toBe('France');
 
             // Old names should be deleted
-            expect(updatedMetadata.adresse.city).toBeUndefined();
-            expect(updatedMetadata.adresse.country).toBeUndefined();
+            expect(updatedMetadata.adresse[0].city).toBeUndefined();
+            expect(updatedMetadata.adresse[0].country).toBeUndefined();
         });
 
         test('should not overwrite existing new property values', async () => {
@@ -310,10 +310,10 @@ describe('Property Aliases - Object Properties', () => {
             
             // New property already has a value
             await mockApp.updateMetadata(file, {
-                info: {
+                info: [{
                     email: 'current@example.com',
                     mail: 'old@example.com'
-                }
+                }]
             });
 
             const instance = new TestClasse(vault, fileInstance);
@@ -322,10 +322,10 @@ describe('Property Aliases - Object Properties', () => {
             const updatedMetadata = await mockApp.getMetadata(file);
             
             // Should NOT overwrite existing value
-            expect(updatedMetadata.info.email).toBe('current@example.com');
+            expect(updatedMetadata.info[0].email).toBe('current@example.com');
 
             // But old alias should still be deleted
-            expect(updatedMetadata.info.mail).toBeUndefined();
+            expect(updatedMetadata.info[0].mail).toBeUndefined();
         });
 
         test('should migrate with deleteAliasesAfterMigration setting', async () => {
@@ -351,9 +351,9 @@ describe('Property Aliases - Object Properties', () => {
             const fileInstance = new File(vault, file);
             
             await mockApp.updateMetadata(file, {
-                data: {
+                data: [{
                     oldField: 'test value'
-                }
+                }]
             });
 
             const instance = new TestClasse(vault, fileInstance);
@@ -362,10 +362,10 @@ describe('Property Aliases - Object Properties', () => {
             const updatedMetadata = await mockApp.getMetadata(file);
             
             // New property should have the value
-            expect(updatedMetadata.data.field).toBe('test value');
+            expect(updatedMetadata.data[0].field).toBe('test value');
 
             // Old alias should STILL EXIST (deleteAliasesAfterMigration = false)
-            expect(updatedMetadata.data.oldField).toBe('test value');
+            expect(updatedMetadata.data[0].oldField).toBe('test value');
         });
 
         test('should handle empty object gracefully', async () => {
@@ -388,7 +388,7 @@ describe('Property Aliases - Object Properties', () => {
             const fileInstance = new File(vault, file);
             
             await mockApp.updateMetadata(file, {
-                data: {}
+                data: []
             });
 
             const instance = new TestClasse(vault, fileInstance);
@@ -396,8 +396,8 @@ describe('Property Aliases - Object Properties', () => {
 
             const updatedMetadata = await mockApp.getMetadata(file);
             
-            // Object should remain empty
-            expect(updatedMetadata.data).toEqual({});
+            // Array should remain empty
+            expect(updatedMetadata.data).toEqual([]);
         });
 
         test('should migrate capitalized aliases to lowercase properties (real world case)', async () => {
@@ -428,10 +428,10 @@ describe('Property Aliases - Object Properties', () => {
             
             // Real world data from Lucas Moreau
             await mockApp.updateMetadata(file, {
-                Postes: {
+                Postes: [{
                     Institution: '[[Global Corp]]',
                     Poste: 'Développeur Senior'
-                }
+                }]
             });
 
             const instance = new TestClasse(vault, fileInstance);
@@ -444,10 +444,10 @@ describe('Property Aliases - Object Properties', () => {
             expect(updatedMetadata.Postes).toBeUndefined();
             
             // Should migrate nested Institution → institution and Poste → poste
-            expect(updatedMetadata.postes.institution).toBe('[[Global Corp]]');
-            expect(updatedMetadata.postes.poste).toBe('Développeur Senior');
-            expect(updatedMetadata.postes.Institution).toBeUndefined();
-            expect(updatedMetadata.postes.Poste).toBeUndefined();
+            expect(updatedMetadata.postes[0].institution).toBe('[[Global Corp]]');
+            expect(updatedMetadata.postes[0].poste).toBe('Développeur Senior');
+            expect(updatedMetadata.postes[0].Institution).toBeUndefined();
+            expect(updatedMetadata.postes[0].Poste).toBeUndefined();
         });
     });
 });
