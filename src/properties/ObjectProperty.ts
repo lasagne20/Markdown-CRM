@@ -108,14 +108,13 @@ export class ObjectProperty extends Property{
      * @returns Object with hasChanges flag and updated metadata
      */
     override migrateAliases(metadata: Record<string, any>, deleteAfterMigration: boolean): { hasChanges: boolean; updates: Record<string, any> } {
-        const updates = { ...metadata };
+        let updates = { ...metadata };
         let hasChanges = false;
 
-        // Get current value - check both the new property name and its aliases
+        // Step 1: Handle top-level ObjectProperty alias migration (migrate entire array)
         let currentValue = updates[this.name];
         let foundInAlias: string | null = null;
         
-        // If property doesn't exist yet, check aliases
         if (!currentValue && this.aliases) {
             for (const alias of this.aliases) {
                 if (updates[alias]) {
@@ -125,61 +124,45 @@ export class ObjectProperty extends Property{
                 }
             }
         }
+
+        // If found via top-level alias, migrate it
+        if (foundInAlias) {
+            updates[this.name] = currentValue;
+            if (deleteAfterMigration) {
+                delete updates[foundInAlias];
+            }
+            hasChanges = true;
+        }
         
-        // Only process if the object property has a value (ObjectProperty uses arrays)
-        if (Array.isArray(currentValue) && currentValue.length > 0) {
+        // Step 2: Handle nested property aliases within each object in the array
+        if (Array.isArray(currentValue) && currentValue.length > 0 && this.properties) {
             const updatedArray = currentValue.map(item => {
+                // Skip non-objects
                 if (typeof item !== 'object' || Array.isArray(item)) {
                     return item;
                 }
 
-                const objectUpdates = { ...item };
+                // Use Property.migrateAliases for each nested property
+                let objectData = { ...item };
                 let objectHasChanges = false;
 
-                // Process nested properties
-                if (this.properties) {
-                    for (const [nestedPropName, nestedProp] of Object.entries(this.properties)) {
-                        if (!nestedProp.aliases || nestedProp.aliases.length === 0) continue;
-
-                        // Check if nested property needs migration
-                        const needsMigration = !(nestedPropName in objectUpdates) 
-                            || objectUpdates[nestedPropName] === undefined 
-                            || objectUpdates[nestedPropName] === '';
-                        let migrated = false;
-
-                        for (const oldName of nestedProp.aliases) {
-                            if (oldName in objectUpdates) {
-                                // Migrate value from first found alias only
-                                if (needsMigration && !migrated) {
-                                    objectUpdates[nestedPropName] = objectUpdates[oldName];
-                                    objectHasChanges = true;
-                                    migrated = true;
-                                }
-
-                                // Delete the old property if setting is enabled
-                                if (deleteAfterMigration) {
-                                    delete objectUpdates[oldName];
-                                    objectHasChanges = true;
-                                }
-                            }
-                        }
+                for (const nestedProp of Object.values(this.properties)) {
+                    const result = nestedProp.migrateAliases(objectData, deleteAfterMigration);
+                    if (result.hasChanges) {
+                        objectData = result.updates;
+                        objectHasChanges = true;
                     }
                 }
 
-                return objectHasChanges ? objectUpdates : item;
+                return objectHasChanges ? objectData : item;
             });
 
-            // Check if array was modified or property was found via alias
+            // Check if any objects were modified
             const arrayHasChanges = updatedArray.some((item, index) => item !== currentValue[index]);
             
-            if (arrayHasChanges || foundInAlias) {
+            if (arrayHasChanges) {
                 updates[this.name] = updatedArray;
                 hasChanges = true;
-                
-                // If found via alias, delete the old top-level property
-                if (foundInAlias && deleteAfterMigration) {
-                    delete updates[foundInAlias];
-                }
             }
         }
 
