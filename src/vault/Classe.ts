@@ -833,6 +833,7 @@ export class Classe {
     /**
      * Migrate old property names to new ones based on aliases configuration.
      * This method runs only on onCreate to avoid repeated migrations.
+     * Supports nested properties in ObjectProperty.
      */
     protected async migratePropertyAliases(): Promise<void> {
         if (!this.file) return;
@@ -845,6 +846,54 @@ export class Classe {
         const updates: Record<string, any> = { ...metadata };
 
         for (const property of this.properties) {
+            // Check if this is an ObjectProperty with nested properties
+            if (property.type === 'object' && 'properties' in property) {
+                const objectProperty = property as any;
+                const currentValue = metadata[property.name];
+                
+                // Only process if the object property has a value
+                if (currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue)) {
+                    const objectUpdates = { ...currentValue };
+                    let objectHasChanges = false;
+
+                    // Process nested properties
+                    if (objectProperty.properties) {
+                        for (const [nestedPropName, nestedProp] of Object.entries(objectProperty.properties as Record<string, any>)) {
+                            if (!nestedProp.aliases || nestedProp.aliases.length === 0) continue;
+
+                            // Check if nested property needs migration
+                            const needsMigration = !(nestedPropName in objectUpdates) 
+                                || objectUpdates[nestedPropName] === undefined 
+                                || objectUpdates[nestedPropName] === '';
+                            let migrated = false;
+
+                            for (const oldName of nestedProp.aliases) {
+                                if (oldName in objectUpdates) {
+                                    // Migrate value from first found alias only
+                                    if (needsMigration && !migrated) {
+                                        objectUpdates[nestedPropName] = objectUpdates[oldName];
+                                        objectHasChanges = true;
+                                        migrated = true;
+                                    }
+
+                                    // Delete the old property if setting is enabled
+                                    if (deleteAfterMigration) {
+                                        delete objectUpdates[oldName];
+                                        objectHasChanges = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (objectHasChanges) {
+                        updates[property.name] = objectUpdates;
+                        hasChanges = true;
+                    }
+                }
+            }
+            
+            // Process top-level property aliases
             if (!property.aliases || property.aliases.length === 0) continue;
 
             // Check if new property needs migration (doesn't exist or is empty)
@@ -854,11 +903,8 @@ export class Classe {
             for (const oldName of property.aliases) {
                 // Check if the old property name exists in metadata
                 if (oldName in metadata) {
-                    console.log(`🔄 Property alias migration: ${oldName} → ${property.name}`);
-
                     // Migrate value from first found alias only
                     if (needsMigration && !migrated) {
-                        console.log(`  📝 Migrating value: "${metadata[oldName]}"`);
                         updates[property.name] = metadata[oldName];
                         hasChanges = true;
                         migrated = true;
@@ -872,8 +918,6 @@ export class Classe {
                 }
             }
         }
-        console.log(`✅ Migration completed for ${this.file.getPath()}. Changes made: ${hasChanges}`);
-        console.log(`Updated metadata:`, updates);
 
         // Apply all changes at once using the app's updateMetadata
         if (hasChanges) {
