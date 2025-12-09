@@ -7,7 +7,7 @@ export class TimeProperty extends Property {
     override type: string = "time";
     private format: string;
 
-    constructor(name: string, vault: Vault, args : {format?: string, icon? : string}= {format : "HH:mm"}) {
+    constructor(name: string, vault: Vault, args : {format?: string, icon? : string, aliases?: string[]}= {format : "HH:mm"}) {
         super(name, vault, args);
         this.format = args.format || "HH:mm";
 

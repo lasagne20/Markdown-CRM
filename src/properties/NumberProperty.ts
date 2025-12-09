@@ -8,7 +8,7 @@ export class NumberProperty extends Property {
     public override type : string = "number";
     public formulaProperty : FormulaProperty | null = null;
 
-    constructor(name: string, vault: Vault, unit: string = "", args : {icon?: string, static?: boolean, formula? : string} = {}) {
+    constructor(name: string, vault: Vault, unit: string = "", args : {icon?: string, static?: boolean, formula? : string, aliases?: string[]} = {}) {
         super(name, vault, args);
         this.static = args.static || false; // Initialiser explicitement à false si non défini
         if (args.formula) {
