@@ -147,7 +147,7 @@ export class ObjectProperty extends Property{
                 let objectHasChanges = false;
 
                 for (const nestedProp of Object.values(this.properties)) {
-                    const result = nestedProp.migrateAliases(objectData, deleteAfterMigration);
+                    const result = nestedProp.migrateAliases(objectData, true);
                     if (result.hasChanges) {
                         objectData = result.updates;
                         objectHasChanges = true;
