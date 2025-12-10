@@ -16,7 +16,7 @@ export class ObjectProperty extends Property{
     public allowMove : boolean = true;
     public display : string = "object"; // Can be "object", "table" or "list"
 
-    constructor(name: string, vault: Vault, properties: { [key: string]: Property }, args: { allowMove?: boolean, appendFirst?: boolean, [key: string]: any} = {}) {
+    constructor(name: string, vault: Vault, properties: { [key: string]: Property }, args: { allowMove?: boolean, appendFirst?: boolean, tooltip?: string, [key: string]: any} = {}) {
         super(name, vault, args);
         this.appendFirst = args?.appendFirst || false;
         this.properties = properties;

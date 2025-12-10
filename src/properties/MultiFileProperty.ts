@@ -12,7 +12,7 @@ export class MultiFileProperty extends ObjectProperty {
     public override flexSpan = 2;
 
 
-    constructor(name: string, vault: Vault, classes : string[], args = {}){
+    constructor(name: string, vault: Vault, classes : string[], args: {icon?: string, aliases?: string[], tooltip?: string} = {}){
         super(name, vault, {}, args);
         this.classes = classes;
         this.property = new FileProperty(name, vault, classes, args);

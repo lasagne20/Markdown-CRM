@@ -10,7 +10,7 @@ export class MediaProperty extends FileProperty{
 
   public override type : string = "media";
     // Used for property with a single file
-    constructor(name: string, vault: Vault, args: { icon?: string; display?: string; create?: string; aliases?: string[]} = {icon: "media", create: ""}) {
+    constructor(name: string, vault: Vault, args: { icon?: string; display?: string; create?: string; aliases?: string[], tooltip?: string} = {icon: "media", create: ""}) {
       super(name, vault, [], args);
       this.createOption = args.create || "";
       this.display = args.display;

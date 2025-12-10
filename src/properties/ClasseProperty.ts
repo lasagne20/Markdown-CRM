@@ -9,8 +9,8 @@ export class ClasseProperty extends Property{
      public override type : string = "class";
 
     // Used for property hidden for the user
-    constructor(name : string, vault: Vault, icon: string = "") {
-      super(name, vault, {icon: icon});
+    constructor(name : string, vault: Vault, icon: string = "", args: {tooltip?: string} = {}) {
+      super(name, vault, {icon: icon, ...args});
     }
 
     override fillDisplay(value: any, update: (value: any) => Promise<void>)  {

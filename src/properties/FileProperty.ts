@@ -10,7 +10,7 @@ export class FileProperty extends LinkProperty{
     public classes : string[];
     public override type : string = "file";
     // Used for property with a single file
-    constructor(name : string, vault: Vault, classes: string[], args= {}){
+    constructor(name : string, vault: Vault, classes: string[], args: {icon?: string, aliases?: string[], tooltip?: string} = {}){
       super(name, vault, args);
       this.classes = classes;
     }
@@ -87,6 +87,11 @@ export class FileProperty extends LinkProperty{
     const icon = document.createElement("div");
     this.vault.app.setIcon(icon, this.icon);
     iconContainer.appendChild(icon);
+
+    if (this.tooltip) {
+      icon.setAttribute("aria-label", this.tooltip);
+      icon.setAttribute("title", this.tooltip);
+    }
 
     if (!this.static) {
       icon.style.cursor = "pointer";

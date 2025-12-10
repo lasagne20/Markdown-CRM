@@ -7,7 +7,7 @@ import { Vault } from "../vault/Vault";
 export class RangeDateProperty extends DateProperty {
 
     public override type : string = "dateRange";
-    constructor(name: string, vault: Vault, args = {}) {
+    constructor(name: string, vault: Vault, args: {icon?: string, static?: boolean, aliases?: string[], tooltip?: string} = {}) {
         super(name, vault, [], args);
     }
 

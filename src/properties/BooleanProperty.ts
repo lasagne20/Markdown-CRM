@@ -6,7 +6,7 @@ export class BooleanProperty extends Property {
 
     public override type : string = "boolean";
 
-    constructor(name: string, vault: Vault, args = {}) {
+    constructor(name: string, vault: Vault, args: {icon?: string, aliases?: string[], tooltip?: string} = {}) {
         super(name, vault, args);
     }
 

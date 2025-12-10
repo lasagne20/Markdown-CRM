@@ -7,7 +7,7 @@ export class LinkProperty extends Property{
 
   override type : string = "link";
 
-  constructor(name: string, vault: Vault, args: { icon?: string, aliases?: string[]} = { icon: "square-arrow-out-up-right" }) {
+  constructor(name: string, vault: Vault, args: { icon?: string, aliases?: string[], tooltip?: string} = { icon: "square-arrow-out-up-right" }) {
     super(name, vault, args);
   }
 

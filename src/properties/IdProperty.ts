@@ -17,6 +17,7 @@ export class IdProperty extends Property {
 
     constructor(name: string, vault: Vault, args: { 
         staticProperty?: boolean,
+        tooltip?: string,
         [key: string]: any 
     } = {}) {
         // By default, ID properties are static (read-only)

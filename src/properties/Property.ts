@@ -18,6 +18,7 @@ export class Property {
     public vault: Vault;
     public static: boolean;
     public title: string = "";
+    public tooltip: string = "";
     public flexSpan = 0;
     public default: any;
     public aliases?: string[]; // Old property names for automatic migration
@@ -36,6 +37,7 @@ export class Property {
      * @param options.flexSpan - Relative width of the property in the display (default: 1)
      * @param options.defaultValue - Default value of the property (default: "")
      * @param options.aliases - Array of old property names for automatic migration
+     * @param options.tooltip - Tooltip text to display on icon hover
      */
     constructor(name: string, vault: Vault, options: { 
         icon?: string, 
@@ -43,15 +45,17 @@ export class Property {
         flexSpan?: number, 
         defaultValue?: any,
         aliases?: string[],
+        tooltip?: string,
         [key: string]: any 
     } = {}) {
-        const { icon = "align-left", staticProperty = false, flexSpan = 1, defaultValue = "", aliases, ...additionalOptions } = options;
+        const { icon = "align-left", staticProperty = false, flexSpan = 1, defaultValue = "", aliases, tooltip = "", ...additionalOptions } = options;
         this.flexSpan = flexSpan;
         this.name = name;
         this.vault = vault;
         this.icon = icon;
         this.default = defaultValue;
         this.aliases = aliases;
+        this.tooltip = tooltip;
         this.static = staticProperty;
 
         // Assign additional options to the instance
@@ -237,6 +241,13 @@ export class Property {
         if (this.icon) {
             const icon = document.createElement("div");
             this.vault.app.setIcon(icon, this.icon);
+            
+            // Add tooltip if configured
+            if (this.tooltip) {
+                icon.setAttribute("aria-label", this.tooltip);
+                icon.setAttribute("title", this.tooltip);
+            }
+            
             iconContainer.appendChild(icon);
             if (!this.static) {
                 icon.style.cursor = "pointer";

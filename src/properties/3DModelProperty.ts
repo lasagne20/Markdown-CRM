@@ -12,7 +12,7 @@ export class ThreeDModelProperty extends MediaProperty {
     
     public override type: string = "3dmodel";
 
-    constructor(name: string, vault : Vault, args: { icon?: string; display?: string; create?: string} = {icon: "box", create: ""}) {
+    constructor(name: string, vault : Vault, args: { icon?: string; display?: string; create?: string, tooltip?: string} = {icon: "box", create: ""}) {
         super(name, vault, args);
     }
 

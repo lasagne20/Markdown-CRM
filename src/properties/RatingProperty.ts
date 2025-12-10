@@ -6,7 +6,7 @@ export class RatingProperty extends Property {
 
     public override type : string = "rating";
 
-    constructor(name: string, vault: Vault, args : {icon?: string, aliases?: string[]} = {icon: "star"}) {
+    constructor(name: string, vault: Vault, args : {icon?: string, aliases?: string[], tooltip?: string} = {icon: "star"}) {
         super(name, vault, args); 
     }
 

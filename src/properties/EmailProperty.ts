@@ -9,7 +9,7 @@ export class EmailProperty extends LinkProperty{
 
   public override type : string = "email";
     // Used for property hidden for the user
-    constructor(name : string, vault: Vault, args : {} =  {icon: "mail"}) {
+    constructor(name : string, vault: Vault, args : {icon?: string, tooltip?: string} =  {icon: "mail"}) {
       super(name, vault, args)
     }
 

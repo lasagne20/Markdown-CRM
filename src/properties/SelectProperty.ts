@@ -6,7 +6,7 @@ export class SelectProperty extends Property {
     public options: {name : string, color : string}[];
     public override type : string = "select";
 
-    constructor(name: string, vault: Vault, options: {name : string, color : string}[], args = {}) {
+    constructor(name: string, vault: Vault, options: {name : string, color : string}[], args : {icon?: string, static?: boolean, aliases?: string[], tooltip?: string} = {}) {
         super(name, vault, args);
         this.options = options;
     }

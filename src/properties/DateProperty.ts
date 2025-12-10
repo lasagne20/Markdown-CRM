@@ -15,7 +15,7 @@ export class DateProperty extends Property {
     private quickSelectIcons: string[];
     public override type : string = "date";
 
-    constructor(name: string, vault: Vault, quickSelectIcons: string[], args = {}) {
+    constructor(name: string, vault: Vault, quickSelectIcons: string[], args : {icon?: string, static?: boolean, aliases?: string[], tooltip?: string} = {}) {
         super(name, vault, args);
         this.quickSelectIcons = quickSelectIcons
         

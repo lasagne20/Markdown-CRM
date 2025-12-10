@@ -12,7 +12,7 @@ export class SubClassProperty extends SelectProperty {
     public subClasses: SubClass[];
     public override type : string = "subClass";
 
-    constructor(name: string, vault: any, subClasses: SubClass[], args = {}) {
+    constructor(name: string, vault: any, subClasses: SubClass[], args: {icon?: string, static?: boolean, aliases?: string[], tooltip?: string} = {}) {
         super(name, vault, subClasses.map(subClass => ({ name: subClass.getsubClassName(), color: "" })), args);
         this.subClasses = subClasses;
     }

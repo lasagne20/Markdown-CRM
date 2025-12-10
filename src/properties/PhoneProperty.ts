@@ -11,7 +11,7 @@ export class PhoneProperty extends LinkProperty{
   private countryCode : string = "+33"; // Default to France
   
     // Used for property hidden for the user
-    constructor(name : string, vault: Vault, args : {icon?: string, defaultFormat?: "national" | "international", countryCode?: string} = {}) {
+    constructor(name : string, vault: Vault, args : {icon?: string, defaultFormat?: "national" | "international", countryCode?: string, tooltip?: string} = {}) {
       super(name, vault, {icon: "phone", ...args});
       
       // Get format from global settings
@@ -116,6 +116,11 @@ export class PhoneProperty extends LinkProperty{
       const icon = document.createElement("div");
       this.vault.app.setIcon(icon, this.icon);
       iconContainer.appendChild(icon);
+      
+      if (this.tooltip) {
+        icon.setAttribute("aria-label", this.tooltip);
+        icon.setAttribute("title", this.tooltip);
+      }
       
       if (!this.static) {
         iconContainer.style.cursor = "pointer";

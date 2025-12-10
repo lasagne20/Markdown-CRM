@@ -12,6 +12,7 @@ export interface PropertyConfig {
     static?: boolean; // Pour rendre une propriété non-modifiable
     unit?: string; // Pour NumberProperty - unité de mesure (€, kg, %, etc.)
     aliases?: string[]; // Old property names for automatic migration
+    tooltip?: string; // Tooltip text to display on icon hover
 }
 
 export interface PropertyTableRow {

@@ -19,7 +19,7 @@ export class MultiMediaProperty extends MultiFileProperty {
     public override flexSpan = 2;
 
 
-    constructor(name: string, vault : Vault, args = {}){
+    constructor(name: string, vault : Vault, args: {icon?: string, display?: string, create?: string, aliases?: string[], tooltip?: string} = {}){
         super(name, vault, [], args);
         this.property = new MediaProperty(name, vault, args);
     }

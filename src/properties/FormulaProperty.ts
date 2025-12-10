@@ -10,7 +10,7 @@ export class FormulaProperty extends LinkProperty {
     public override type : string = "formula";
     public write : boolean = false;
 
-    constructor(name : string, vault: Vault, formula: string, args : {icon: string, static?: boolean, write?: boolean} = {icon: "", static: true, write: false}) {
+    constructor(name : string, vault: Vault, formula: string, args : {icon: string, static?: boolean, write?: boolean, tooltip?: string} = {icon: "", static: true, write: false}) {
         super(name, vault, args);
         this.formula = formula;
         this.write = args.write ?? false;

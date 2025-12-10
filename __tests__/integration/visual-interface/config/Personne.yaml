@@ -28,6 +28,7 @@ properties:
     title: Identifiant unique
     icon: 🔑
     static: true
+    tooltip: "Identifiant unique généré automatiquement"
     
   nom:
     type: Property
@@ -35,6 +36,7 @@ properties:
     icon: 📝
     required: true
     defaultValue: ""
+    tooltip: "Nom de famille de la personne"
     
   prenom:
     type: TextProperty
@@ -42,12 +44,14 @@ properties:
     icon: 👤
     required: false
     defaultValue: ""
+    tooltip: "Prénom de la personne"
     
   institution:
     type: FileProperty
     title: Institution
     aliases: ["Institution"]
     icon: 🏢
+    tooltip: "Institution de rattachement principal"
     required: false
     defaultValue: ""
     
@@ -83,6 +87,7 @@ properties:
   email:
     type: EmailProperty
     title: Email professionnel
+    tooltip: "Adresse e-mail professionnelle de la personne"
     icon: 📧
     required: false
     defaultValue: ""

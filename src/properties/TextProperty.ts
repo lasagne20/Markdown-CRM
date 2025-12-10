@@ -6,7 +6,7 @@ import { Vault } from "../vault/Vault";
 export class TextProperty extends Property {
   override type: string = "text";
 
-  constructor(name: string, vault: Vault, args = {}) {
+  constructor(name: string, vault: Vault, args: {icon?: string, aliases?: string[], tooltip?: string} = {}) {
     super(name, vault, args);
   }
 

@@ -10,7 +10,7 @@ declare const TFile: any;
 export class HearderProperty extends Property {
   public override type: string = "header";
 
-  constructor(name: string, vault: Vault, args = {}) {
+  constructor(name: string, vault: Vault, args: {icon?: string, aliases?: string[], tooltip?: string} = {}) {
     super(name, vault, args);
   }
 

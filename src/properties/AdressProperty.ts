@@ -10,7 +10,7 @@ export class AdressProperty extends LinkProperty{
   public override type : string = "adress";
 
     // Used for property hidden for the user
-    constructor(name : string, vault: Vault, args : {}= {icon: "map-pinned"}) {
+    constructor(name : string, vault: Vault, args : {icon?: string, tooltip?: string}= {icon: "map-pinned"}) {
       super(name, vault, args)
     }
 

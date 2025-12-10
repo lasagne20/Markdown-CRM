@@ -5,7 +5,7 @@ export class MultiSelectProperty extends Property {
     public options: {name : string, color : string}[];
     public override type : string = "multiSelect";
 
-    constructor(name: string, vault : Vault, options: {name : string, color : string}[], args = {}) {
+    constructor(name: string, vault : Vault, options: {name : string, color : string}[], args: {icon?: string, aliases?: string[], tooltip?: string} = {}) {
         super(name, vault, args);
         this.options = options;
     }

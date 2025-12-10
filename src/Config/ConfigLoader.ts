@@ -114,6 +114,11 @@ export class ConfigLoader {
             options.title = config.title;
         }
         
+        // Add tooltip from config.tooltip
+        if (config.tooltip) {
+            options.tooltip = config.tooltip;
+        }
+        
         // Add aliases from config.aliases
         if (config.aliases && Array.isArray(config.aliases)) {
             options.aliases = config.aliases;
