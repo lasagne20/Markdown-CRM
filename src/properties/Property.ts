@@ -133,22 +133,28 @@ export class Property {
         const updates = { ...metadata };
         let hasChanges = false;
 
-        // Check if new property needs migration (doesn't exist or is empty)
-        const needsMigration = !(this.name in metadata);
-        let migrated = false;
-
+        // Find first alias that exists in metadata (for migration)
+        let foundInAlias: string | undefined;
         for (const oldName of this.aliases) {
-            // Check if the old property name exists in metadata
             if (oldName in metadata) {
-                // Migrate value from first found alias only
-                if (needsMigration && !migrated) {
-                    updates[this.name] = metadata[oldName];
-                    hasChanges = true;
-                    migrated = true;
-                }
+                foundInAlias = oldName;
+                break;
+            }
+        }
 
-                // Delete the old property if setting is enabled
-                if (deleteAfterMigration) {
+        // Check if new property needs migration (doesn't exist or is empty)
+        const needsMigration = !(this.name in metadata) || metadata[this.name] === undefined || metadata[this.name] === '';
+
+        // If an alias is found and migration is needed, migrate its value
+        if (foundInAlias && needsMigration) {
+            updates[this.name] = metadata[foundInAlias];
+            hasChanges = true;
+        }
+
+        // Delete ALL aliases if setting is enabled (regardless of migration)
+        if (deleteAfterMigration) {
+            for (const oldName of this.aliases) {
+                if (oldName in updates) {
                     delete updates[oldName];
                     hasChanges = true;
                 }

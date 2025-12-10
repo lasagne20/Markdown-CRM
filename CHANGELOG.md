@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **ClassePropertyAliases**: Support for legacy file migration with `classePropertyAliases` setting
+  - Auto-detects classe property from multiple possible property names
+  - Automatic migration to standardized property name
+  - Configurable alias deletion after migration via `deleteAliasesAfterMigration` setting
+  - 25 comprehensive tests covering all migration scenarios
+  - Backward compatible with existing files
+- **IdProperty**: New property type for automatic UUID generation
+  - Auto-generates RFC 4122 compliant UUIDs on first access
+  - Static (read-only) by default to prevent accidental modification
+  - Validates existing UUID formats
+  - Browser and Node.js compatible with automatic fallback
+  - 22 comprehensive tests with 100% success rate
+  - Complete documentation in `docs/IdProperty-Guide.md`
+  - Examples added to `Personne.yaml` and `Institution.yaml` configurations
 - **Static Properties**: New feature allowing fields to be made non-editable with `static: true` in YAML configuration
 - **Comprehensive Data Management Tests**: 20 new tests in `DynamicClassFactory.data-management.test.ts`
   - Instance creation tests with `createInstanceFromDataObject`
@@ -15,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - JSON loading tests with parent-child relationships
   - Parent resolution and metadata management tests
 - **Documentation**:
+  - IdProperty comprehensive guide (`docs/IdProperty-Guide.md`)
+  - Updated Property Types reference with IdProperty section
   - Static Properties guide (`docs/Static-Properties.md`)
   - Detailed changelog of fixes (`docs/Test-Fixes-Nov-2025.md`)
   - Updated documentation index

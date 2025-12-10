@@ -374,15 +374,11 @@ export class Vault {
         let existingClass = this.files[file.path];
         if (existingClass) { return existingClass; }
         
-        const metadata = await this.app.getMetadata(fileInstance);
-        if (!metadata) {
-            console.error("Pas de metadata pour le fichier:", fileInstance.getPath());
-            return;
-        }
-        const classePropertyName = this.app.getSettings().classePropertyName || "Classe";
-        const className = metadata[classePropertyName];
+        // Use getClassePropertyValue to handle aliases and migration
+        const className = await fileInstance.getClassePropertyValue();
         if (!className) {
             console.error("Pas de classe définie dans les métadonnées pour:", fileInstance.getPath());
+            const metadata = await this.app.getMetadata(fileInstance);
             console.error("Métadonnées disponibles:", Object.keys(metadata));
             return undefined;
         }

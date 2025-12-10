@@ -24,3 +24,4 @@ export { MultiFileProperty } from './MultiFileProperty';
 export { MultiMediaProperty } from './MultiMediaProperty';
 export { RangeDateProperty } from './RangeDateProperty';
 export { SubClassProperty } from './SubClassProperty';
+export { IdProperty } from './IdProperty';

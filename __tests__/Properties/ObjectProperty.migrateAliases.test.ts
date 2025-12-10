@@ -276,7 +276,7 @@ describe('ObjectProperty.migrateAliases', () => {
     });
 
     describe('deleteAliasesAfterMigration setting', () => {
-        test('should keep aliases when setting is false', () => {
+        test('should remove aliases when setting is false', () => {
             const property = new ObjectProperty('address', vault, {
                 street: new TextProperty('street', vault, { aliases: ['rue'] }),
                 city: new TextProperty('city', vault, { aliases: ['ville'] })
@@ -293,8 +293,8 @@ describe('ObjectProperty.migrateAliases', () => {
             expect(result.hasChanges).toBe(true);
             expect(result.updates.address[0].street).toBe('123 Avenue');
             expect(result.updates.address[0].city).toBe('Paris');
-            expect(result.updates.address[0].rue).toBe('123 Avenue'); // Still exists
-            expect(result.updates.address[0].ville).toBe('Paris'); // Still exists
+            expect(result.updates.address[0].rue).toBe(undefined); // Still exists
+            expect(result.updates.address[0].ville).toBe(undefined); // Still exists
         });
 
         test('should keep top-level alias when setting is false', () => {

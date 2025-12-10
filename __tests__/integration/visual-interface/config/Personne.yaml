@@ -23,6 +23,12 @@ populate:
 
 # Configuration des propriétés
 properties:
+  id:
+    type: IdProperty
+    title: Identifiant unique
+    icon: 🔑
+    static: true
+    
   nom:
     type: Property
     title: Nom complet

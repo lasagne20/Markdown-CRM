@@ -49,6 +49,7 @@
 
 Create custom fields for any data type:
 
+- **🔑 Unique Identifiers** - Auto-generated UUIDs for stable references
 - **📝 Text & Rich Text** - Single or multi-line with autocomplete
 - **📧 Email & Phone** - Validated contact fields
 - **📅 Date & Time** - Single dates, ranges, and timestamps
@@ -70,6 +71,7 @@ Create custom fields for any data type:
 - **Extensible System** - Add new property types easily
 - **Static Field Support** - Protect critical fields from modification
 - **Populate Manager** - Guide users through data entry with smart prompts
+- **Legacy File Migration** - Automatic migration of files with different property names
 
 ### 🗂️ Flexible Data Organization
 
@@ -90,7 +92,7 @@ Create custom fields for any data type:
 
 ### Production-Ready
 
-- **1,081 Passing Tests** - Comprehensive test coverage (100% success rate)
+- **1,292 Passing Tests** - Comprehensive test coverage (100% success rate)
 - **Type-Safe** - Written in TypeScript with strict checks
 - **Error Handling** - Graceful degradation and recovery
 - **Data Integrity** - Validated writes, atomic operations

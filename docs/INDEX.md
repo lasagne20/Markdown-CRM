@@ -33,8 +33,12 @@ Welcome to the Markdown CRM documentation! This index provides an overview of al
 - **[Data Loading](./Data-Loading.md)** - How data is loaded and managed
 - **[YAML Configuration Format](./YAML-Configuration-Format.md)** - Property naming and configuration guide
 
-### Feature Guides
+### Property Guides
 - **[Static Properties](./Static-Properties.md)** - Non-editable fields guide
+- **[Property Aliases](./Property-Aliases.md)** - Alternative property names
+- **[Classe Property Aliases](./ClassePropertyAliases.md)** - Migration of legacy files with different classe property names
+
+### Feature Guides
 - **[Populate Feature](./Populate-Feature.md)** - Interactive file creation with property prompts
 - **[Auto-Rename](./Auto-Rename.md)** - Automatic file renaming based on properties
 - **[Quick Reference: Static Properties](./QUICK-REFERENCE-Static-Properties.md)** - Quick snippets and examples

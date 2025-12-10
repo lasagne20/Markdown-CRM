@@ -21,6 +21,7 @@ import { RangeDateProperty } from '../properties/RangeDateProperty';
 import { RatingProperty } from '../properties/RatingProperty';
 import { SelectProperty } from '../properties/SelectProperty';
 import { TextProperty } from '../properties/TextProperty';
+import { IdProperty } from '../properties/IdProperty';
 import { Vault } from '../vault/Vault';
 import { ClassConfig, PropertyConfig, PropertyTableRow } from './interfaces';
 
@@ -208,6 +209,9 @@ export class ConfigLoader {
 
             case 'MediaProperty':
                 return new MediaProperty(propertyName, this.vault, options);
+
+            case 'IdProperty':
+                return new IdProperty(propertyName, this.vault, options);
 
             case 'FormulaProperty':
                 const formula = config.formula || config.defaultValue || '';

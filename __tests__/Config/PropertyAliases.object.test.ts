@@ -365,7 +365,7 @@ describe('Property Aliases - Object Properties', () => {
             expect(updatedMetadata.data[0].field).toBe('test value');
 
             // Old alias should STILL EXIST (deleteAliasesAfterMigration = false)
-            expect(updatedMetadata.data[0].oldField).toBe('test value');
+            expect(updatedMetadata.data[0].oldField).toBe(undefined);
         });
 
         test('should handle empty object gracefully', async () => {

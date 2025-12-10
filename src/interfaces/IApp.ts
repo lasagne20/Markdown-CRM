@@ -30,6 +30,7 @@ export interface ISettings {
 
     // Classe property name 
     classePropertyName?: string;
+    classePropertyAliases?: string[]; // Aliases for classe property
     
     // Property aliases migration
     deleteAliasesAfterMigration?: boolean; // Default: true - Remove old property names after migration

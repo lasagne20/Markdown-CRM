@@ -466,11 +466,11 @@ export class DynamicClassFactory {
             
             for (const file of allFiles) {
                 if ('extension' in file && file.extension === 'md') {
-                    // Check if file is of this class
-                    const metadata = await vault.app.getMetadata(file as IFile);
-                    const classePropertyName = vault.app.getSettings().classePropertyName || "Classe";
-                    if (metadata[classePropertyName] === className) {
-                        const fileInstance = new File(vault, file as IFile);
+                    // Use getClassePropertyValue to handle aliases and trigger migration
+                    const fileInstance = new File(vault, file as IFile);
+                    const fileClassName = await fileInstance.getClassePropertyValue();
+                    
+                    if (fileClassName === className) {
                         const instance = new ClassConstructor(vault, fileInstance);
                         instances.push(instance);
                     }

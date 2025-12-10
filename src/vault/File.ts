@@ -151,6 +151,41 @@ export class File implements IFile {
       return metadata ? metadata[key] : undefined;
     }
 
+    /**
+     * Get the classe property name from metadata, checking aliases if configured
+     * @returns The classe name or undefined
+     */
+    async getClassePropertyValue(): Promise<string | undefined> {
+      const metadata = await this.getMetadata();
+      const settings = this.vault.app.getSettings();
+      const classePropertyName = settings.classePropertyName || 'Classe';
+      const aliases = settings.classePropertyAliases || [];
+      
+      // Check main property first
+      if (metadata[classePropertyName] !== undefined) {
+        return metadata[classePropertyName];
+      }
+      
+      // Check aliases
+      for (const alias of aliases) {
+        if (metadata[alias] !== undefined) {
+          const value = metadata[alias];
+          
+          // Migrate: copy value to main property and optionally delete alias
+          await this.updateMetadata(classePropertyName, value);
+          
+          // Delete old alias if setting is true (default)
+          if (settings.deleteAliasesAfterMigration !== false) {
+            await this.removeMetadata(alias);
+          }
+          
+          return value;
+        }
+      }
+      
+      return undefined;
+    }
+
     getAllProperties(){
       let metadata = this.getMetadata();
       if (!metadata) return {};

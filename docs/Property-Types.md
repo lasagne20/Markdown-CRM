@@ -2,6 +2,21 @@
 
 Markdown CRM provides 20+ built-in property types to model any business domain. Each property type handles validation, rendering, and storage automatically.
 
+## Quick Reference
+
+| Category | Property Types |
+|----------|---------------|
+| 🔑 **Identifiers** | IdProperty |
+| 📝 **Text & Strings** | TextProperty, NameProperty, EmailProperty, PhoneProperty, LinkProperty, AdressProperty |
+| 🔢 **Numbers** | NumberProperty, RatingProperty, FormulaProperty |
+| 📅 **Dates & Times** | DateProperty, TimeProperty, RangeDateProperty |
+| ✅ **Selection** | BooleanProperty, SelectProperty, MultiSelectProperty |
+| 📁 **Files & Media** | FileProperty, MultiFileProperty, MediaProperty, MultiMediaProperty, 3DModelProperty |
+| 🔗 **Relations** | ClasseProperty, ObjectProperty, SubClassProperty |
+| 🎨 **Layout** | HeaderProperty |
+
+---
+
 ## 📝 Text & String Properties
 
 ### TextProperty
@@ -118,6 +133,54 @@ address:
 - Map link generation
 
 **Use Cases:** Office addresses, shipping addresses, locations
+
+---
+
+## 🔑 Identifier Properties
+
+### IdProperty
+Unique UUID identifier with automatic generation.
+
+```yaml
+id:
+  type: IdProperty
+  title: Unique ID
+  static: true  # Default: true (read-only)
+```
+
+**Features:**
+- Automatic UUID v4 generation on first access
+- RFC 4122 compliant format
+- Read-only by default to prevent modification
+- Validates existing UUIDs
+- Persists to metadata automatically
+- Browser and Node.js compatible
+
+**Behavior:**
+- Generates UUID only if property value is missing or empty
+- Once generated, UUID is saved and never changes
+- Format: `550e8400-e29b-41d4-a716-446655440000`
+
+**Use Cases:** Unique record IDs, external API references, tracking codes, immutable identifiers
+
+**Example:**
+```yaml
+# In your class configuration (e.g., config/Customer.yaml)
+properties:
+  id:
+    type: IdProperty
+    title: Customer ID
+    icon: 🔑
+    static: true  # Prevents accidental modification
+```
+
+When a new record is created, the ID is automatically generated and persisted:
+```yaml
+---
+id: 3f8c4a2e-9b1d-4c7e-a5f2-8d6e1b9c4a7f
+name: John Doe
+---
+```
 
 ---
 
