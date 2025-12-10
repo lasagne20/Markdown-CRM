@@ -177,7 +177,7 @@ describe('Property Tooltip Configuration Tests', () => {
     });
 
     describe('Tooltip rendering from configuration', () => {
-        it('should render tooltip in icon container', () => {
+        it('should render tooltip in icon container with default tooltipType (title)', () => {
             const config: PropertyConfig = {
                 type: 'Property',
                 tooltip: 'Helpful tooltip text',
@@ -189,8 +189,9 @@ describe('Property Tooltip Configuration Tests', () => {
             const iconContainer = property.createIconContainer(async () => {});
             const icon = iconContainer.querySelector('div');
 
+            // By default, only title attribute should be set
             expect(icon?.getAttribute('title')).toBe('Helpful tooltip text');
-            expect(icon?.getAttribute('aria-label')).toBe('Helpful tooltip text');
+            expect(icon?.hasAttribute('aria-label')).toBe(false);
         });
 
         it('should not add tooltip attributes when tooltip is not configured', () => {
@@ -204,8 +205,8 @@ describe('Property Tooltip Configuration Tests', () => {
             const iconContainer = property.createIconContainer(async () => {});
             const icon = iconContainer.querySelector('div');
 
-            expect(icon?.getAttribute('title')).toBeNull();
-            expect(icon?.getAttribute('aria-label')).toBeNull();
+            expect(icon?.hasAttribute('title')).toBe(false);
+            expect(icon?.hasAttribute('aria-label')).toBe(false);
         });
     });
 

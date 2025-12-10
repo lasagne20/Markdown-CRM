@@ -35,6 +35,9 @@ export interface ISettings {
     // Property aliases migration
     deleteAliasesAfterMigration?: boolean; // Default: true - Remove old property names after migration
     
+    // Tooltip configuration
+    tooltipType?: 'title' | 'aria-label' | 'both'; // Default: 'title' - Type of tooltip attribute to use
+    
     // Other settings can be added here
     [key: string]: any; // Allow custom settings
 }

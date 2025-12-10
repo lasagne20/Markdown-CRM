@@ -118,8 +118,15 @@ export class PhoneProperty extends LinkProperty{
       iconContainer.appendChild(icon);
       
       if (this.tooltip) {
-        icon.setAttribute("aria-label", this.tooltip);
-        icon.setAttribute("title", this.tooltip);
+        const settings = this.vault.app.getSettings();
+        const tooltipType = settings.tooltipType || 'title'; // Default to 'title'
+        
+        if (tooltipType === 'title' || tooltipType === 'both') {
+          icon.setAttribute("title", this.tooltip);
+        }
+        if (tooltipType === 'aria-label' || tooltipType === 'both') {
+          icon.setAttribute("aria-label", this.tooltip);
+        }
       }
       
       if (!this.static) {

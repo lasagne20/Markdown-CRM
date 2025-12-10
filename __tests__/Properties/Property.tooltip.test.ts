@@ -38,7 +38,8 @@ describe('Property Tooltip Tests', () => {
             const icon = iconContainer.querySelector('div');
 
             expect(icon).toBeTruthy();
-            expect(icon?.getAttribute('aria-label')).toBe('This is a helpful tooltip');
+            // Par défaut, seulement title est défini (tooltipType: 'title')
+            expect(icon?.hasAttribute('aria-label')).toBe(false);
             expect(icon?.getAttribute('title')).toBe('This is a helpful tooltip');
         });
 
@@ -76,7 +77,8 @@ describe('Property Tooltip Tests', () => {
             const icon = iconContainer.querySelector('div');
 
             expect(icon?.getAttribute('title')).toBe(multilineTooltip);
-            expect(icon?.getAttribute('aria-label')).toBe(multilineTooltip);
+            // Par défaut, aria-label n'est pas défini
+            expect(icon?.hasAttribute('aria-label')).toBe(false);
         });
 
         it('should handle special characters in tooltip', () => {
@@ -197,7 +199,8 @@ describe('Property Tooltip Tests', () => {
 
             const icon = display.querySelector('.icon-container div');
             expect(icon?.getAttribute('title')).toBe('This is a test field');
-            expect(icon?.getAttribute('aria-label')).toBe('This is a test field');
+            // Par défaut, aria-label n'est pas défini
+            expect(icon?.hasAttribute('aria-label')).toBe(false);
         });
 
         it('should work with static properties', async () => {
@@ -239,7 +242,15 @@ describe('Property Tooltip Tests', () => {
     });
 
     describe('Accessibility', () => {
-        it('should provide both title and aria-label for accessibility', () => {
+        it('should provide both title and aria-label when tooltipType is "both"', () => {
+            // Mock getSettings pour retourner tooltipType: 'both'
+            vault.app.getSettings = jest.fn().mockReturnValue({ 
+                tooltipType: 'both',
+                classePropertyName: 'Classe',
+                classePropertyAliases: [],
+                deleteAliasesAfterMigration: true
+            });
+            
             const property = new Property('accessibleProp', vault, {
                 tooltip: 'Accessible tooltip'
             });
@@ -247,12 +258,20 @@ describe('Property Tooltip Tests', () => {
             const iconContainer = property.createIconContainer(async () => {});
             const icon = iconContainer.querySelector('div');
 
-            // Both attributes should be present for better accessibility
+            // Les deux attributs doivent être présents en mode 'both'
             expect(icon?.getAttribute('title')).toBe('Accessible tooltip');
             expect(icon?.getAttribute('aria-label')).toBe('Accessible tooltip');
         });
 
-        it('should support long descriptive tooltips for screen readers', () => {
+        it('should support long descriptive tooltips for screen readers with aria-label mode', () => {
+            // Mock getSettings pour retourner tooltipType: 'aria-label'
+            vault.app.getSettings = jest.fn().mockReturnValue({ 
+                tooltipType: 'aria-label',
+                classePropertyName: 'Classe',
+                classePropertyAliases: [],
+                deleteAliasesAfterMigration: true
+            });
+            
             const longTooltip = 'This is a comprehensive description of the field that provides detailed context for users who need additional information about what to enter and why it matters.';
             
             const property = new Property('detailedProp', vault, {
@@ -263,6 +282,8 @@ describe('Property Tooltip Tests', () => {
             const icon = iconContainer.querySelector('div');
 
             expect(icon?.getAttribute('aria-label')).toBe(longTooltip);
+            // En mode aria-label uniquement, title ne doit pas être défini
+            expect(icon?.hasAttribute('title')).toBe(false);
         });
     });
 
