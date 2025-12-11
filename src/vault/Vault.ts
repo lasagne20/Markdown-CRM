@@ -363,7 +363,7 @@ export class Vault {
         this.app.sendNotice("Vault refresh");
     }
 
-    async createClasse(file: IFile) {
+    async createClasse(file: IFile, onCreate = true): Promise<Classe | undefined> {
         let fileInstance: File;
         let classe: Classe | undefined = undefined;
         if (!(file instanceof File)){
@@ -404,7 +404,9 @@ export class Vault {
             console.error("Erreur lors de la création de la classe : " + className, error);
         }
         this.files[fileInstance.path] = classe!;
-        await classe?.onCreate();
+        if (onCreate){
+            await classe?.onCreate();
+        }
         return classe;
     }
 }

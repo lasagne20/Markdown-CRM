@@ -504,7 +504,7 @@ export class Classe {
             } else {
                 // Check if file has a parent property pointing to this file
                 try {
-                    const childClasse = await this.vault.createClasse(file);
+                    const childClasse = await this.vault.createClasse(file, false);
                     if (childClasse) {
                         const metadata = await this.vault.app.getMetadata(file);
                         const childProperties = childClasse.getProperties();
@@ -815,6 +815,17 @@ export class Classe {
         }
         await this.handleAutoRename();
         await this.migratePropertyAliases();
+
+        // Initialize IdProperty if present
+        for (const property of this.properties) {
+            if (property.type === 'id') {
+                const currentValue = await this.getPropertyValue(property.name);
+                if (!currentValue) {
+                    const newId = await (property as any).generateId();
+                    await this.updatePropertyValue(property.name, newId);
+                }
+            }
+        }
     }
     
     async onUpdate(): Promise<void> {
