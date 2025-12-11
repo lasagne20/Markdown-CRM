@@ -342,7 +342,6 @@ describe('DynamicClassFactory - Data Management', () => {
             // YAML may quote strings, so check for both formats
             expect(content).toMatch(/Classe:\s*"?Lieu"?/);
             expect(content).toMatch(/nom:\s*"?Toulouse"?/);
-            expect(content).toContain('# Toulouse');
         });
 
         it('should not create empty frontmatter blocks', async () => {

@@ -653,14 +653,7 @@ export class Classe {
             // Case 2: Same parent property, check if value changed
             else if (currentParentProperty) {
                 const currentMetadata = await this.getMetadata();
-                const oldValue = oldMetadata[currentParentProperty.name];
                 const newValue = currentMetadata[currentParentProperty.name];
-                
-                if (oldValue === newValue) {
-                    // No change, skip update
-                    console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged, skipping folder update`);
-                    return;
-                }
                 
                 // Value changed, verify it's actually valid before moving
                 if ('getParentFile' in currentParentProperty && typeof (currentParentProperty as any).getParentFile === 'function') {

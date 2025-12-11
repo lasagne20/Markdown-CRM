@@ -277,7 +277,7 @@ export class DynamicClassFactory {
         
         if (!file) {
             // Create minimal file WITHOUT frontmatter (
-            const content = `# ${name}\n\n`;
+            const content = ``;
             file = await vault.app.createFile(filePath, content);
             
             const fileInstance = new File(vault, file as IFile);

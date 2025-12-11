@@ -115,7 +115,8 @@ const mockApp = {
 const mockVault = {
     app: mockApp,
     getFromLink: jest.fn(),
-    createClasse: jest.fn()
+    createClasse: jest.fn(),
+    listFiles: jest.fn().mockResolvedValue([])
 } as unknown as Vault;
 
 describe('Classe - Parent-Child Relationships', () => {
@@ -157,7 +158,10 @@ describe('Classe - Parent-Child Relationships', () => {
         TestableClasse.parentPropertyName = 'parent';
 
         // Default mock responses
-        mockApp.getMetadata.mockResolvedValue({});
+        mockApp.getMetadata.mockImplementation(async (file: any) => {
+            // Return metadata with Classe property for all files so they pass vault.listFiles() filtering
+            return { Classe: 'Test' };
+        });
         mockApp.fileExists.mockResolvedValue(true);
         mockApp.getFile.mockResolvedValue(null); // By default, folder doesn't exist
         mockApp.getAbstractFileByPath.mockImplementation((path: string) => {
@@ -271,6 +275,8 @@ describe('Classe - Parent-Child Relationships', () => {
             mockApp.getMetadata.mockResolvedValue({
                 parent: '[[parent]]'
             });
+            // Mock vault.listFiles to return child and parent files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([childFile, parentFile]);
         });
 
         it('should create parent folder and move files when parent folder does not exist', async () => {
@@ -366,14 +372,28 @@ describe('Classe - Parent-Child Relationships', () => {
 
     describe('updatePropertyValue', () => {
         it('should update metadata and trigger parent folder update', async () => {
-            let currentMetadata: any = {};  // Start with empty
-            mockApp.getMetadata.mockImplementation(() => Promise.resolve(currentMetadata));
+            let currentMetadata: any = { Classe: 'Test' };  // Start with Classe property for vault.listFiles() filtering
+            mockApp.getMetadata.mockImplementation(() => Promise.resolve({ ...currentMetadata }));  // Return copy
             mockApp.getFile.mockResolvedValue(null); // Folder doesn't exist
             
             // Mock updateMetadata to update metadata
             mockApp.updateMetadata.mockImplementation(async (file, metadata) => {
-                currentMetadata = metadata;
+                currentMetadata = { ...metadata, Classe: 'Test' };  // Preserve Classe property
             });
+            
+            // Mock getFromLink for this test
+            (mockVault.getFromLink as jest.Mock).mockImplementation(async (link: string) => {
+                const fileName = link.replace(/\[\[|\]\]/g, '');
+                if (fileName === 'parent') {
+                    const parentClasse = new TestableClasse(mockVault);
+                    parentClasse.setFile(parentFile as unknown as File);
+                    return parentClasse;
+                }
+                return null;
+            });
+            
+            // Mock vault.listFiles to return files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([childFile, parentFile]);
 
             await childClasse.updatePropertyValue('parent', '[[parent]]');
 
@@ -417,14 +437,14 @@ describe('Classe - Parent-Child Relationships', () => {
             newClasse.addProperty(prop);
             newClasse.setFile(newFile as unknown as File);
             
-            let currentMetadata: any = {};  // Start with empty
-            mockApp.getMetadata.mockImplementation(() => Promise.resolve(currentMetadata));
+            let currentMetadata: any = { Classe: 'Test' };  // Start with Classe property
+            mockApp.getMetadata.mockImplementation(() => Promise.resolve({ ...currentMetadata }));  // Return copy
             mockApp.getFile.mockResolvedValue(null);
             mockApp.getAbstractFileByPath.mockReturnValue(testParentFile);
             
             // Mock updateMetadata to update metadata
             mockApp.updateMetadata.mockImplementation(async (file, metadata) => {
-                currentMetadata = metadata;
+                currentMetadata = { ...metadata, Classe: 'Test' };  // Preserve Classe property
             });
 
             // Mock getFromLink for this test
@@ -437,6 +457,9 @@ describe('Classe - Parent-Child Relationships', () => {
                 }
                 return null;
             });
+            
+            // Mock vault.listFiles to return files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([newFile, testParentFile]);
 
             // Update parent property - this should trigger updateParentFolder
             await newClasse.updatePropertyValue('parent', '[[parent]]');
@@ -495,6 +518,9 @@ describe('Classe - Parent-Child Relationships', () => {
                 }
                 return null;
             });
+            
+            // Mock vault.listFiles to return files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([newChildFile, newParentFile]);
 
             // Add parent property
             const prop = new FileProperty('parent', mockVault, [], {});
@@ -529,8 +555,8 @@ describe('Classe - Parent-Child Relationships', () => {
             child.addProperty(prop);
 
             // Mock: initially points to parent1
-            let currentMetadata = { parent: '[[parent1]]' };
-            mockApp.getMetadata.mockImplementation(() => Promise.resolve(currentMetadata));
+            let currentMetadata = { parent: '[[parent1]]', Classe: 'Test' };  // Include Classe property
+            mockApp.getMetadata.mockImplementation(() => Promise.resolve({ ...currentMetadata }));  // Return copy
             mockApp.fileExists.mockResolvedValue(true);
             mockApp.getAbstractFileByPath.mockImplementation((path: string) => {
                 if (path.includes('parent1')) return parent1File;
@@ -553,10 +579,13 @@ describe('Classe - Parent-Child Relationships', () => {
                 }
                 return null;
             });
+            
+            // Mock vault.listFiles to return files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([childFile, parent1File, parent2File]);
 
             // Mock updateMetadata to update metadata when called
             mockApp.updateMetadata.mockImplementation(async (file, metadata) => {
-                currentMetadata = metadata;
+                currentMetadata = { ...metadata, Classe: 'Test' };  // Preserve Classe property
             });
 
             // Change parent to parent2
@@ -752,6 +781,9 @@ describe('Classe - Parent-Child Relationships', () => {
                 classe.setFile(file as unknown as File);
                 return classe;
             });
+            
+            // Mock vault.listFiles to return files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([parentFile, childFile, grandChildFile]);
 
             // Mock getFile for folder checks and file reloads
             mockApp.getFile.mockResolvedValue(null);
@@ -830,6 +862,9 @@ describe('Classe - Parent-Child Relationships', () => {
                 classe.setFile(file as unknown as File);
                 return classe;
             });
+            
+            // Mock vault.listFiles to return files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([parentFile, childFile, grandChildFile, greatGrandChildFile]);
 
             mockApp.getFile.mockImplementation(async (path: string) => {
                 if (path === parentFile.path) return parentFile;
@@ -903,6 +938,9 @@ describe('Classe - Parent-Child Relationships', () => {
                 classe.setFile(file as unknown as File);
                 return classe;
             });
+            
+            // Mock vault.listFiles to return files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([parentFile, childFile, grandChildFile]);
 
             // Mock for file existence checks and reloads
             mockApp.getFile.mockImplementation(async (path: string) => {
@@ -1206,6 +1244,9 @@ describe('Classe - Parent-Child Relationships', () => {
                 classe.setFile(file as unknown as File);
                 return classe;
             });
+            
+            // Mock vault.listFiles to return files
+            (mockVault.listFiles as jest.Mock).mockResolvedValue([parentFile, childFile, otherFile]);
 
             // Create parent classe
             const parentClasse = new TestableClasse(mockVault);

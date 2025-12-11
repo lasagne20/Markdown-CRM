@@ -135,7 +135,6 @@ export class ClassConfigManager {
                     for (const propKey of propertyNames) {
                         // Get property by key from static Properties map
                         const property = (this.constructor as typeof Classe).Properties[propKey];
-                        console.log("Adding property to container:", propKey, property);
                         if (property) {
                             container.appendChild(await property.getDisplay(this));
                         }

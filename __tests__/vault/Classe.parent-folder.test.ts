@@ -120,7 +120,7 @@ describe('Classe - Parent Folder Configuration', () => {
             isFile: jest.fn((file: IFile) => 'extension' in file),
             getUrl: jest.fn((path: string) => `file:///vault/${path}`),
             getMetadata: jest.fn(async (file: IFile): Promise<Record<string, any>> => {
-                return metadata.get(file.path) || {};
+                return { ...(metadata.get(file.path) || {}) };  // Return copy to avoid reference issues
             }),
             updateMetadata: jest.fn(async (file: IFile, meta: Record<string, any>) => {
                 metadata.set(file.path, { ...meta });
@@ -163,7 +163,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(parentFile.path, parentFile);
-            metadata.set(parentFile.path, {});
+            metadata.set(parentFile.path, { Classe: 'Test' });
 
             const childFile: IFile = {
                 path: 'Child.md',
@@ -172,7 +172,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(childFile.path, childFile);
-            metadata.set(childFile.path, { parent: '[[Parent]]' });
+            metadata.set(childFile.path, { parent: '[[Parent]]', Classe: 'Test' });
 
             const parentClasse = new TestClasse(vault);
             parentClasse.addProperty(new FileProperty('parent', vault, ['TestClasse'], {}));
@@ -209,7 +209,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(parentFile.path, parentFile);
-            metadata.set(parentFile.path, {});
+            metadata.set(parentFile.path, { Classe: 'Test' });
 
             const childFile: IFile = {
                 path: 'Child.md',
@@ -218,7 +218,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(childFile.path, childFile);
-            metadata.set(childFile.path, { parent: '[[Parent]]' });
+            metadata.set(childFile.path, { parent: '[[Parent]]', Classe: 'Test' });
 
             const grandchildFile: IFile = {
                 path: 'Grandchild.md',
@@ -227,7 +227,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(grandchildFile.path, grandchildFile);
-            metadata.set(grandchildFile.path, { parent: '[[Child]]' });
+            metadata.set(grandchildFile.path, { parent: '[[Child]]', Classe: 'Test' });
 
             const parentClasse = new TestClasse(vault);
             parentClasse.addProperty(new FileProperty('parent', vault, ['TestClasse'], {}));
@@ -276,7 +276,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(parentFile.path, parentFile);
-            metadata.set(parentFile.path, {});
+            metadata.set(parentFile.path, { Classe: 'Test' });
 
             const childFile: IFile = {
                 path: 'Child.md',
@@ -285,8 +285,9 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(childFile.path, childFile);
-            metadata.set(childFile.path, { parent: '[[Parent]]' });
+            metadata.set(childFile.path, { parent: '[[Parent]]', Classe: 'Test' });
 
+            // Create parent classe
             const parentClasse = new TestClasseNoFolder(vault);
             parentClasse.addProperty(new FileProperty('parent', vault, ['TestClasseNoFolder'], {}));
             parentClasse.setFile(new File(vault, parentFile));
@@ -318,7 +319,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(parentFile.path, parentFile);
-            metadata.set(parentFile.path, {});
+            metadata.set(parentFile.path, { Classe: 'Test' });
 
             const childFile: IFile = {
                 path: 'Child.md',
@@ -327,7 +328,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(childFile.path, childFile);
-            metadata.set(childFile.path, { parent: '[[Parent]]' });
+            metadata.set(childFile.path, { parent: '[[Parent]]', Classe: 'Test' });
 
             const grandchildFile: IFile = {
                 path: 'Grandchild.md',
@@ -336,7 +337,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(grandchildFile.path, grandchildFile);
-            metadata.set(grandchildFile.path, { parent: '[[Child]]' });
+            metadata.set(grandchildFile.path, { parent: '[[Child]]', Classe: 'Test' });
 
             const parentClasse = new TestClasseNoFolder(vault);
             parentClasse.addProperty(new FileProperty('parent', vault, ['TestClasseNoFolder'], {}));
@@ -382,7 +383,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(parentFile.path, parentFile);
-            metadata.set(parentFile.path, {});
+            metadata.set(parentFile.path, { Classe: 'Test' });
 
             const childFile: IFile = {
                 path: 'Child.md',
@@ -391,7 +392,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(childFile.path, childFile);
-            metadata.set(childFile.path, { parent: '' });
+            metadata.set(childFile.path, { parent: '', Classe: 'Test' });
 
             const childClasse = new TestClasse(vault);
             const childParentProp = new FileProperty('parent', vault, ['TestClasse'], {});
@@ -432,7 +433,7 @@ describe('Classe - Parent Folder Configuration', () => {
                 extension: 'md'
             };
             files.set(childFile.path, childFile);
-            metadata.set(childFile.path, { parent: '', status: 'draft' });
+            metadata.set(childFile.path, { parent: '', status: 'draft', Classe: 'Test' });
 
             const childClasse = new TestClasse(vault);
             childClasse.addProperty(new FileProperty('parent', vault, ['TestClasse'], {}));
