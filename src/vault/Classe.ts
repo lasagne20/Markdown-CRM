@@ -811,7 +811,7 @@ export class Classe {
             if (property.type === 'id') {
                 const currentValue = await this.getPropertyValue(property.name);
                 if (!currentValue) {
-                    const newId = await (property as any).generateId();
+                    const newId = await (property as any).generateUUID();
                     await this.updatePropertyValue(property.name, newId);
                 }
             }
