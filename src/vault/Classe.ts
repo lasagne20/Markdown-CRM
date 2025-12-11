@@ -128,21 +128,10 @@ export class Classe {
     }
     
     async updatePropertyValue(propertyName: string, value: any): Promise<void> {
-        if (!this.file) return;
-        
         // Get old metadata and parent property before update
-        const oldMetadata = await this.getMetadata();
-        const oldParentProperty = await this.getParentProperty();
-        
-        // Update metadata first
-        const newMetadata = { ...oldMetadata, [propertyName]: value };
-        await this.vault.app.updateMetadata(this.file, newMetadata);
-        
-        // Let updateParentFolder decide if it needs to do anything
-        await this.updateParentFolder(oldMetadata, oldParentProperty);
-        
-        // Handle automatic renaming if configured
-        await this.handleAutoRename();
+        const metadata = await this.getMetadata();
+        metadata[propertyName] = value;
+        await this.updateMetadata(metadata);
     }
     
     async getPropertyValue(propertyName: string): Promise<any> {
