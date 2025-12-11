@@ -67,6 +67,21 @@ export class Vault {
         return Vault.classes[name]
     }
 
+    async listFiles(): Promise<IFile[]>{
+        let files = await this.app.listFiles();
+        const filtered: IFile[] = [];
+        
+        for (const file of files) {
+            const fileInstance = new File(this, file);
+            const classeValue = await fileInstance.getClassePropertyValue();
+            if (classeValue) {
+                filtered.push(file);
+            }
+        }
+        
+        return filtered;
+    }
+
     readLinkFile(link: string, path = false): string {
         if (!link || typeof link !== "string") return "";
         // Match [[file|alias]] or [[file]]
@@ -89,7 +104,7 @@ export class Vault {
 
         // Search with the path
         let path = this.readLinkFile(name, true);
-        let directfile = (await this.app.listFiles()).find((f : IFile) => {
+        let directfile = (await this.listFiles()).find((f : IFile) => {
             return f.path.trim() === path.trim()
         });
         if (directfile) {
@@ -101,7 +116,7 @@ export class Vault {
 
 
         let fileName = path.split("/").pop() || "";
-        const files = (await this.app.listFiles()).filter((f : IFile) => f.name === fileName);
+        const files = (await this.listFiles()).filter((f : IFile) => f.name === fileName);
         if (files.length > 0) {
             let file = files[0];
             if (files.length > 1) {
@@ -178,15 +193,7 @@ export class Vault {
                 return undefined;
             }
         }
-
-        
-        
-        let classe: Classe | undefined;
-        
-        classe = await this.createClasse(file);
-
-        return classe;
-
+        return await this.createClasse(file);
     }
 
     async createFile(classeType: null | typeof Classe = null, name: string = "", args: {parent? : Classe} = {}): Promise<File | undefined> {
@@ -308,7 +315,7 @@ export class Vault {
             throw Error("Le fichier n'existe pas : " + newFilePath);
         }
         
-        await this.app.waitForFileMetaDataUpdate(file.path, "Classe", async () => {
+        await this.app.waitForFileMetaDataUpdate(file.path, this.app.getSettings().classePropertyName || "Classe", async () => {
             await new Promise(resolve => setTimeout(resolve, 200));
             if (!file) { return; }
             let classe = await this.getFromFile(file);

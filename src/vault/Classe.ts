@@ -460,7 +460,7 @@ export class Classe {
         
         // Mode 2: Fallback - scan filesystem (for backward compatibility with existing code)
         console.log(`🔍 Mode 2: Fallback filesystem scan`);
-        const allFiles = await this.vault.app.listFiles();
+        const allFiles = await this.vault.listFiles();
         const thisFileBaseName = this.file.getName(false);
         const thisFilePath = this.file.getPath();
         
