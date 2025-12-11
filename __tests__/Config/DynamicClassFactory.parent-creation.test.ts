@@ -295,13 +295,8 @@ describe('DynamicClassFactory - Parent Creation from Data', () => {
             mockApp.readFile.mockResolvedValue('---\n---\n\n# France\n');
             
             let savedFrontmatter: any = null;
-            mockApp.writeFile.mockImplementation(async (file: any, content: string) => {
-                // Extract frontmatter from content
-                const match = content.match(/---\n([\s\S]+?)\n---/);
-                if (match) {
-                    const yaml = require('js-yaml');
-                    savedFrontmatter = yaml.load(match[1]);
-                }
+            mockApp.updateMetadata.mockImplementation(async (file: any, metadata: Record<string, any>) => {
+                savedFrontmatter = { ...metadata };
             });
 
             jest.spyOn(factory['configManager'], 'getClassConfig').mockResolvedValue(mockConfig as any);

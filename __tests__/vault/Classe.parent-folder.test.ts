@@ -412,10 +412,10 @@ describe('Classe - Parent Folder Configuration', () => {
             // Verify updateParentFolder was called
             expect(updateParentFolderSpy).toHaveBeenCalled();
 
-            // Verify file content was written (metadata update happens via writeFile)
-            expect(mockApp.writeFile).toHaveBeenCalled();
-            const writeCall = (mockApp.writeFile as jest.Mock).mock.calls[0];
-            expect(writeCall[1]).toContain('parent: "[[Parent]]"');
+            // Verify file metadata was updated (metadata update happens via updateMetadata)
+            expect(mockApp.updateMetadata).toHaveBeenCalled();
+            const updateCall = (mockApp.updateMetadata as jest.Mock).mock.calls[0];
+            expect(updateCall[1]).toHaveProperty('parent', '[[Parent]]');
 
             // Verify child was moved to Parent/Projets/Child.md
             const moveCalls = (mockApp.move as jest.Mock).mock.calls;
@@ -451,10 +451,10 @@ describe('Classe - Parent Folder Configuration', () => {
             // Verify no folder was created (the important check)
             expect(mockApp.createFolder).not.toHaveBeenCalled();
 
-            // Verify file content was written (metadata update happens via writeFile)
-            expect(mockApp.writeFile).toHaveBeenCalled();
-            const writeCall = (mockApp.writeFile as jest.Mock).mock.calls[0];
-            expect(writeCall[1]).toMatch(/status:\s*"?published"?/); // Handle both quoted and unquoted values
+            // Verify file metadata was updated (metadata update happens via updateMetadata)
+            expect(mockApp.updateMetadata).toHaveBeenCalled();
+            const updateCall = (mockApp.updateMetadata as jest.Mock).mock.calls[0];
+            expect(updateCall[1]).toHaveProperty('status', 'published');
         });
     });
 

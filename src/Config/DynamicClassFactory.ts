@@ -276,11 +276,10 @@ export class DynamicClassFactory {
         let file = await vault.app.getFile(filePath);
         
         if (!file) {
-            // Create minimal file WITHOUT frontmatter (saveFrontmatter will add it)
+            // Create minimal file WITHOUT frontmatter (
             const content = `# ${name}\n\n`;
             file = await vault.app.createFile(filePath, content);
             
-            // Apply metadata using File's saveFrontmatter
             const fileInstance = new File(vault, file as IFile);
             
             // Extract frontmatter data (exclude parent and filter by defined properties)
@@ -308,7 +307,7 @@ export class DynamicClassFactory {
             }
             
             // Save frontmatter only ONCE
-            await fileInstance.saveFrontmatter(frontmatter);
+            await vault.app.updateMetadata(fileInstance, frontmatter);
         } else {
             // Update existing file metadata
             if ('extension' in file) {

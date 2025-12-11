@@ -139,7 +139,13 @@ describe('ClassePropertyAliases Integration Tests', () => {
                 quotingType: '"',
                 noCompatMode: true
             });
-            const content = `---\n${frontmatter}\n---\n`;
+            
+            // Preserve content after frontmatter
+            const existingContent = this.fileContents.get(file.path) || '---\n---\n';
+            const frontmatterRegex = /^---\r?\n[\s\S]+?\r?\n---\r?\n/;
+            const bodyContent = existingContent.replace(frontmatterRegex, '');
+            
+            const content = `---\n${frontmatter}---\n${bodyContent}`;
             this.fileContents.set(file.path, content);
         }
 

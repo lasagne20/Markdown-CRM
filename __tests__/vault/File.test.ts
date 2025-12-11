@@ -20,6 +20,7 @@ const mockApp = {
     renameFile: jest.fn(),
     move: jest.fn(),
     getMetadata: jest.fn(),
+    updateMetadata: jest.fn(),
     waitForFileMetaDataUpdate: jest.fn()
 };
 
@@ -155,32 +156,6 @@ describe('File', () => {
         });
     });
 
-    describe('ID management', () => {
-        it('should get existing ID from metadata', async () => {
-            mockApp.getMetadata.mockResolvedValue({ Id: 'existing-id' });
-            
-            const id = await file.getID();
-            expect(id).toBe('existing-id');
-        });
-
-        it('should generate new ID when not exists', async () => {
-            mockApp.getMetadata.mockResolvedValue({});
-            file.updateMetadata = jest.fn();
-            
-            const id = await file.getID();
-            expect(id).toBe('mock-uuid-1234');
-            expect(file.updateMetadata).toHaveBeenCalledWith('Id', 'mock-uuid-1234');
-        });
-
-        it('should generate new ID when metadata is null', async () => {
-            mockApp.getMetadata.mockResolvedValue(null);
-            file.updateMetadata = jest.fn();
-            
-            const id = await file.getID();
-            expect(id).toBe('mock-uuid-1234');
-        });
-    });
-
     describe('Move operations', () => {
         beforeEach(() => {
             file['lock'] = false;
@@ -309,48 +284,17 @@ describe('File', () => {
     });
 
     describe('Update metadata', () => {
-        const mockContent = `---
-existing: value
----
-Body content here`;
-
         beforeEach(() => {
-            mockApp.readFile.mockResolvedValue(mockContent);
+            mockApp.getMetadata.mockResolvedValue({ existing: 'value' });
             file['lock'] = false;
         });
 
         it('should update metadata successfully', async () => {
-            // Configure mocks to return expected values
-            mockJsYaml.load.mockReturnValue({ existing: 'value' });
-            mockJsYaml.dump.mockReturnValue('existing: value\nnewKey: newValue\n');
-            
-            const expectedNewContent = `---
-existing: value
-newKey: newValue
-
----
-Body content here`;
-            
             await file.updateMetadata('newKey', 'newValue');
             
-            expect(mockJsYaml.load).toHaveBeenCalledWith('existing: value');
-            expect(mockJsYaml.dump).toHaveBeenCalledWith(
-                { existing: 'value', newKey: 'newValue' },
-                { 
-                    flowLevel: -1, 
-                    lineWidth: -1, 
-                    noRefs: true, 
-                    sortKeys: false,
-                    forceQuotes: true,
-                    quotingType: '"',
-                    noCompatMode: true
-                }
-            );
-            expect(mockApp.writeFile).toHaveBeenCalledWith(mockIFile, expectedNewContent);
-            expect(mockApp.waitForFileMetaDataUpdate).toHaveBeenCalledWith(
-                'folder/test.md',
-                'newKey',
-                expect.any(Function)
+            expect(mockApp.updateMetadata).toHaveBeenCalledWith(
+                mockIFile,
+                { existing: 'value', newKey: 'newValue' }
             );
         });
 
@@ -364,259 +308,56 @@ Body content here`;
             
             await file.updateMetadata('key', 'value');
             
-            expect(mockApp.writeFile).toHaveBeenCalled();
+            expect(mockApp.updateMetadata).toHaveBeenCalled();
         });
 
-        it('should handle yaml parsing errors', async () => {
-            mockJsYaml.load.mockImplementation(() => {
-                throw new Error('YAML parse error');
-            });
+        it('should skip update when value unchanged', async () => {
+            mockApp.getMetadata.mockResolvedValue({ existing: 'same-value' });
+            
+            await file.updateMetadata('existing', 'same-value');
+            
+            expect(mockApp.updateMetadata).not.toHaveBeenCalled();
+        });
+
+        it('should handle null metadata', async () => {
+            mockApp.getMetadata.mockResolvedValue(null);
             
             await file.updateMetadata('key', 'value');
             
-            expect(mockApp.writeFile).not.toHaveBeenCalled();
-        });
-
-        it('should handle missing frontmatter', async () => {
-            file.extractFrontmatter = jest.fn().mockReturnValue({
-                existingFrontmatter: null,
-                body: 'content'
-            });
-            
-            await file.updateMetadata('key', 'value');
-            
-            expect(mockApp.writeFile).not.toHaveBeenCalled();
-        });
-
-        it('should handle null frontmatter from yaml parsing', async () => {
-            mockJsYaml.load.mockReturnValue(null);
-            
-            await file.updateMetadata('key', 'value');
-            
-            expect(mockApp.writeFile).not.toHaveBeenCalled();
+            expect(mockApp.updateMetadata).not.toHaveBeenCalled();
         });
     });
 
     describe('Remove metadata', () => {
         it('should remove metadata key', async () => {
-            const mockFrontmatter = { key1: 'value1', key2: 'value2' };
-            file.getMetadata = jest.fn().mockResolvedValue(mockFrontmatter);
-            file.saveFrontmatter = jest.fn();
+            mockApp.getMetadata.mockResolvedValue({ key1: 'value1', key2: 'value2' });
             
             await file.removeMetadata('key1');
             
-            expect(file.saveFrontmatter).toHaveBeenCalledWith({ key2: 'value2' });
+            expect(mockApp.updateMetadata).toHaveBeenCalledWith(
+                mockIFile,
+                { key2: 'value2' }
+            );
         });
 
         it('should handle removing from null metadata', async () => {
-            file.getMetadata = jest.fn().mockResolvedValue(null);
-            file.saveFrontmatter = jest.fn();
+            mockApp.getMetadata.mockResolvedValue(null);
             
             await file.removeMetadata('key1');
             
-            expect(file.saveFrontmatter).not.toHaveBeenCalled();
+            expect(mockApp.updateMetadata).not.toHaveBeenCalled();
         });
     });
 
-    describe('Reorder metadata', () => {
-        it('should reorder metadata according to properties order', async () => {
-            const mockFrontmatter = { prop3: 'c', prop1: 'a', prop2: 'b' };
-            file.getMetadata = jest.fn().mockReturnValue(mockFrontmatter);
-            file.sortFrontmatter = jest.fn().mockReturnValue({
-                sortedFrontmatter: { prop1: 'a', prop2: 'b', prop3: 'c', Id: null },
-                extraProperties: []
-            });
-            file.saveFrontmatter = jest.fn();
+    describe('External references', () => {
+        it('should get from link through vault', async () => {
+            const expectedResult = { path: 'linked/file.md' };
+            (mockVault.getFromLink as jest.Mock).mockResolvedValue(expectedResult);
             
-            await file.reorderMetadata(['prop1', 'prop2', 'prop3']);
+            const result = await file.getFromLink('[[linked/file]]');
             
-            expect(file.saveFrontmatter).toHaveBeenCalled();
-        });
-
-        it('should not reorder when order is already correct', async () => {
-            const mockFrontmatter = { prop1: 'a', prop2: 'b', Id: 'test-id' };
-            file.getMetadata = jest.fn().mockReturnValue(mockFrontmatter);
-            file.saveFrontmatter = jest.fn();
-            
-            await file.reorderMetadata(['prop1', 'prop2']);
-            
-            expect(file.saveFrontmatter).not.toHaveBeenCalled();
-        });
-
-        it('should handle null metadata in reorder', async () => {
-            file.getMetadata = jest.fn().mockReturnValue(null);
-            file.saveFrontmatter = jest.fn();
-            
-            await file.reorderMetadata(['prop1', 'prop2']);
-            
-            expect(file.saveFrontmatter).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('Save frontmatter', () => {
-        const mockContent = `---
-old: content
----
-Body content`;
-
-        beforeEach(() => {
-            mockApp.readFile.mockResolvedValue(mockContent);
-        });
-
-        it('should save frontmatter correctly', async () => {
-            const frontmatter = { key: 'value' };
-            const expectedContent = `---
-testKey: testValue
-
----
-Body content`;
-            
-            await file.saveFrontmatter(frontmatter);
-            
-            expect(mockJsYaml.dump).toHaveBeenCalledWith(
-                frontmatter,
-                { 
-                    flowLevel: -1, 
-                    lineWidth: -1, 
-                    noRefs: true, 
-                    sortKeys: false,
-                    forceQuotes: true,
-                    quotingType: '"',
-                    noCompatMode: true
-                }
-            );
-            expect(mockApp.writeFile).toHaveBeenCalledWith(mockIFile, expectedContent);
-        });
-
-        it('should save frontmatter with extra properties', async () => {
-            const frontmatter = { key: 'value' };
-            const extraProperties = ['extra1: value1', 'extra2: value2'];
-            
-            await file.saveFrontmatter(frontmatter, extraProperties);
-            
-            expect(mockApp.writeFile).toHaveBeenCalled();
-        });
-
-        it('should filter out empty extra properties', async () => {
-            const frontmatter = { key: 'value' };
-            const extraProperties = ['extra1: value1', '', '   ', 'extra2: value2'];
-            
-            await file.saveFrontmatter(frontmatter, extraProperties);
-            
-            expect(mockApp.writeFile).toHaveBeenCalled();
-        });
-    });
-
-    describe('Extract frontmatter', () => {
-        it('should extract frontmatter and body correctly', () => {
-            const content = `---
-key: value
-nested:
-  prop: data
----
-# Title
-Body content here`;
-            
-            const result = file.extractFrontmatter(content);
-            
-            expect(result.existingFrontmatter).toBe(`key: value
-nested:
-  prop: data`);
-            expect(result.body).toBe(`# Title
-Body content here`);
-        });
-
-        it('should handle content without frontmatter', () => {
-            const content = `# Title
-Just body content`;
-            
-            const result = file.extractFrontmatter(content);
-            
-            expect(result.existingFrontmatter).toBe('');
-            expect(result.body).toBe(content);
-        });
-
-        it('should handle empty content', () => {
-            const result = file.extractFrontmatter('');
-            
-            expect(result.existingFrontmatter).toBe('');
-            expect(result.body).toBe('');
-        });
-
-        it('should handle malformed frontmatter', () => {
-            const content = `---
-incomplete frontmatter
-# Title
-Content`;
-            
-            const result = file.extractFrontmatter(content);
-            
-            expect(result.existingFrontmatter).toBe('');
-            expect(result.body).toBe(content);
-        });
-    });
-
-    describe('Format frontmatter', () => {
-        it('should format frontmatter using js-yaml', () => {
-            const frontmatter = { key: 'value', nested: { prop: 'data' } };
-            
-            const result = file.formatFrontmatter(frontmatter);
-            
-            expect(mockJsYaml.dump).toHaveBeenCalledWith(
-                frontmatter,
-                { 
-                    flowLevel: -1, 
-                    lineWidth: -1, 
-                    noRefs: true, 
-                    sortKeys: false,
-                    forceQuotes: true,
-                    quotingType: '"',
-                    noCompatMode: true
-                }
-            );
-            expect(result).toBe('testKey: testValue\n');
-        });
-    });
-
-    describe('Sort frontmatter', () => {
-        it('should sort frontmatter according to order', () => {
-            const frontmatter = { prop3: 'c', prop1: 'a', prop2: 'b', extra: 'x' };
-            const order = ['prop1', 'prop2', 'prop3'];
-            
-            const result = file.sortFrontmatter(frontmatter, order);
-            
-            expect(result.sortedFrontmatter).toEqual({
-                prop1: 'a',
-                prop2: 'b',
-                prop3: 'c'
-            });
-            expect(result.extraProperties).toEqual([
-                'extra: "x"'
-            ]);
-        });
-
-        it('should handle missing properties in frontmatter', () => {
-            const frontmatter = { prop1: 'a' };
-            const order = ['prop1', 'prop2', 'prop3'];
-            
-            const result = file.sortFrontmatter(frontmatter, order);
-            
-            expect(result.sortedFrontmatter).toEqual({
-                prop1: 'a',
-                prop2: null,
-                prop3: null
-            });
-            expect(result.extraProperties).toEqual([]);
-        });
-
-        it('should handle empty frontmatter', () => {
-            const result = file.sortFrontmatter({}, ['prop1', 'prop2']);
-            
-            expect(result.sortedFrontmatter).toEqual({
-                prop1: null,
-                prop2: null
-            });
-            expect(result.extraProperties).toEqual([]);
+            expect(mockVault.getFromLink).toHaveBeenCalledWith('[[linked/file]]');
+            expect(result).toBe(expectedResult);
         });
     });
 
@@ -635,6 +376,7 @@ Content`;
     describe('Error handling and edge cases', () => {
         it('should handle concurrent metadata updates', async () => {
             file['lock'] = false;
+            mockApp.getMetadata.mockResolvedValue({ existing: 'value' });
             
             // Start two concurrent updates
             const update1 = file.updateMetadata('key1', 'value1');
@@ -643,7 +385,7 @@ Content`;
             await Promise.all([update1, update2]);
             
             // Both should complete without throwing
-            expect(mockApp.writeFile).toHaveBeenCalled();
+            expect(mockApp.updateMetadata).toHaveBeenCalled();
         });
 
         it('should handle very long file paths', () => {

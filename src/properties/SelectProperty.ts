@@ -14,7 +14,7 @@ export class SelectProperty extends Property {
     override fillDisplay(value : any, update: (value: string) => Promise<void>) {
         const field = this.createFieldContainer();
         const fieldContainer = document.createElement("div");
-        fieldContainer.classList.add("field-container-column");
+        fieldContainer.classList.add("metadata-field");
 
         const iconContainer = this.createIconContainer(update);
         fieldContainer.appendChild(iconContainer);

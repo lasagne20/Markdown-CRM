@@ -101,7 +101,7 @@ describe('SelectProperty', () => {
             expect(display).toBeTruthy();
             expect(display.classList.contains('metadata-field')).toBe(true);
             
-            const fieldContainer = display.querySelector('.field-container-column');
+            const fieldContainer = display.querySelector('.metadata-field');
             expect(fieldContainer).toBeTruthy();
             
             const selectElement = display.querySelector('select');

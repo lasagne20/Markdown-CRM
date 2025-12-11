@@ -524,8 +524,8 @@ describe('DynamicClassFactory - Data Management', () => {
             const childFile = files.find(([path]) => path.includes('Child'));
             const content = childFile![1];
             
-            // Parent link should be a wikilink, may be quoted by YAML
-            expect(content).toMatch(/parent:\s*"?\[\[.*Parent.*\]\]"?/);
+            // Parent link should be a wikilink, may be quoted by YAML (single or double quotes)
+            expect(content).toMatch(/parent:\s*['"]?\[\[.*Parent.*\]\]['"]?/);
         });
     });
 });

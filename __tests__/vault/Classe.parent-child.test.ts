@@ -370,15 +370,15 @@ describe('Classe - Parent-Child Relationships', () => {
             mockApp.getMetadata.mockImplementation(() => Promise.resolve(currentMetadata));
             mockApp.getFile.mockResolvedValue(null); // Folder doesn't exist
             
-            // Mock writeFile to update metadata
-            mockApp.writeFile.mockImplementation(async () => {
-                currentMetadata = { parent: '[[parent]]' };
+            // Mock updateMetadata to update metadata
+            mockApp.updateMetadata.mockImplementation(async (file, metadata) => {
+                currentMetadata = metadata;
             });
 
             await childClasse.updatePropertyValue('parent', '[[parent]]');
 
-            // Should update metadata via app.writeFile (not spy on MockFile anymore)
-            expect(mockApp.writeFile).toHaveBeenCalled();
+            // Should update metadata via app.updateMetadata
+            expect(mockApp.updateMetadata).toHaveBeenCalled();
 
             // Should trigger parent folder update (verify by checking createFolder was called)
             expect(mockApp.createFolder).toHaveBeenCalledWith('/vault/parent');
@@ -389,8 +389,8 @@ describe('Classe - Parent-Child Relationships', () => {
 
             await childClasse.updatePropertyValue('otherProperty', 'someValue');
 
-            // Should update metadata via app.writeFile
-            expect(mockApp.writeFile).toHaveBeenCalled();
+            // Should update metadata via app.updateMetadata
+            expect(mockApp.updateMetadata).toHaveBeenCalled();
 
             // updateParentFolder is called but should not create any folder since it's not a parent property
             // The important part is that no folder is created
@@ -422,9 +422,9 @@ describe('Classe - Parent-Child Relationships', () => {
             mockApp.getFile.mockResolvedValue(null);
             mockApp.getAbstractFileByPath.mockReturnValue(testParentFile);
             
-            // Mock writeFile to update metadata
-            mockApp.writeFile.mockImplementation(async () => {
-                currentMetadata = { parent: '[[parent]]' };
+            // Mock updateMetadata to update metadata
+            mockApp.updateMetadata.mockImplementation(async (file, metadata) => {
+                currentMetadata = metadata;
             });
 
             // Mock getFromLink for this test
@@ -554,9 +554,9 @@ describe('Classe - Parent-Child Relationships', () => {
                 return null;
             });
 
-            // Mock writeFile to update metadata when called
-            mockApp.writeFile.mockImplementation(async () => {
-                currentMetadata = { parent: '[[parent2]]' };
+            // Mock updateMetadata to update metadata when called
+            mockApp.updateMetadata.mockImplementation(async (file, metadata) => {
+                currentMetadata = metadata;
             });
 
             // Change parent to parent2

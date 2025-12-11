@@ -135,7 +135,8 @@ export class Classe {
         const oldParentProperty = await this.getParentProperty();
         
         // Update metadata first
-        await this.file.updateMetadata(propertyName, value);
+        const newMetadata = { ...oldMetadata, [propertyName]: value };
+        await this.vault.app.updateMetadata(this.file, newMetadata);
         
         // Let updateParentFolder decide if it needs to do anything
         await this.updateParentFolder(oldMetadata, oldParentProperty);
