@@ -1,0 +1,32 @@
+# Configuration de la classe Institution
+name: Institution
+icon: 🏢
+description: Institution ou entreprise
+template: Institution.md
+
+# Configuration des parents
+parents:
+  - property: lieu
+    folder: Institutions
+
+# Configuration du populate
+populate:
+  - property: lieu
+    title: "Choisir un lieu"
+    hint: "Sélectionnez le lieu de l'institution"
+    required: false
+
+properties:
+  nom:
+    type: TextProperty
+    title: Nom
+    icon: 📝
+    required: true
+    defaultValue: ""
+  
+  lieu:
+    type: FileProperty
+    title: Lieu
+    icon: 📍
+    required: false
+    classes: [Lieu]

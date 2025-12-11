@@ -328,7 +328,6 @@ export class Vault {
             // before file creation, so we don't need to update them here
             
             await classe.onCreate();
-            await classe.onUpdate();
             console.log("Classe créée : " + classe.name);
         });
         return file;

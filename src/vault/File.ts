@@ -102,7 +102,7 @@ export class File implements IFile {
 
         // Vérification si le fichier cible existe déjà
         const existingFile = await this.vault.app.getFile(newFilePath);
-        if (existingFile) {
+        if (existingFile && existingFile.path === newFilePath) {
             console.log('Le fichier existe déjà, impossible de déplacer.');
             this.lock = false;
             return;

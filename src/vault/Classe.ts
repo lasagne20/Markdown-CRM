@@ -653,7 +653,14 @@ export class Classe {
             // Case 2: Same parent property, check if value changed
             else if (currentParentProperty) {
                 const currentMetadata = await this.getMetadata();
+                const oldValue = oldMetadata[currentParentProperty.name];
                 const newValue = currentMetadata[currentParentProperty.name];
+                
+                if (oldValue === newValue) {
+                    // No change, skip update
+                    console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged, skipping folder update`);
+                    return;
+                }
                 
                 // Value changed, verify it's actually valid before moving
                 if ('getParentFile' in currentParentProperty && typeof (currentParentProperty as any).getParentFile === 'function') {
@@ -788,6 +795,7 @@ export class Classe {
     // Lifecycle hooks
     async onCreate(): Promise<void> {
         // Check if parent folder should be set up on creation
+        console.log(`🚀 onCreate called for ${this.file?.getPath()}`);
         const parentProperty = await this.getParentProperty();
         if (parentProperty) {
             const parentValue = await this.getPropertyValue(parentProperty.name);

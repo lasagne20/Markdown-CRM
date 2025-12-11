@@ -1,0 +1,13 @@
+# Configuration de la classe Lieu
+name: Lieu
+icon: 📍
+description: Lieu géographique
+template: Lieu.md
+
+properties:
+  nom:
+    type: TextProperty
+    title: Nom
+    icon: 📝
+    required: true
+    defaultValue: ""

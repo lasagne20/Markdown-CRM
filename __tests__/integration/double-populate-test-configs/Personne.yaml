@@ -1,0 +1,45 @@
+# Configuration de la classe Personne pour test double populate
+name: Personne
+icon: 👤
+description: Personne avec deux populates successifs
+template: Personne.md
+
+# Configuration des parents
+parents:
+  - property: institution
+    folder: Personnes
+
+# Configuration du populate - deux populates successifs
+populate:
+  - property: institution
+    title: "Choisir une institution"
+    hint: "Sélectionnez l'institution principale"
+    required: true
+
+  - property: lieu
+    title: "Choisir un lieu"
+    hint: "Sélectionnez le lieu de résidence"
+    required: true
+
+# Configuration des propriétés
+properties:
+  nom:
+    type: TextProperty
+    title: Nom
+    icon: 📝
+    required: true
+    defaultValue: ""
+    
+  institution:
+    type: FileProperty
+    title: Institution
+    icon: 🏢
+    required: false
+    classes: [Institution]
+    
+  lieu:
+    type: FileProperty
+    title: Lieu
+    icon: 📍
+    required: false
+    classes: [Lieu]
