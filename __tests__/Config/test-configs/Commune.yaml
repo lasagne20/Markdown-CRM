@@ -1,0 +1,31 @@
+className: Commune
+classIcon: 🏘️
+parent:
+  property: region
+data:
+  - file: communes.json
+    dynamic: false
+populate:
+  population: defaultPopulation
+  code_postal: defaultCodePostal
+properties:
+  nom:
+    type: NameProperty
+    title: Nom
+  type:
+    type: SelectProperty
+    title: Type
+    options:
+      - Commune
+  population:
+    type: NumberProperty
+    title: Population
+  code_postal:
+    type: Property
+    title: Code postal
+  superficie:
+    type: NumberProperty
+    title: Superficie
+  maire:
+    type: Property
+    title: Maire

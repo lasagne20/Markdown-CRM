@@ -2,6 +2,8 @@ import { Classe } from '../vault/Classe';
 import { Vault } from '../vault/Vault';
 import { ConditionManager, Condition } from './ConditionManager';
 import { ClassConfig } from './interfaces';
+import { Data } from '../vault/Data';
+import { IFile } from '../interfaces/IApp';
 
 /**
  * Process trigger types
@@ -244,8 +246,36 @@ export class ProcessManager {
                     const newClassConstructor = await factory.getClass(newClass);
                     
                     if (newClassConstructor) {
-                        // Create new instance with the correct class type
-                        const newInstance = new newClassConstructor(this.vault, file);
+                        // Load class data to check if this instance should have data populated
+                        const configManager = factory.getConfigManager();
+                        let dataObject: Data | null = null;
+                        
+                        if (configManager) {
+                            try {
+                                const classData = await configManager.loadClassData(newClass);
+                                if (classData && classData.length > 0) {
+                                    // Get the instance name from the file metadata
+                                    const metadata = await this.vault.app.getMetadata(file as IFile);
+                                    const instanceName = metadata?.nom || file.basename;
+                                    
+                                    // Find matching data entry by name
+                                    const matchingData = classData.find((d: any) => d.nom === instanceName || d.name === instanceName);
+                                    
+                                    if (matchingData) {
+                                        // Create a Data object with the matching data
+                                        dataObject = new Data(instanceName);
+                                        Object.assign(dataObject, matchingData);
+                                        console.log(`📊 Loaded data for ${instanceName} from ${newClass} data file`);
+                                    }
+                                }
+                            } catch (error) {
+                                // No data configured for this class, that's ok
+                                console.log(`ℹ️  No data file configured for ${newClass}`, error);
+                            }
+                        }
+                        
+                        // Create new instance with the correct class type and data
+                        const newInstance = new newClassConstructor(this.vault, file, dataObject || undefined);
                         
                         // Update the Vault cache
                         (this.vault as any).files[filePath] = newInstance;

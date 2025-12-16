@@ -1,0 +1,26 @@
+[
+  {
+    "nom": "Paris",
+    "type": "Commune",
+    "population": 2161000,
+    "code_postal": "75000",
+    "superficie": 105.4,
+    "maire": "Anne Hidalgo"
+  },
+  {
+    "nom": "Lyon",
+    "type": "Commune",
+    "population": 513275,
+    "code_postal": "69000",
+    "superficie": 47.87,
+    "maire": "Grégory Doucet"
+  },
+  {
+    "nom": "TestLocation",
+    "type": "Commune",
+    "population": 50000,
+    "code_postal": "75001",
+    "superficie": 10.5,
+    "maire": "Jean Dupont"
+  }
+]

@@ -466,6 +466,13 @@ export class DynamicClassFactory {
     }
     
     /**
+     * Get the config manager instance
+     */
+    getConfigManager(): ClassConfigManager {
+        return this.configManager;
+    }
+    
+    /**
      * Get all instances of a specific class from the vault
      */
     async getAllInstancesForClass(className: string, vault: Vault): Promise<Classe[]> {

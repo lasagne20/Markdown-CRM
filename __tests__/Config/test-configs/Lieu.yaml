@@ -52,3 +52,15 @@ properties:
     static: true
     classes:
       - Lieu
+
+process:
+  - name: Convert to Commune
+    triggers:
+      - onUpdate
+    conditions:
+      - type: equals
+        property: type
+        value: Commune
+    actions:
+      - type: UpdateClassAction
+        newClass: Commune
