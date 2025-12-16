@@ -222,19 +222,53 @@ export class ConfigLoader {
                 return new MultiFileProperty(propertyName, this.vault, config.classes || [], options);
             
             case 'SelectProperty':
-                const selectOptions = (config.options || []).map(opt => 
-                    typeof opt === 'string' 
-                        ? { name: opt, color: '' }
-                        : { name: opt.name, color: opt.color || '' }
-                );
+                const selectOptions = (config.options || []).map((opt: any) => {
+                    if (typeof opt === 'string') {
+                        return { name: opt, color: '', aliases: [] };
+                    }
+                    // Handle object format with potential aliases
+                    // YAML format: "Name" : ["alias1", "alias2"]
+                    if (typeof opt === 'object' && !opt.name) {
+                        // This is the case where YAML parses {"Name": ["alias1"]}
+                        const key = Object.keys(opt)[0];
+                        const aliases = opt[key];
+                        return { 
+                            name: key, 
+                            color: '', 
+                            aliases: Array.isArray(aliases) ? aliases : [] 
+                        };
+                    }
+                    return { 
+                        name: opt.name, 
+                        color: opt.color || '',
+                        aliases: opt.aliases || []
+                    };
+                });
                 return new SelectProperty(propertyName, this.vault, selectOptions, options);
             
             case 'MultiSelectProperty':
-                const multiSelectOptions = (config.options || []).map(opt =>
-                    typeof opt === 'string' 
-                        ? { name: opt, color: '' }
-                        : { name: opt.name, color: opt.color || '' }
-                );
+                const multiSelectOptions = (config.options || []).map((opt: any) => {
+                    if (typeof opt === 'string') {
+                        return { name: opt, color: '', aliases: [] };
+                    }
+                    // Handle object format with potential aliases
+                    // YAML format: "Name" : ["alias1", "alias2"]
+                    if (typeof opt === 'object' && !opt.name) {
+                        // This is the case where YAML parses {"Name": ["alias1"]}
+                        const key = Object.keys(opt)[0];
+                        const aliases = opt[key];
+                        return { 
+                            name: key, 
+                            color: '', 
+                            aliases: Array.isArray(aliases) ? aliases : [] 
+                        };
+                    }
+                    return { 
+                        name: opt.name, 
+                        color: opt.color || '',
+                        aliases: opt.aliases || []
+                    };
+                });
                 return new MultiSelectProperty(propertyName, this.vault, multiSelectOptions, options);
             
             case 'EmailProperty':

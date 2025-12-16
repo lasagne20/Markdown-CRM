@@ -75,7 +75,7 @@ describe('MultiSelectProperty', () => {
         test('should create field container with correct structure', () => {
             const value: string[] = [];
             
-            const container = multiSelectProperty.fillDisplay(mockVault, value, mockUpdate);
+            const container = multiSelectProperty.fillDisplay(value, mockUpdate);
 
             expect(container).toBeDefined();
             expect(container.classList.contains('metadata-field')).toBe(true);
@@ -84,7 +84,7 @@ describe('MultiSelectProperty', () => {
         test('should set vault property', () => {
             const value: string[] = [];
             
-            multiSelectProperty.fillDisplay(mockVault, value, mockUpdate);
+            multiSelectProperty.fillDisplay(value, mockUpdate);
 
             expect(multiSelectProperty.vault).toBe(mockVault);
         });
@@ -92,7 +92,7 @@ describe('MultiSelectProperty', () => {
         test('should create header with correct text', () => {
             const value: string[] = [];
             
-            const container = multiSelectProperty.fillDisplay(mockVault, value, mockUpdate);
+            const container = multiSelectProperty.fillDisplay(value, mockUpdate);
             const header = container.querySelector('.metadata-header');
 
             expect(header).toBeDefined();
@@ -102,15 +102,15 @@ describe('MultiSelectProperty', () => {
         test('should create button container', () => {
             const value: string[] = [];
             
-            const container = multiSelectProperty.fillDisplay(mockVault, value, mockUpdate);
+            const container = multiSelectProperty.fillDisplay(value, mockUpdate);
             const buttonContainer = container.querySelector('.multi-select-container');
 
             expect(buttonContainer).toBeDefined();
         });
 
         test('should handle null/undefined value', () => {
-            const container1 = multiSelectProperty.fillDisplay(mockVault, null, mockUpdate);
-            const container2 = multiSelectProperty.fillDisplay(mockVault, undefined, mockUpdate);
+            const container1 = multiSelectProperty.fillDisplay(null, mockUpdate);
+            const container2 = multiSelectProperty.fillDisplay(undefined, mockUpdate);
 
             expect(container1).toBeDefined();
             expect(container2).toBeDefined();
@@ -356,7 +356,7 @@ describe('MultiSelectProperty', () => {
                 { name: 'Personal', color: '#00FF00' }
             ]);
 
-            const container = multiSelectProperty.fillDisplay(mockVault, ['Work'], mockUpdate);
+            const container = multiSelectProperty.fillDisplay(['Work'], mockUpdate);
             document.body.appendChild(container);
 
             const workButton = document.querySelector('[textContent="Work"]') as HTMLElement;
@@ -369,7 +369,7 @@ describe('MultiSelectProperty', () => {
         test('should handle edge case with no options', () => {
             multiSelectProperty = new MultiSelectProperty('Empty', mockVault, []);
 
-            const container = multiSelectProperty.fillDisplay(mockVault, [], mockUpdate);
+            const container = multiSelectProperty.fillDisplay([], mockUpdate);
             const buttons = container.querySelectorAll('.multi-select-button');
 
             expect(buttons.length).toBe(0);
@@ -398,4 +398,125 @@ describe('MultiSelectProperty', () => {
             expect(mockUpdate).toHaveBeenCalledWith(['Option 2']);
         });
     });
+
+    describe('Options with aliases', () => {
+        test('should accept options with aliases in object format', () => {
+            const optionsWithAliases = [
+                { name: 'Management', color: '#FF0000', aliases: ['management', 'manager'] },
+                { name: 'Technique', color: '#00FF00', aliases: ['tech', 'technical'] },
+                { name: 'Communication', color: '#0000FF', aliases: ['com', 'comm'] }
+            ];
+
+            multiSelectProperty = new MultiSelectProperty('competences', mockVault, optionsWithAliases as any);
+            
+            expect(multiSelectProperty.options).toBe(optionsWithAliases);
+            expect(multiSelectProperty.options.length).toBe(3);
+            expect((multiSelectProperty.options[0] as any).aliases).toEqual(['management', 'manager']);
+        });
+
+        test('should normalize values from aliases to canonical names on read', async () => {
+            const optionsWithAliases = [
+                { name: 'Management', aliases: ['management', 'manager'] },
+                { name: 'Technique', aliases: ['tech', 'technical'] },
+                { name: 'Communication', aliases: [] }
+            ];
+
+            multiSelectProperty = new MultiSelectProperty('competences', mockVault, optionsWithAliases as any);
+            
+            const mockClasse = {
+                getPropertyValue: jest.fn().mockResolvedValue(['management', 'tech', 'Communication'])
+            };
+            
+            const value = await multiSelectProperty.read(mockClasse);
+            
+            // Should return canonical names
+            expect(value).toEqual(['Management', 'Technique', 'Communication']);
+        });
+
+        test('should handle mixed aliases and canonical names', async () => {
+            const optionsWithAliases = [
+                { name: 'Management', aliases: ['management'] },
+                { name: 'Technique', aliases: ['tech'] }
+            ];
+
+            multiSelectProperty = new MultiSelectProperty('skills', mockVault, optionsWithAliases as any);
+            
+            const mockClasse = {
+                getPropertyValue: jest.fn().mockResolvedValue(['management', 'Technique']) // One alias, one canonical
+            };
+            
+            const value = await multiSelectProperty.read(mockClasse);
+            
+            expect(value).toEqual(['Management', 'Technique']);
+        });
+
+        test('should preserve unknown values that have no aliases', async () => {
+            const optionsWithAliases = [
+                { name: 'Management', aliases: ['management'] }
+            ];
+
+            multiSelectProperty = new MultiSelectProperty('skills', mockVault, optionsWithAliases as any);
+            
+            const mockClasse = {
+                getPropertyValue: jest.fn().mockResolvedValue(['management', 'Unknown', 'Other'])
+            };
+            
+            const value = await multiSelectProperty.read(mockClasse);
+            
+            // Should normalize known aliases but preserve unknown values
+            expect(value).toEqual(['Management', 'Unknown', 'Other']);
+        });
+
+        test('should handle multiple aliases pointing to same canonical name', async () => {
+            const optionsWithAliases = [
+                { name: 'Marketing', aliases: ['mkt', 'marketing', 'mrkt'] }
+            ];
+
+            multiSelectProperty = new MultiSelectProperty('domains', mockVault, optionsWithAliases as any);
+            
+            const mockClasse = {
+                getPropertyValue: jest.fn().mockResolvedValue(['mkt', 'marketing'])
+            };
+            
+            const value = await multiSelectProperty.read(mockClasse);
+            
+            // Should deduplicate and return single canonical name
+            expect(value).toEqual(['Marketing']);
+        });
+
+        test('should display buttons correctly with aliased options', () => {
+            const optionsWithAliases = [
+                { name: 'Management', color: '#FF0000', aliases: ['management'] },
+                { name: 'Technique', color: '#00FF00', aliases: ['tech'] }
+            ];
+
+            multiSelectProperty = new MultiSelectProperty('competences', mockVault, optionsWithAliases as any);
+            
+            const buttonContainer = multiSelectProperty.createButtonGroup(['Management'], mockUpdate);
+            const buttons = buttonContainer.querySelectorAll('.multi-select-button');
+            
+            expect(buttons.length).toBe(2);
+            expect(buttons[0].textContent).toBe('Management');
+            expect(buttons[1].textContent).toBe('Technique');
+        });
+
+        test('should handle options without aliases mixed with options with aliases', async () => {
+            const mixedOptions = [
+                { name: 'Management', aliases: ['management'] },
+                { name: 'Technique' }, // No aliases property
+                { name: 'Communication', aliases: ['com'] }
+            ];
+
+            multiSelectProperty = new MultiSelectProperty('skills', mockVault, mixedOptions as any);
+            
+            const mockClasse = {
+                getPropertyValue: jest.fn().mockResolvedValue(['management', 'Technique', 'com'])
+            };
+            
+            const value = await multiSelectProperty.read(mockClasse);
+            
+            expect(value).toEqual(['Management', 'Technique', 'Communication']);
+        });
+    });
 });
+

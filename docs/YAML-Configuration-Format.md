@@ -348,6 +348,101 @@ properties:
 ✅ **Easier to read**: YAML objects are more intuitive than arrays  
 ✅ **Better tooling**: Easier to parse and validate  
 ✅ **Explicit naming**: Property key is clearly the object key  
+
+---
+
+## Select Property Aliases
+
+**Since**: December 2025
+
+SelectProperty and MultiSelectProperty now support **aliases** for backward compatibility with legacy data. This allows you to migrate from old naming conventions without manually updating all your files.
+
+### Basic Syntax
+
+```yaml
+properties:
+  department:
+    type: SelectProperty
+    title: Department
+    options:
+      - "Management" : ["management", "mgmt", "manager"]
+      - "Technique" : ["tech", "technique"]
+      - "Communication" : ["com", "comm"]
+      - Sales  # Options without aliases work as before
+```
+
+### How It Works
+
+1. **Define canonical names and aliases** in your configuration
+2. **Old data is automatically normalized** when read
+3. **Values are stored with canonical names** going forward
+
+**Example:**
+
+```yaml
+# Configuration
+competences:
+  type: MultiSelectProperty
+  title: Competences
+  options:
+    - "Management" : ["management"]
+    - "Marketing" : ["mkt", "marketing"]
+    - "Technique" : ["tech"]
+```
+
+**Data migration:**
+
+```markdown
+---
+# Old file (before migration)
+competences: [management, mkt, tech]
+---
+```
+
+When read, the values are automatically normalized:
+- `management` → `Management`
+- `mkt` → `Marketing`
+- `tech` → `Technique`
+
+Result: `["Management", "Marketing", "Technique"]`
+
+### Deduplication
+
+For MultiSelectProperty, duplicate values (canonical + alias) are automatically removed:
+
+```markdown
+---
+competences: [management, Management, mkt, Marketing]
+---
+```
+
+**Result after normalization:** `["Management", "Marketing"]`
+
+### Mixed Format
+
+You can mix options with aliases and options without:
+
+```yaml
+status:
+  type: SelectProperty
+  title: Status
+  options:
+    - name: Active
+      color: green
+    - "In Progress" : ["wip", "working", "in-progress"]
+    - name: Completed
+      color: blue
+      aliases: ["done", "finished"]
+    - Archived  # Simple string format
+```
+
+### Use Cases
+
+✅ **Legacy data migration**: Support old property values without manual updates  
+✅ **Standardization**: Normalize various naming conventions to a single standard  
+✅ **Typo handling**: Accept common typos or variations  
+✅ **Case sensitivity**: Handle lowercase/uppercase variations  
+✅ **Abbreviations**: Map short codes to full names  
 ✅ **No redundancy**: No need to repeat the name in two places
 
 ---

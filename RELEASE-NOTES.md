@@ -1,17 +1,53 @@
-# 🎉 Update: Architecture Refactoring & Static Properties
+# 🎉 Update: Architecture Refactoring & New Features
 
 **Date**: November-December 2025  
-**Status**: ✅ Complete - All tests passing (1333/1333)
+**Status**: ✅ Complete - All tests passing (1345/1345)
 
 ---
 
 ## 📋 Summary
 
-Major architectural refactoring implementing singleton pattern for managers, removal of legacy autoRename code, and implementation of the "static properties" feature with comprehensive test suite updates.
+Major architectural refactoring implementing singleton pattern for managers, removal of legacy autoRename code, implementation of the "static properties" feature, and addition of **aliases support** for SelectProperty and MultiSelectProperty for backward compatibility with legacy data.
 
 ## ✨ What's New
 
-### 1. Architecture Refactoring 🏗️
+### 1. Select Property Aliases 🏷️ **(NEW - December 2025)**
+
+#### Backward Compatibility for Legacy Data
+- **Aliases Support**: SelectProperty and MultiSelectProperty now accept aliases for options
+- **Automatic Normalization**: Old values are automatically converted to canonical names
+- **Deduplication**: MultiSelectProperty removes duplicate values after normalization
+- **Zero Migration**: No manual data updates required
+
+**Configuration Format:**
+
+```yaml
+department:
+  type: SelectProperty
+  title: Department
+  options:
+    - "Management" : ["management", "mgmt", "manager"]
+    - "Technique" : ["tech", "technique"]
+    - "Communication"  # Works without aliases too
+```
+
+**How It Works:**
+- Old data: `department: management`
+- Read value: `"Management"` (automatically normalized)
+- Multi-select deduplication: `["management", "Management"]` → `["Management"]`
+
+**Benefits:**
+- ✅ Support legacy data without manual migration
+- ✅ Handle typos and variations automatically
+- ✅ Normalize naming conventions across your vault
+- ✅ Mix aliased and non-aliased options freely
+
+**Test Coverage:**
+- ✅ 13 new tests for aliases functionality
+- ✅ 7 integration tests for ConfigLoader parsing
+- ✅ All 72 SelectProperty/MultiSelectProperty tests passing
+
+### 2. Architecture Refactoring 🏗️
 
 #### PopulateManager Optimization
 - **Singleton per Vault**: One instance per Vault (was: new instance per file creation)

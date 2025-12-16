@@ -452,4 +452,113 @@ describe('SelectProperty', () => {
             expect(selectElement.style.backgroundColor).toBeTruthy(); // blocked color set
         });
     });
+
+    describe('options with aliases', () => {
+        it('should accept options with aliases in object format', () => {
+            const optionsWithAliases = [
+                { name: 'Management', aliases: ['management', 'manager'] },
+                { name: 'Technique', aliases: ['tech', 'technical'] },
+                { name: 'Communication', aliases: ['com', 'comm'] }
+            ];
+
+            const prop = new SelectProperty('competences', mockVault, optionsWithAliases as any);
+            
+            expect(prop.options).toBe(optionsWithAliases);
+            expect(prop.options.length).toBe(3);
+            expect((prop.options[0] as any).aliases).toEqual(['management', 'manager']);
+        });
+
+        it('should normalize value from alias to canonical name on read', async () => {
+            const optionsWithAliases = [
+                { name: 'Management', aliases: ['management', 'manager'] },
+                { name: 'Technique', aliases: ['tech', 'technical'] }
+            ];
+
+            const prop = new SelectProperty('competence', mockVault, optionsWithAliases as any);
+            
+            const mockClasse = {
+                getPropertyValue: jest.fn().mockResolvedValue('management') // alias stored
+            };
+            
+            const value = await prop.read(mockClasse);
+            
+            // Should return the canonical name
+            expect(value).toBe('Management');
+        });
+
+        it('should handle multiple aliases for same option', async () => {
+            const optionsWithAliases = [
+                { name: 'Marketing', aliases: ['mkt', 'marketing', 'mrkt'] }
+            ];
+
+            const prop = new SelectProperty('domain', mockVault, optionsWithAliases as any);
+            
+            const mockClasse = { getPropertyValue: jest.fn() };
+            
+            // Test with different aliases
+            mockClasse.getPropertyValue.mockResolvedValue('mkt');
+            expect(await prop.read(mockClasse)).toBe('Marketing');
+            
+            mockClasse.getPropertyValue.mockResolvedValue('marketing');
+            expect(await prop.read(mockClasse)).toBe('Marketing');
+            
+            mockClasse.getPropertyValue.mockResolvedValue('mrkt');
+            expect(await prop.read(mockClasse)).toBe('Marketing');
+        });
+
+        it('should return value as-is if no alias matches', async () => {
+            const optionsWithAliases = [
+                { name: 'Management', aliases: ['management'] }
+            ];
+
+            const prop = new SelectProperty('competence', mockVault, optionsWithAliases as any);
+            
+            const mockClasse = {
+                getPropertyValue: jest.fn().mockResolvedValue('Unknown')
+            };
+            
+            const value = await prop.read(mockClasse);
+            
+            // Should return the value unchanged if not found
+            expect(value).toBe('Unknown');
+        });
+
+        it('should handle options without aliases mixed with options with aliases', async () => {
+            const mixedOptions = [
+                { name: 'Management', aliases: ['management'] },
+                { name: 'Technique' }, // No aliases
+                { name: 'Communication', aliases: ['com'] }
+            ];
+
+            const prop = new SelectProperty('skill', mockVault, mixedOptions as any);
+            
+            const mockClasse = { getPropertyValue: jest.fn() };
+            
+            // Test with alias
+            mockClasse.getPropertyValue.mockResolvedValue('management');
+            expect(await prop.read(mockClasse)).toBe('Management');
+            
+            // Test without alias
+            mockClasse.getPropertyValue.mockResolvedValue('Technique');
+            expect(await prop.read(mockClasse)).toBe('Technique');
+        });
+
+        it('should display widget correctly with aliased options', () => {
+            const optionsWithAliases = [
+                { name: 'Management', color: '#ff0000', aliases: ['management'] },
+                { name: 'Technique', color: '#00ff00', aliases: ['tech'] }
+            ];
+
+            const prop = new SelectProperty('competence', mockVault, optionsWithAliases as any);
+            const updateFn = jest.fn();
+            
+            const display = prop.fillDisplay('Management', updateFn);
+            const selectElement = display.querySelector('select') as HTMLSelectElement;
+            
+            expect(selectElement).toBeTruthy();
+            expect(selectElement.options.length).toBe(2);
+            expect(selectElement.value).toBe('Management');
+        });
+    });
 });
+

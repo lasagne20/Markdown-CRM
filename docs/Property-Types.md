@@ -348,13 +348,29 @@ status:
       color: yellow
 ```
 
+**With Aliases (for backward compatibility):**
+
+```yaml
+department:
+  type: SelectProperty
+  title: Department
+  options:
+    - "Management" : ["management", "mgmt", "manager"]
+    - "Technique" : ["technique", "tech"]
+    - "Communication"
+```
+
+When reading values, aliases are automatically normalized to their canonical name (e.g., `"management"` → `"Management"`).
+
 **Features:**
 - Dropdown UI
 - Color-coded options
 - Custom option objects
+- Aliases for backward compatibility with legacy data
 - Validation against options
+- Automatic normalization of alias values
 
-**Use Cases:** Status fields, categories, priorities
+**Use Cases:** Status fields, categories, priorities, department assignments
 
 ---
 
@@ -368,13 +384,30 @@ tags:
   options: [Client, Partner, Vendor, VIP, Inactive]
 ```
 
+**With Aliases (for backward compatibility):**
+
+```yaml
+competences:
+  type: MultiSelectProperty
+  title: Competences
+  options:
+    - "Management" : ["management"]
+    - "Technique" : ["tech", "technique"]
+    - "Communication" : ["com", "comm"]
+    - "Marketing" : ["mkt", "marketing"]
+```
+
+When reading values, aliases are automatically normalized to their canonical name and duplicates are removed (e.g., `["management", "Management"]` → `["Management"]`).
+
 **Features:**
 - Tag-style UI
 - Color-coded tags
 - Array storage
+- Aliases for backward compatibility with legacy data
+- Automatic normalization and deduplication of alias values
 - Search/filter support
 
-**Use Cases:** Tags, categories, skills, features
+**Use Cases:** Tags, categories, skills, features, competencies
 
 ---
 

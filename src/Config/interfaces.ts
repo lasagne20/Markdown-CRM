@@ -3,7 +3,7 @@ export interface PropertyConfig {
     title?: string; // Display name for the property
     classes?: string[];
     icon?: string;
-    options?: SelectOption[];
+    options?: any[];
     properties?: { [key: string]: PropertyConfig } | PropertyTableRow[];
     hint?: string;
     defaultValue?: any;
@@ -29,6 +29,7 @@ export interface PropertyTableRow {
 export interface SelectOption {
     name: string;
     color: string;
+    aliases?: string[];
 }
 
 export interface TabConfig {

@@ -3,12 +3,47 @@ import { Property } from "./Property";
 import { Vault } from "../vault/Vault";
 
 export class SelectProperty extends Property {
-    public options: {name : string, color : string}[];
+    public options: {name : string, color : string, aliases?: string[]}[];
     public override type : string = "select";
 
-    constructor(name: string, vault: Vault, options: {name : string, color : string}[], args : {icon?: string, static?: boolean, aliases?: string[], tooltip?: string} = {}) {
+    constructor(name: string, vault: Vault, options: {name : string, color : string, aliases?: string[]}[], args : {icon?: string, static?: boolean, aliases?: string[], tooltip?: string} = {}) {
         super(name, vault, args);
         this.options = options;
+    }
+
+    /**
+     * Normalize a value from an alias to its canonical name
+     * @param value The value to normalize (could be an alias)
+     * @returns The canonical name if an alias matches, otherwise the original value
+     */
+    private normalizeValue(value: any): any {
+        if (!value || typeof value !== 'string') {
+            return value;
+        }
+        
+        // Check if the value is already a canonical name
+        const directMatch = this.options.find(opt => opt.name === value);
+        if (directMatch) {
+            return value;
+        }
+        
+        // Check if the value is an alias
+        for (const option of this.options) {
+            if (option.aliases && option.aliases.includes(value)) {
+                return option.name;
+            }
+        }
+        
+        // Return original value if no match found
+        return value;
+    }
+
+    /**
+     * Override read method to normalize aliases
+     */
+    override async read(classe: any): Promise<any> {
+        const value = await super.read(classe);
+        return this.normalizeValue(value);
     }
 
     override fillDisplay(value : any, update: (value: string) => Promise<void>) {
