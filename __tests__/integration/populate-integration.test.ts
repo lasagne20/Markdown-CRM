@@ -155,7 +155,7 @@ nom: ""
             'Test Person.md'
         );
 
-        // Verify populate was called
+        // Verify populate was called for postes.institution (ObjectProperty with FileProperty inside)
         expect(app.selectFile).toHaveBeenCalledWith(
             vault,
             ['Institution', 'Lieu'],
@@ -164,6 +164,7 @@ nom: ""
             })
         );
 
+        // Verify selectFromList was called for statut (SelectProperty)
         expect(app.selectFromList).toHaveBeenCalledWith(
             ['Actif', 'Inactif', 'En congé', 'Parti'],
             expect.objectContaining({
@@ -305,7 +306,7 @@ nom: ""
         expect(app.selectFile).toHaveBeenCalled();
         expect(app.selectFromList).toHaveBeenCalled();
 
-        // Verify institution was called first (before statut)
+        // Verify postes.institution was called first (before statut)
         expect(callOrder).toEqual(['selectFile', 'selectFromList']);
     });
 

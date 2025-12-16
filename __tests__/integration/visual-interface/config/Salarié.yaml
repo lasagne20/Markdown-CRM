@@ -1,0 +1,71 @@
+# Configuration de la classe Personne
+name: Salarié
+icon: 😀
+extend: Personne
+
+# Configuration des propriétés
+properties:
+    
+  dateEntree:
+    type: DateProperty
+    title: Date d'entrée
+    icon: 📅
+    required: false
+    defaultValue: ""
+    
+  competences:
+    type: MultiSelectProperty
+    title: Compétences
+    icon: 🎯
+    required: false
+    defaultValue: []
+    options:
+      - "Management"
+      - "Technique"
+      - "Communication"
+      - "Vente"
+      - "Marketing"
+      - "Finance"
+      - "RH"
+      - "Juridique"
+    
+  notes:
+    type: TextProperty
+    title: Notes
+    icon: 📋
+    required: false
+    defaultValue: ""
+    multiline: true
+
+# Configuration d'affichage
+display:
+  containers:
+    - type: line
+      title: "Identité"
+      className: "personne-identity-section"
+      properties:
+        - classe
+        - nom
+        - prenom
+        - institution
+    
+    - type: tabs
+      title: "Informations"
+      className: "personne-info-tabs"
+      tabs:
+        - name: "Professionnel"
+          properties:
+            - postes
+            - dateEntree
+            - statut
+            - competences
+        - name: "Contact"
+          properties:
+            - email
+            - telephone
+    
+    - type: fold
+      foldTitle: "Notes supplémentaires"
+      className: "personne-notes-fold"
+      properties:
+        - notes

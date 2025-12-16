@@ -34,6 +34,11 @@ export class Classe {
     getVault(): Vault {
         return this.vault;
     }
+
+    // Static method to access Properties from outside the class
+    static getStaticProperties(): { [key: string]: Property } {
+        return this.Properties;
+    }
     
     // Property management
     addProperty(property: Property): void {
@@ -286,14 +291,13 @@ export class Classe {
                 value = this.file.basename;
                 
                 // Remove parts of the template that were already applied
-                // For example, if template is "{dateEntree} - {current}" and current is "2025-01-10 - Marie Dupont"
-                // we want to extract just "Marie Dupont" by removing the prefix that matches the template pattern
                 let cleanedCurrent = value;
                 
-                // Try to extract the clean part by removing the template pattern from the beginning
-                // Build a regex pattern from the template part BEFORE {current}
+                // Find position of {current} in template
                 const currentIndex = template.indexOf('{current}');
+                
                 if (currentIndex > 0) {
+                    // {current} has content BEFORE it - remove prefix
                     const prefixTemplate = template.substring(0, currentIndex);
                     
                     // Convert template placeholders to regex patterns that match any value
@@ -306,6 +310,24 @@ export class Classe {
                         cleanedCurrent = match[1].trim();
                         console.log(`  🧹 Cleaned {current}: pattern "${prefixTemplate}" matched`);
                         console.log(`    "${value}" → "${cleanedCurrent}"`);
+                    }
+                } else if (currentIndex === 0) {
+                    // {current} is at the START - remove suffix
+                    const suffixIndex = template.indexOf('}', currentIndex) + 1;
+                    if (suffixIndex < template.length) {
+                        const suffixTemplate = template.substring(suffixIndex);
+                        
+                        // Convert template placeholders to regex patterns
+                        let regexPattern = suffixTemplate
+                            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
+                            .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
+                        
+                        const match = value.match(new RegExp('^(.*?)' + regexPattern + '$'));
+                        if (match && match[1]) {
+                            cleanedCurrent = match[1].trim();
+                            console.log(`  🧹 Cleaned {current} at start: pattern "${suffixTemplate}" matched`);
+                            console.log(`    "${value}" → "${cleanedCurrent}"`);
+                        }
                     }
                 }
                 

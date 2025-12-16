@@ -129,6 +129,129 @@ describe('Classe - AutoRename Functionality', () => {
                 'vault/Person/2025-01-15 - Marie Dupont.md'
             );
         });
+
+        it('should handle {current} when initial filename does not match template', async () => {
+            // File that doesn't match the template pattern yet
+            const initialFile: IFile = {
+                path: 'vault/Person/Simple Name.md',
+                name: 'Simple Name.md',
+                basename: 'Simple Name',
+                extension: 'md',
+            };
+            const file = new File(mockVault, initialFile);
+            
+            TestClasseWithAutoRename.autoRename = '{dateEntree} - {current}';
+            const instance = new TestClasseWithAutoRename(mockVault, file);
+
+            // Set dateEntree for the first time
+            mockApp.getMetadata.mockResolvedValue({ 
+                dateEntree: '2025-01-15'
+            });
+            mockApp.getFile.mockResolvedValue(null);
+
+            await instance.updateMetadata({ dateEntree: '2025-01-15' });
+
+            // Should use "Simple Name" as {current} and create "2025-01-15 - Simple Name"
+            expect(mockApp.move).toHaveBeenCalledWith(
+                file,
+                'vault/Person/2025-01-15 - Simple Name.md'
+            );
+        });
+
+        it('should clean {current} when template has multiple placeholders before it', async () => {
+            // File renamed with a complex template
+            const complexFile: IFile = {
+                path: 'vault/Person/Actif - 2025-01-10 - Marie Dupont.md',
+                name: 'Actif - 2025-01-10 - Marie Dupont.md',
+                basename: 'Actif - 2025-01-10 - Marie Dupont',
+                extension: 'md',
+            };
+            const file = new File(mockVault, complexFile);
+            
+            TestClasseWithAutoRename.autoRename = '{statut} - {dateEntree} - {current}';
+            const instance = new TestClasseWithAutoRename(mockVault, file);
+
+            // Update statut and dateEntree
+            mockApp.getMetadata.mockResolvedValue({ 
+                statut: 'Inactif',
+                dateEntree: '2025-01-20'
+            });
+            mockApp.getFile.mockResolvedValue(null);
+
+            await instance.updateMetadata({ 
+                statut: 'Inactif',
+                dateEntree: '2025-01-20'
+            });
+
+            // Should extract "Marie Dupont" and create "Inactif - 2025-01-20 - Marie Dupont"
+            // NOT "Inactif - 2025-01-20 - Actif - 2025-01-10 - Marie Dupont"
+            expect(mockApp.move).toHaveBeenCalledWith(
+                file,
+                'vault/Person/Inactif - 2025-01-20 - Marie Dupont.md'
+            );
+        });
+
+        it('should handle {current} BEFORE other placeholders and avoid infinite recursion', async () => {
+            // File that has been renamed multiple times with {current} at the beginning
+            const recursiveFile: IFile = {
+                path: 'vault/Person/Alice Durand - Actif - Actif - Actif.md',
+                name: 'Alice Durand - Actif - Actif - Actif.md',
+                basename: 'Alice Durand - Actif - Actif - Actif',
+                extension: 'md',
+            };
+            const file = new File(mockVault, recursiveFile);
+            
+            TestClasseWithAutoRename.autoRename = '{current} - {statut}';
+            const instance = new TestClasseWithAutoRename(mockVault, file);
+
+            // Update statut
+            mockApp.getMetadata.mockResolvedValue({ 
+                statut: 'Inactif'
+            });
+            mockApp.getFile.mockResolvedValue(null);
+
+            await instance.updateMetadata({ 
+                statut: 'Inactif'
+            });
+
+            // Should extract "Alice Durand" and create "Alice Durand - Inactif"
+            // NOT "Alice Durand - Actif - Actif - Actif - Inactif"
+            expect(mockApp.move).toHaveBeenCalledWith(
+                file,
+                'vault/Person/Alice Durand - Inactif.md'
+            );
+        });
+
+        it('should handle extremely recursive {current} at beginning with complex suffix', async () => {
+            // File that has accumulated many repetitions
+            const extremeFile: IFile = {
+                path: 'vault/Person/Alice Durand - Actif - 2023-01-15 - Actif - Actif - Actif - Actif.md',
+                name: 'Alice Durand - Actif - 2023-01-15 - Actif - Actif - Actif - Actif.md',
+                basename: 'Alice Durand - Actif - 2023-01-15 - Actif - Actif - Actif - Actif',
+                extension: 'md',
+            };
+            const file = new File(mockVault, extremeFile);
+            
+            TestClasseWithAutoRename.autoRename = '{current} - {statut}';
+            const instance = new TestClasseWithAutoRename(mockVault, file);
+
+            // Update statut
+            mockApp.getMetadata.mockResolvedValue({ 
+                statut: 'Inactif'
+            });
+            mockApp.getFile.mockResolvedValue(null);
+
+            await instance.updateMetadata({ 
+                statut: 'Inactif'
+            });
+
+            // Should extract base name and create "Alice Durand - Inactif"
+            // The current logic won't clean this properly when {current} is BEFORE the placeholder
+            expect(mockApp.move).toHaveBeenCalledWith(
+                file,
+                'vault/Person/Alice Durand - Inactif.md'
+            );
+        });
     });
 
     describe('Edge cases', () => {

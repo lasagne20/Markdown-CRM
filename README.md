@@ -19,10 +19,17 @@
 
 ## 📢 Latest Updates
 
+### ✨ December 2025
+
+- **🧬 Class Inheritance** - New feature: classes can extend other classes with `extend` keyword
+- **📋 Property Reuse** - Share common properties across related classes
+- **🎯 Multi-Level Inheritance** - Support for inheritance chains (grandparent → parent → child)
+- **⚙️ Configuration Inheritance** - Automatically inherit `autoRename`, `parent`, `populate`, and `display` settings
+
 ### ✨ November 2025
 
-- **� Populate Feature** - Interactive file creation with property prompts
-- **�🔒 Static Properties** - New feature: mark fields as non-editable with `static: true`
+- **🎯 Populate Feature** - Interactive file creation with property prompts
+- **🔒 Static Properties** - New feature: mark fields as non-editable with `static: true`
 - **📊 Dataset Expansion** - 36,360 French territories (regions, departments, communes)
 - **✅ Test Suite** - 1,081 tests passing (100% success rate)
 - **🐛 Bug Fixes** - Multiple test corrections and improvements
@@ -66,6 +73,7 @@ Create custom fields for any data type:
 ### 🎭 Type-Safe Architecture
 
 - **Dynamic Class Factory** - Generate classes from YAML configurations
+- **Class Inheritance System** - Classes can extend other classes to share properties
 - **Runtime Type Validation** - Catch errors before they happen
 - **Property Inheritance** - Share configurations across classes
 - **Extensible System** - Add new property types easily

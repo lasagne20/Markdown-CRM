@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Class Inheritance System**: New `extend` keyword for YAML class definitions
+  - Classes can inherit properties from a parent class
+  - Multi-level inheritance support (grandparent → parent → child)
+  - Property override capability - child can redefine parent properties
+  - Configuration inheritance: `autoRename`, `parent`, `parents`, `populate`, and `display`
+  - New static method `Classe.getStaticProperties()` for external access to class properties
+  - Comprehensive test suite with 7 test cases covering all inheritance scenarios
+  - Full documentation in `docs/YAML-Configuration-Format.md`
+  - Examples: Employee extends Person, Manager extends Employee, etc.
 - **ClassePropertyAliases**: Support for legacy file migration with `classePropertyAliases` setting
   - Auto-detects classe property from multiple possible property names
   - Automatic migration to standardized property name

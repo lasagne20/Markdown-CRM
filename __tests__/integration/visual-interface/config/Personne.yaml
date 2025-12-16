@@ -3,7 +3,7 @@ name: Personne
 icon: 👤
 description: Gestion des personnes liées à des institutions
 template: Personne.md
-autoRename: "{current} - {statut} - {dateEntree}"
+autoRename: "{current} - {statut}"
 
 # Propriété parent pour organisation automatique des fichiers
 parents:
@@ -102,48 +102,17 @@ properties:
     required: false
     defaultValue: ""
     
-  dateEntree:
-    type: DateProperty
-    title: Date d'entrée
-    icon: 📅
-    required: false
-    defaultValue: ""
-    
   statut:
     type: SelectProperty
     title: Statut
     icon: 🏷️
     required: false
-    defaultValue: "Actif"
+    defaultValue: Actif
     options:
-      - "Actif"
-      - "Inactif"
-      - "En congé"
-      - "Parti"
-    
-  competences:
-    type: MultiSelectProperty
-    title: Compétences
-    icon: 🎯
-    required: false
-    defaultValue: []
-    options:
-      - "Management"
-      - "Technique"
-      - "Communication"
-      - "Vente"
-      - "Marketing"
-      - "Finance"
-      - "RH"
-      - "Juridique"
-    
-  notes:
-    type: TextProperty
-    title: Notes
-    icon: 📋
-    required: false
-    defaultValue: ""
-    multiline: true
+      - Actif
+      - Inactif
+      - En congé
+      - Parti
 
 # Configuration d'affichage
 display:
@@ -164,16 +133,8 @@ display:
         - name: "Professionnel"
           properties:
             - postes
-            - dateEntree
-            - statut
-            - competences
         - name: "Contact"
           properties:
             - email
             - telephone
-    
-    - type: fold
-      foldTitle: "Notes supplémentaires"
-      className: "personne-notes-fold"
-      properties:
-        - notes
+  

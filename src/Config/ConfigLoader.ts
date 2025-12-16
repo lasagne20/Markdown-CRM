@@ -88,6 +88,38 @@ export class ConfigLoader {
                 throw new Error(`Configuration error for ${className}: properties must be an object, not an array. Please update your YAML configuration file.`);
             }
             
+            // Handle class inheritance with extend
+            if (config.extend) {
+                console.log(`🔗 ${className} extends ${config.extend}`);
+                const parentConfig = await this.loadClassConfig(config.extend);
+                
+                // Merge properties from parent (parent properties first, then child can override)
+                const mergedProperties = {
+                    ...parentConfig.properties,
+                    ...(config.properties || {})
+                };
+                config.properties = mergedProperties;
+                
+                // Inherit other configurations if not explicitly set
+                if (!config.parent && parentConfig.parent) {
+                    config.parent = parentConfig.parent;
+                }
+                if (!config.parents && parentConfig.parents) {
+                    config.parents = parentConfig.parents;
+                }
+                if (!config.autoRename && parentConfig.autoRename) {
+                    config.autoRename = parentConfig.autoRename;
+                }
+                if (!config.populate && parentConfig.populate) {
+                    config.populate = parentConfig.populate;
+                }
+                if (!config.display && parentConfig.display) {
+                    config.display = parentConfig.display;
+                }
+                
+                console.log(`✅ Merged ${Object.keys(mergedProperties).length} properties from ${config.extend}`);
+            }
+            
             console.log("Parent config:", config.parent);
 
             this.loadedConfigs.set(className, config as ClassConfig);

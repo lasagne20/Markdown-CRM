@@ -5,6 +5,7 @@ This document explains the YAML configuration format used for defining classes i
 ## Table of Contents
 
 - [Property Naming System](#property-naming-system)
+- [Class Inheritance](#class-inheritance)
 - [Object-Based Format](#object-based-format)
 - [Migration from Array Format](#migration-from-array-format)
 - [Complete Examples](#complete-examples)
@@ -63,6 +64,218 @@ This design allows:
 - **Localization**: Different display names for different languages while keeping the same metadata keys
 - **Clean metadata**: Short, technical keys in YAML frontmatter
 - **User-friendly UI**: Long, descriptive labels in the interface
+
+---
+
+## Class Inheritance
+
+**Since December 2025**: Classes can inherit properties and configuration from a parent class using the `extend` keyword.
+
+### Basic Syntax
+
+```yaml
+className: ChildClass
+classIcon: 👤
+extend: ParentClass  # ← Inherits all properties from ParentClass
+
+properties:
+  # Child-specific properties
+  additionalProperty:
+    type: TextProperty
+    title: Additional Property
+```
+
+### How Inheritance Works
+
+When a class extends another:
+
+1. **Properties are merged**: Child class receives all parent properties
+2. **Child properties take precedence**: If a child defines a property with the same key as the parent, the child's definition is used
+3. **Configuration inheritance**: If not specified in child, inherits:
+   - `autoRename` template
+   - `parent` / `parents` configuration
+   - `populate` settings
+   - `display` configuration
+
+### Example: Employee Extending Person
+
+**Person.yaml** (Parent class):
+```yaml
+className: Person
+classIcon: 👤
+
+properties:
+  firstName:
+    type: TextProperty
+    title: First Name
+    required: true
+    
+  lastName:
+    type: TextProperty
+    title: Last Name
+    required: true
+    
+  email:
+    type: EmailProperty
+    title: Email Address
+    icon: ✉️
+```
+
+**Employee.yaml** (Child class):
+```yaml
+className: Employee
+classIcon: 💼
+extend: Person  # ← Inherits firstName, lastName, email
+
+properties:
+  employeeId:
+    type: IdProperty
+    title: Employee ID
+    
+  department:
+    type: TextProperty
+    title: Department
+    
+  salary:
+    type: NumberProperty
+    title: Salary
+    format: currency
+```
+
+**Result**: Employee class has 6 properties:
+- `firstName`, `lastName`, `email` (inherited from Person)
+- `employeeId`, `department`, `salary` (defined in Employee)
+
+### Property Override
+
+A child class can override a parent property to customize it:
+
+```yaml
+className: Manager
+classIcon: 👔
+extend: Employee
+
+properties:
+  # Override the department property from Employee
+  department:
+    type: SelectProperty
+    title: Department
+    options:
+      - Sales
+      - Engineering
+      - Marketing
+      - HR
+    required: true
+    
+  # Add manager-specific properties
+  teamSize:
+    type: NumberProperty
+    title: Team Size
+```
+
+### Multi-Level Inheritance
+
+Classes can form inheritance chains:
+
+```yaml
+# Base class
+className: Entity
+properties:
+  id:
+    type: IdProperty
+    title: ID
+
+---
+
+# Middle class
+className: Person
+extend: Entity  # ← Inherits id
+properties:
+  name:
+    type: TextProperty
+    title: Name
+
+---
+
+# Child class
+className: Employee
+extend: Person  # ← Inherits id from Entity and name from Person
+properties:
+  salary:
+    type: NumberProperty
+    title: Salary
+```
+
+**Result**: Employee has `id` (from Entity), `name` (from Person), and `salary` (own property)
+
+### Configuration Inheritance Example
+
+Parent class with auto-rename and parent folder:
+
+```yaml
+className: Contact
+classIcon: 👤
+autoRename: "{lastName}, {firstName}"
+parent:
+  property: company
+  folder: Contacts
+
+properties:
+  firstName:
+    type: TextProperty
+    title: First Name
+  lastName:
+    type: TextProperty
+    title: Last Name
+```
+
+Child class inherits configuration:
+
+```yaml
+className: VIPContact
+classIcon: ⭐
+extend: Contact
+# ← Automatically inherits autoRename and parent configuration
+
+properties:
+  vipLevel:
+    type: SelectProperty
+    title: VIP Level
+    options:
+      - Gold
+      - Platinum
+      - Diamond
+```
+
+To override inherited configuration:
+
+```yaml
+className: Freelancer
+classIcon: 💻
+extend: Contact
+autoRename: "{firstName} {lastName} - Freelance"  # ← Overrides parent's autoRename
+
+properties:
+  hourlyRate:
+    type: NumberProperty
+    title: Hourly Rate
+```
+
+### Benefits of Inheritance
+
+✅ **Code reuse**: Define common properties once in a base class  
+✅ **Consistency**: Ensure related classes share the same base structure  
+✅ **Maintainability**: Update properties in parent class, changes apply to all children  
+✅ **Flexibility**: Override properties or configuration when needed  
+✅ **Organization**: Create class hierarchies that reflect your domain model
+
+### Best Practices
+
+1. **Create base classes** for common entity types (Person, Document, Event, etc.)
+2. **Use meaningful names** that clearly show the relationship
+3. **Keep inheritance chains shallow** (2-3 levels maximum)
+4. **Document your class hierarchy** in your project documentation
+5. **Override sparingly** - only when truly needed
 
 ---
 

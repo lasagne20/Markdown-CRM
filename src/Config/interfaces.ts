@@ -88,6 +88,7 @@ export interface PopulateConfig {
 export interface ClassConfig {
     className: string;
     classIcon: string;
+    extend?: string; // Name of the parent class to extend from
     parent?: {
         property: string; // Name of the property that defines the parent (FileProperty, ObjectProperty, or MultiFileProperty)
         folder?: string; // Optional subfolder name in parent's folder where this file should be placed
