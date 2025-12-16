@@ -366,4 +366,48 @@ export class PopulateManager {
 
         return finalValues;
     }
+
+    /**
+     * Merge data from JSON with existing file metadata, preserving existing values.
+     * This is useful when converting a class and loading data from a JSON file.
+     * @param className Name of the class
+     * @param dataFromJson Data loaded from JSON file
+     * @param existingMetadata Current metadata from the file
+     * @returns Merged metadata (existing values take precedence)
+     */
+    async mergeDataWithMetadata(
+        className: string,
+        dataFromJson: { [key: string]: any },
+        existingMetadata: { [key: string]: any }
+    ): Promise<{ [key: string]: any }> {
+        const classConfig = await this.getClassConfig(className);
+        if (!classConfig) {
+            return existingMetadata;
+        }
+
+        const mergedMetadata: { [key: string]: any } = { ...existingMetadata };
+        const definedProperties = Object.keys(classConfig.properties);
+
+        // Merge data from JSON, but only if the property doesn't exist or is empty in existing metadata
+        for (const [key, value] of Object.entries(dataFromJson)) {
+            // Skip special properties
+            if (key === 'nom' || key === 'name' || key === 'type' || key === 'parent') {
+                continue;
+            }
+
+            // Only merge properties that are defined in the class config
+            if (!definedProperties.includes(key)) {
+                continue;
+            }
+
+            // Only update if property doesn't exist or is empty in existing metadata
+            const existingValue = existingMetadata[key];
+            if (existingValue === undefined || existingValue === null || existingValue === '') {
+                mergedMetadata[key] = value;
+            }
+            // If existing value is present, keep it (existing values take precedence)
+        }
+
+        return mergedMetadata;
+    }
 }

@@ -34,7 +34,9 @@ describe('ProcessManager', () => {
             createFile: jest.fn(),
             getFromFile: jest.fn(),
             getFromLink: jest.fn(),
+            updateFileFromData: jest.fn().mockResolvedValue(undefined),
             getDynamicClassFactory: jest.fn().mockReturnValue({
+                getClass: jest.fn(),
                 getClassConfig: jest.fn(),
                 getConfigManager: jest.fn().mockReturnValue({
                     loadClassData: jest.fn().mockResolvedValue([])

@@ -405,6 +405,47 @@ export class Vault {
         this.app.sendNotice("Vault refresh");
     }
 
+    /**
+     * Update file metadata from data loaded from JSON.
+     * This reads the file's metadata, loads matching data from JSON,
+     * and merges them, preserving existing values.
+     * @param file The file to update
+     * @param className The class name to use for data loading and property filtering
+     */
+    async updateFileFromData(file: IFile, className: string): Promise<void> {
+        // Read existing metadata to get the instance name
+        const existingMetadata = await this.app.getMetadata(file);
+        const instanceName = existingMetadata?.nom || (file as any).basename;
+        
+        // Load class data and find matching entry
+        const factory = this.getDynamicClassFactory();
+        if (!factory) {
+            return;
+        }
+        
+        const configManager = factory.getConfigManager();
+        try {
+            const classData = await configManager.loadClassData(className);
+            const matchingData = classData.find((d: any) => d.nom === instanceName || d.name === instanceName);
+            
+            if (!matchingData) {
+                return;
+            }
+            
+            // Merge with existing metadata
+            const mergedMetadata = await this.populateManager.mergeDataWithMetadata(
+                className,
+                matchingData,
+                existingMetadata
+            );
+            
+            // Update file metadata
+            await this.app.updateMetadata(file, mergedMetadata);
+        } catch (error) {
+            // No data file configured for this class, that's ok
+        }
+    }
+
     async createClasse(file: IFile, onCreate = true): Promise<Classe | undefined> {
         let fileInstance: File;
         let classe: Classe | undefined = undefined;

@@ -245,63 +245,17 @@ export class ProcessManager {
                     // Get the new class constructor
                     const newClassConstructor = await factory.getClass(newClass);
                     
-                    if (newClassConstructor) {
-                        // Load class data to check if this instance should have data populated
-                        const configManager = factory.getConfigManager();
-                        let dataObject: Data | null = null;
-                        
-                        if (configManager) {
-                            try {
-                                const classData = await configManager.loadClassData(newClass);
-                                if (classData && classData.length > 0) {
-                                    // Get the instance name from the file metadata
-                                    const metadata = await this.vault.app.getMetadata(file as IFile);
-                                    const instanceName = metadata?.nom || file.basename;
-                                    
-                                    // Find matching data entry by name
-                                    const matchingData = classData.find((d: any) => d.nom === instanceName || d.name === instanceName);
-                                    
-                                    if (matchingData) {
-                                        // Create a Data object with the matching data
-                                        dataObject = new Data(instanceName);
-                                        Object.assign(dataObject, matchingData);
-                                        console.log(`📊 Loaded data for ${instanceName} from ${newClass} data file`);
-                                        
-                                        // Write data properties to file metadata
-                                        const metadataUpdate: Record<string, any> = {};
-                                        
-                                        // Get class config to know which properties are defined
-                                        const newClassConfig = await factory.getClassConfig(newClass);
-                                        const definedProperties = newClassConfig?.properties ? Object.keys(newClassConfig.properties) : [];
-                                        
-                                        // Only write properties that are defined in the class config (exclude 'nom', 'name', 'type')
-                                        for (const [key, value] of Object.entries(matchingData)) {
-                                            if (key !== 'nom' && key !== 'name' && key !== 'type' && definedProperties.includes(key)) {
-                                                metadataUpdate[key] = value;
-                                            }
-                                        }
-                                        
-                                        // Update file metadata with data properties
-                                        if (Object.keys(metadataUpdate).length > 0) {
-                                            await this.vault.app.updateMetadata(file as IFile, metadataUpdate);
-                                            console.log(`📝 Updated file metadata with data properties:`, Object.keys(metadataUpdate));
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                                // No data configured for this class, that's ok
-                                console.log(`ℹ️  No data file configured for ${newClass}`, error);
-                            }
-                        }
-                        
-                        // Create new instance with the correct class type and data
-                        const newInstance = new newClassConstructor(this.vault, file, dataObject || undefined);
-                        
-                        // Update the Vault cache
-                        (this.vault as any).files[filePath] = newInstance;
-                        
-                        console.log(`✅ Vault cache updated with new ${newClass} instance`);
-                    }
+                    // Update file metadata from data (if available)
+                    await this.vault.updateFileFromData(file as IFile, newClass);
+                    
+                    // Create new instance with the correct class type
+                    // Data will be loaded by the class constructor if needed
+                    const newInstance = new newClassConstructor(this.vault, file);
+                    
+                    // Update the Vault cache
+                    (this.vault as any).files[filePath] = newInstance;
+                    
+                    console.log(`✅ Vault cache updated with new ${newClass} instance`);
                 } catch (error) {
                     console.warn(`⚠️  Could not update Vault cache:`, error);
                 }

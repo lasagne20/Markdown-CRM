@@ -29,17 +29,20 @@ import fs from 'fs';
 
 describe('ProcessManager - UpdateClassAction with Data Loading', () => {
     let processManager: ProcessManager;
-    let mockVault: any;
+    let vault: Vault;
     let mockApp: IApp;
     let mockFile: any;
     let mockFileInstance: any;
     let factory: DynamicClassFactory;
     let testConfigPath: string;
+    let metadataStore: Map<string, any>;
 
-    beforeEach(() => {
+    beforeAll(async () => {
         testConfigPath = path.join(__dirname, 'test-configs');
-
-        // Setup mock app with real file reading
+        
+        // Create mockApp ONCE for all tests
+        metadataStore = new Map();
+        
         mockApp = {
             getFile: jest.fn(),
             readFile: jest.fn(),
@@ -68,8 +71,15 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                 return div;
             }),
             getMetadata: jest.fn((file: IFile) => {
+                const filePath = file.path || 'unknown';
+                
+                // Return updated metadata if it exists
+                if (metadataStore.has(filePath)) {
+                    return Promise.resolve(metadataStore.get(filePath));
+                }
+                
                 // Return different metadata based on file path
-                if (file.path?.includes('Paris')) {
+                if (filePath.includes('Paris')) {
                     return Promise.resolve({
                         Classe: 'Lieu',
                         nom: 'Paris',
@@ -83,15 +93,17 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                     type: 'Commune'
                 });
             }),
-            updateMetadata: jest.fn().mockResolvedValue(undefined)
-        } as any;
+        updateMetadata: jest.fn((file: IFile, metadata: any) => {
+            const filePath = file.path || 'unknown';
+            metadataStore.set(filePath, metadata);
+            return Promise.resolve();
+        })
+    } as any;
 
-        // Mock getFile to read actual YAML and JSON files from test-configs
-        (mockApp.getFile as jest.Mock).mockImplementation(async (filePath: string) => {
-            // Handle both simple basenames and full paths with config path prefix
-            let basename = path.basename(filePath);
-            
-            // If filePath contains the config path prefix, extract just the filename
+    // Mock getFile to read actual YAML and JSON files from test-configs
+    (mockApp.getFile as jest.Mock).mockImplementation(async (filePath: string) => {
+        // Handle both simple basenames and full paths with config path prefix
+        let basename = path.basename(filePath);            // If filePath contains the config path prefix, extract just the filename
             if (filePath.includes('test-configs/') || filePath.includes('test-configs\\')) {
                 const parts = filePath.split(/[/\\]/);
                 basename = parts[parts.length - 1];
@@ -137,7 +149,14 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
             basename: 'TestLocation',
             file: mockFile,
             getClassePropertyValue: jest.fn().mockResolvedValue('Lieu'),
-            updateMetadata: jest.fn().mockResolvedValue(undefined),
+            updateMetadata: jest.fn(async (key: string, value: any) => {
+                // Get current metadata
+                const currentMeta = await mockApp.getMetadata(mockFile);
+                // Update it
+                const updated = { ...currentMeta, [key]: value };
+                // Call mockApp.updateMetadata so it's tracked
+                await mockApp.updateMetadata(mockFile, updated);
+            }),
             getMetadata: jest.fn().mockResolvedValue({
                 Classe: 'Lieu',
                 nom: 'TestLocation',
@@ -145,39 +164,22 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
             })
         };
 
-        // Setup mock vault with app
-        mockVault = {
-            app: mockApp,
-            files: {},
-            getFile: jest.fn().mockResolvedValue(mockFileInstance),
-            getFromFile: jest.fn().mockResolvedValue(null),
-            getFromLink: jest.fn().mockResolvedValue(null),
-            createFile: jest.fn().mockResolvedValue(mockFile),
-            getClasseFromName: jest.fn(),
-            getPopulateManager: jest.fn().mockReturnValue({
-                populateProperties: jest.fn().mockResolvedValue({
-                    nom: 'TestLocation',
-                    type: 'Commune',
-                    population: 50000,
-                    code_postal: '75001'
-                })
-            })
-        };
+        // Create a real Vault instance for integration testing
+        vault = new Vault(mockApp, {
+            templateFolder: 'templates',
+            personalName: 'TestUser',
+            configPath: testConfigPath
+        });
 
-        // Setup DynamicClassFactory AFTER vault is configured
-        factory = new DynamicClassFactory(testConfigPath, mockVault as any);
-        
-        // Mock getDynamicClassFactory to return our factory
-        mockVault.getDynamicClassFactory = jest.fn().mockReturnValue(factory);
-
-        processManager = new ProcessManager(mockVault);
+        processManager = vault.getProcessManager();
+        factory = vault.getDynamicClassFactory()!;
     });
 
     describe('UpdateClassAction with data and populate', () => {
         it('should convert Lieu to Commune and load data properly', async () => {
             // Create initial Lieu instance
             const LieuClass = await factory.getClass('Lieu');
-            const lieuInstance = new LieuClass(mockVault, mockFileInstance);
+            const lieuInstance = new LieuClass(vault, mockFileInstance);
 
             // Mock the getProperty and updatePropertyValue methods
             lieuInstance.getProperty = jest.fn((propName: string) => ({
@@ -211,6 +213,7 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
             // Mock file with TestLocation name to match communes.json data
             const testLocationFile = {
                 ...mockFileInstance,
+                path: 'Lieux/TestLocation/TestLocation.md',
                 getMetadata: jest.fn().mockResolvedValue({
                     Classe: 'Lieu',
                     nom: 'TestLocation',
@@ -218,7 +221,7 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                 })
             };
             
-            const lieuInstance = new LieuClass(mockVault, testLocationFile);
+            const lieuInstance = new LieuClass(vault, testLocationFile);
             lieuInstance.data = { nom: 'TestLocation', type: 'Commune' } as any;
 
             // Mock getProperty to return the right values
@@ -234,37 +237,30 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
             
             lieuInstance.updatePropertyValue = jest.fn().mockResolvedValue(undefined);
 
-            // Spy on updateMetadata
-            const updateMetadataSpy = jest.spyOn(mockApp, 'updateMetadata');
-
             // Execute the process (Lieu.yaml already has the process config)
             await processManager.runProcesses('Lieu', lieuInstance, 'onUpdate');
 
-            // Verify the conversion happened
-            expect(updateMetadataSpy).toHaveBeenCalled();
-            const metadataCall = updateMetadataSpy.mock.calls.find((call: any) => 
-                call[1] && call[1].Classe === 'Commune'
-            );
-            expect(metadataCall).toBeDefined();
+            // Verify final metadata contains data from communes.json
+            const finalMetadata = metadataStore.get(testLocationFile.path);
+            expect(finalMetadata).toBeDefined();
+            expect(finalMetadata.Classe).toBe('Commune');
+            expect(finalMetadata.population).toBe(50000);
+            expect(finalMetadata.code_postal).toBe('75001');
 
-            // Get the new Commune instance from vault cache
+            // Verify the instance in vault has been updated
             const filePath = testLocationFile.path;
-            const communeInstance = mockVault.files[filePath];
+            const communeInstance = vault.files[filePath];
+            expect(communeInstance).toBeDefined();
+            expect(communeInstance.constructor.name).toBe('Commune');
             
-            if (communeInstance) {
-                // Verify it's a Commune instance
-                expect(communeInstance.constructor.name).toBe('Commune');
-                
-                // Verify the instance has data populated from communes.json
-                expect(communeInstance.data).toBeDefined();
-                expect(communeInstance.data.nom).toBe('TestLocation');
-                expect(communeInstance.data.type).toBe('Commune');
-                expect(communeInstance.data.population).toBe(50000);
-                expect(communeInstance.data.code_postal).toBe('75001');
-                expect(communeInstance.data.superficie).toBe(10.5);
-                expect(communeInstance.data.maire).toBe('Jean Dupont');
-            }
-            
+            // Verify the instance can read its metadata
+            const instanceMetadata = await communeInstance.getMetadata();
+            expect(instanceMetadata.Classe).toBe('Commune');
+            expect(instanceMetadata.population).toBe(50000);
+            expect(instanceMetadata.code_postal).toBe('75001');
+            expect(instanceMetadata.superficie).toBe(10.5);
+            expect(instanceMetadata.maire).toBe('Jean Dupont');
+
             // Also verify via loadDataForClass that TestLocation data is available
             const communeDataFile = await (factory as any).configManager.loadClassData('Commune');
             expect(communeDataFile).toBeDefined();
@@ -282,7 +278,7 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
             
             // Create initial Lieu instance
             const LieuClass = await factory.getClass('Lieu');
-            const lieuInstance = new LieuClass(mockVault, mockFileInstance);
+            const lieuInstance = new LieuClass(vault, mockFileInstance);
 
             // Mock for Region type (not Commune)
             lieuInstance.getProperty = jest.fn((propName: string) => ({
@@ -312,7 +308,7 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                 })
             };
             
-            const lieuInstance = new LieuClass(mockVault, parisFile);
+            const lieuInstance = new LieuClass(vault, parisFile);
             lieuInstance.data = { nom: 'Paris', type: 'Commune' } as any;
 
             lieuInstance.getProperty = jest.fn((propName: string) => {
@@ -325,36 +321,32 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                 return { read: jest.fn().mockResolvedValue(null) };
             }) as any;
 
-            // Spy on updateMetadata
-            const updateMetadataSpy = jest.spyOn(mockApp, 'updateMetadata');
-
             // Execute the process
             await processManager.runProcesses('Lieu', lieuInstance, 'onUpdate');
 
-            // Verify conversion
-            expect(updateMetadataSpy).toHaveBeenCalled();
-            const metadataCall = updateMetadataSpy.mock.calls.find((call: any) => 
-                call[1] && call[1].Classe === 'Commune'
-            );
-            expect(metadataCall).toBeDefined();
+            // Verify final metadata contains Paris data from communes.json
+            const finalMetadata = metadataStore.get(parisFile.path);
+            expect(finalMetadata).toBeDefined();
+            expect(finalMetadata.Classe).toBe('Commune');
+            expect(finalMetadata.nom).toBe('Paris');
+            expect(finalMetadata.type).toBe('Commune');
+            expect(finalMetadata.population).toBe(2161000);
+            expect(finalMetadata.code_postal).toBe('75000');
 
-            // Get the Commune instance from vault cache
+            // Verify the instance in vault has been updated
             const filePath = parisFile.path;
-            const communeInstance = mockVault.files[filePath];
+            const communeInstance = vault.files[filePath];
+            expect(communeInstance).toBeDefined();
+            expect(communeInstance.constructor.name).toBe('Commune');
             
-            if (communeInstance) {
-                // Verify it's a Commune instance
-                expect(communeInstance.constructor.name).toBe('Commune');
-                
-                // Verify the instance data property contains Paris data from communes.json
-                expect(communeInstance.data).toBeDefined();
-                expect(communeInstance.data.nom).toBe('Paris');
-                expect(communeInstance.data.type).toBe('Commune');
-                expect(communeInstance.data.population).toBe(2161000);
-                expect(communeInstance.data.code_postal).toBe('75000');
-                expect(communeInstance.data.superficie).toBe(105.4);
-                expect(communeInstance.data.maire).toBe('Anne Hidalgo');
-            }
+            // Verify the instance can read its metadata
+            const instanceMetadata = await communeInstance.getMetadata();
+            expect(instanceMetadata.Classe).toBe('Commune');
+            expect(instanceMetadata.nom).toBe('Paris');
+            expect(instanceMetadata.population).toBe(2161000);
+            expect(instanceMetadata.code_postal).toBe('75000');
+            expect(instanceMetadata.superficie).toBe(105.4);
+            expect(instanceMetadata.maire).toBe('Anne Hidalgo');
 
             // Load all commune instances to verify data population
             const communeDataRaw = await (factory as any).configManager.loadClassData('Commune');
@@ -403,10 +395,16 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                     Classe: 'Lieu',
                     nom: 'TestLocation',
                     type: 'Commune'
+                }),
+                // Define updateMetadata HERE, before creating the instance
+                updateMetadata: jest.fn(async (key: string, value: any) => {
+                    const currentMeta = await testLocationFile.getMetadata();
+                    const updated = { ...currentMeta, [key]: value };
+                    await mockApp.updateMetadata(testLocationFile, updated);
                 })
             };
             
-            const lieuInstance = new LieuClass(mockVault, testLocationFile);
+            const lieuInstance = new LieuClass(vault, testLocationFile);
             lieuInstance.data = { nom: 'TestLocation', type: 'Commune' } as any;
 
             lieuInstance.getProperty = jest.fn((propName: string) => {
@@ -419,27 +417,16 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                 return { read: jest.fn().mockResolvedValue(null) };
             }) as any;
 
-            // Spy on updateMetadata
-            const updateMetadataSpy = jest.spyOn(mockApp, 'updateMetadata');
-
             // Execute the process
             await processManager.runProcesses('Lieu', lieuInstance, 'onUpdate');
 
-            // Verify class was updated
-            const classUpdateCall = updateMetadataSpy.mock.calls.find((call: any) => 
-                call[1]?.Classe === 'Commune'
-            );
-            expect(classUpdateCall).toBeDefined();
-
-            // Verify data properties were written to file metadata
-            // After conversion, the data should be written to the file
-            const dataUpdateCall = updateMetadataSpy.mock.calls.find((call: any) => 
-                call[1]?.population !== undefined
-            );
-            
-            // This should pass - data properties should be written to file
-            expect(dataUpdateCall).toBeDefined();
-            expect(dataUpdateCall[1]).toMatchObject({
+            // Verify final metadata contains all data properties
+            const finalMetadata = metadataStore.get('Lieux/TestLocation/TestLocation.md');
+            expect(finalMetadata).toBeDefined();
+            expect(finalMetadata).toMatchObject({
+                Classe: 'Commune',
+                nom: 'TestLocation',
+                type: 'Commune',
                 population: 50000,
                 code_postal: '75001',
                 superficie: 10.5,
