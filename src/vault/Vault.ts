@@ -101,10 +101,10 @@ export class Vault {
      */
     async getExtendedClasses(baseClasses: string[]): Promise<string[]> {
         try {
-            const configLoader = (this as any).configLoader;
-            if (configLoader && typeof configLoader.getExtendedClasses === 'function') {
+            const factory = this.getDynamicClassFactory();
+            if (factory && typeof factory.getExtendedClasses === 'function') {
                 const availableClasses = await this.getAvailableClasses();
-                return await configLoader.getExtendedClasses(baseClasses, availableClasses);
+                return await factory.getExtendedClasses(baseClasses, availableClasses);
             }
         } catch (error) {
             console.warn('Could not get extended classes:', error);

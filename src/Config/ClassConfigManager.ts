@@ -469,6 +469,13 @@ export class ClassConfigManager {
     }
 
     /**
+     * Get extended classes including inheritance
+     */
+    async getExtendedClasses(baseClasses: string[], availableClasses: string[]): Promise<string[]> {
+        return await this.configLoader.getExtendedClasses(baseClasses, availableClasses);
+    }
+
+    /**
      * Clear the cache and reload configurations
      */
     clearCache(): void {

@@ -53,6 +53,13 @@ export class DynamicClassFactory {
     }
 
     /**
+     * Get extended classes including inheritance
+     */
+    async getExtendedClasses(baseClasses: string[], availableClasses: string[]): Promise<string[]> {
+        return await this.configManager.getExtendedClasses(baseClasses, availableClasses);
+    }
+
+    /**
      * Public method to create a single instance from data
      * This is a convenience wrapper for the private createInstanceFromData method
      */
