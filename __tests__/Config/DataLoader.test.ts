@@ -287,5 +287,75 @@ describe('DataLoader', () => {
         it('should provide stopDynamicDataReload method', () => {
             expect(typeof factory.stopDynamicDataReload).toBe('function');
         });
+
+        it('should automatically setup dynamic reload when loadDataForClass is called with dynamic: true', async () => {
+            // Spy on setupDynamicDataReload to verify it's called
+            const setupSpy = jest.spyOn(factory, 'setupDynamicDataReload');
+            
+            await factory.loadDataForClass('Lieu', vault);
+            
+            expect(setupSpy).toHaveBeenCalledWith('Lieu', vault);
+            expect(setupSpy).toHaveBeenCalledTimes(1);
+            
+            setupSpy.mockRestore();
+        });
+
+        it('should NOT setup dynamic reload when autoSetupDynamicReload is false', async () => {
+            const setupSpy = jest.spyOn(factory, 'setupDynamicDataReload');
+            
+            await factory.loadDataForClass('Lieu', vault, false);
+            
+            expect(setupSpy).not.toHaveBeenCalled();
+            
+            setupSpy.mockRestore();
+        });
+
+        it('should create watchers for classes with dynamic: true', async () => {
+            await factory.loadDataForClass('Lieu', vault);
+            
+            // Check that watchers are registered
+            const watchers = (factory as any).dataWatchers;
+            const hasLieuWatcher = Array.from(watchers.keys()).some((key: string) => key.startsWith('Lieu:'));
+            
+            expect(hasLieuWatcher).toBe(true);
+        });
+
+        it('should NOT setup dynamic reload for classes without dynamic flag', async () => {
+            // Create a mock config without dynamic
+            const originalGetClassConfig = (factory as any).configManager.getClassConfig;
+            (factory as any).configManager.getClassConfig = jest.fn(async (className: string) => {
+                const config = await originalGetClassConfig.call((factory as any).configManager, className);
+                // Remove dynamic flag
+                if (config.data) {
+                    config.data = config.data.map((d: any) => ({ ...d, dynamic: false }));
+                }
+                return config;
+            });
+
+            const setupSpy = jest.spyOn(factory, 'setupDynamicDataReload');
+            
+            await factory.loadDataForClass('Lieu', vault);
+            
+            expect(setupSpy).not.toHaveBeenCalled();
+            
+            setupSpy.mockRestore();
+            (factory as any).configManager.getClassConfig = originalGetClassConfig;
+        });
+
+        it('should stop watching when stopDynamicDataReload is called', async () => {
+            await factory.loadDataForClass('Lieu', vault);
+            
+            // Verify watcher exists
+            const watchers = (factory as any).dataWatchers;
+            let hasLieuWatcher = Array.from(watchers.keys()).some((key: string) => key.startsWith('Lieu:'));
+            expect(hasLieuWatcher).toBe(true);
+            
+            // Stop watching
+            factory.stopDynamicDataReload('Lieu');
+            
+            // Verify watcher is removed
+            hasLieuWatcher = Array.from(watchers.keys()).some((key: string) => key.startsWith('Lieu:'));
+            expect(hasLieuWatcher).toBe(false);
+        });
     });
 });

@@ -114,8 +114,9 @@ export class DynamicClassFactory {
     /**
      * Load data from JSON and create/update instances
      * This method will create files if they don't exist, or update properties if they do
+     * @param autoSetupDynamicReload - If true, automatically setup dynamic reload for classes with dynamic: true
      */
-    async loadDataForClass(className: string, vault: Vault): Promise<Classe[]> {
+    async loadDataForClass(className: string, vault: Vault, autoSetupDynamicReload: boolean = true): Promise<Classe[]> {
         const data = await this.configManager.loadClassData(className);
         if (data.length === 0) {
             console.log(`No data to load for ${className}`);
@@ -242,6 +243,16 @@ export class DynamicClassFactory {
                         console.error(`Failed to set parent for ${item.nom || item.name}:`, error);
                     }
                 }
+            }
+        }
+        
+        // Setup dynamic reload if configured (only on first load, not on reload)
+        if (autoSetupDynamicReload && config.data && config.data.length > 0) {
+            const hasDynamic = config.data.some((dataSource: any) => dataSource.dynamic === true);
+            if (hasDynamic) {
+                // Setup dynamic reload for this class
+                await this.setupDynamicDataReload(className, vault);
+                console.log(`🔄 Dynamic reload enabled for ${className}`);
             }
         }
         
@@ -400,8 +411,8 @@ export class DynamicClassFactory {
                             console.log(`🔄 Data file changed: ${dataSource.file}, reloading ${className}...`);
                             this.dataFileHashes.set(watchKey, newHash);
                             
-                            // Reload data
-                            const instances = await this.loadDataForClass(className, vault);
+                            // Reload data without re-setting up dynamic reload (prevents infinite loop)
+                            const instances = await this.loadDataForClass(className, vault, false);
                             
                             if (onReload) {
                                 onReload(instances);
