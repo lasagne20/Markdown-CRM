@@ -3,7 +3,6 @@ name: Personne
 icon: 👤
 description: Gestion des personnes liées à des institutions
 template: Personne.md
-autoRename: "{current} - {statut}"
 
 # Propriété parent pour organisation automatique des fichiers
 parents:
@@ -114,6 +113,41 @@ properties:
       - En congé
       - Parti
 
+  relation:
+    type: SelectProperty
+    title: Relation
+    icon: 🔗
+    options:
+      - Client
+      - Fournisseur
+      - Partenaire
+      - Salarié
+      - Autre
+
+
+process:
+  - name: AutoRenameProcess
+    description: Renomme automatiquement le fichier basé sur le statut
+    triggers:
+      - onCreate
+      - onPropertyChange
+    conditions: []
+    actions:
+      - type: RenameFileAction
+        template: "{current} - {statut}"
+
+  - name: ClassChangeProcess
+    description: Met à jour la classe en fonction de la propriété 'relation'
+    triggers:
+       - onPropertyChange
+    conditions:
+        - property: relation
+          type: equals
+          value: Salarié
+    actions:
+      - type: UpdateClassAction
+        newClass: Salarié
+        
 # Configuration d'affichage
 display:
   containers:
@@ -133,6 +167,8 @@ display:
         - name: "Professionnel"
           properties:
             - postes
+            - relation
+            - statut
         - name: "Contact"
           properties:
             - email

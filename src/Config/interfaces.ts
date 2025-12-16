@@ -85,6 +85,14 @@ export interface PopulateConfig {
     required?: boolean; // If true, user cannot skip this field
 }
 
+export interface ProcessConfig {
+    name: string;
+    description?: string;
+    triggers?: ('onCreate' | 'onUpdate' | 'onDelete' | 'onPropertyChange')[];
+    conditions: any[]; // Conditions from ConditionManager
+    actions: any[]; // Actions from ProcessManager
+}
+
 export interface ClassConfig {
     className: string;
     classIcon: string;
@@ -108,5 +116,5 @@ export interface ClassConfig {
     };
     data?: DataSourceConfig[]; // Data sources for pre-populating instances
     populate?: PopulateConfig[]; // Properties to prompt for during file creation
-    autoRename?: string; // Template for automatic file renaming (e.g., "{dateEntree} - {current}")
+    process?: ProcessConfig[]; // Automated processes to run on triggers
 }

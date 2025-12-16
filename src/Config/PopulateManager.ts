@@ -11,6 +11,7 @@ import { IApp } from '../interfaces/IApp';
 export class PopulateManager {
     private vault: Vault;
     private app: IApp;
+    private configCache: Map<string, ClassConfig> = new Map();
 
     constructor(vault: Vault) {
         this.vault = vault;
@@ -18,12 +19,59 @@ export class PopulateManager {
     }
 
     /**
+     * Load and cache class configuration
+     * @param className Name of the class
+     * @returns Class configuration or null if not found
+     */
+    private async getClassConfig(className: string): Promise<ClassConfig | null> {
+        // Check cache first
+        if (this.configCache.has(className)) {
+            return this.configCache.get(className)!;
+        }
+
+        // Load from factory
+        const factory = this.vault.getDynamicClassFactory();
+        if (!factory) {
+            return null;
+        }
+
+        const config = await factory.getClassConfig(className);
+        if (config) {
+            this.configCache.set(className, config);
+        }
+
+        return config;
+    }
+
+    /**
+     * Clear cached configuration for a class (useful when config changes)
+     * @param className Name of the class to clear, or undefined to clear all
+     */
+    public clearCache(className?: string): void {
+        if (className) {
+            this.configCache.delete(className);
+        } else {
+            this.configCache.clear();
+        }
+    }
+
+    /**
      * Process all populate configurations for a class and return the populated values.
-     * @param classConfig The class configuration containing populate settings
+     * @param classNameOrConfig Name of the class to populate OR class configuration object (for tests)
      * @returns Object with property names as keys and populated values, or null if cancelled
      */
-    async populateProperties(classConfig: ClassConfig): Promise<{ [key: string]: any } | null> {
-        if (!classConfig.populate || classConfig.populate.length === 0) {
+    async populateProperties(classNameOrConfig: string | ClassConfig): Promise<{ [key: string]: any } | null> {
+        let classConfig: ClassConfig | null;
+        
+        if (typeof classNameOrConfig === 'string') {
+            // Load from cache/factory
+            classConfig = await this.getClassConfig(classNameOrConfig);
+        } else {
+            // Use provided config directly (for tests)
+            classConfig = classNameOrConfig;
+        }
+        
+        if (!classConfig || !classConfig.populate || classConfig.populate.length === 0) {
             return {};
         }
 
@@ -34,8 +82,7 @@ export class PopulateManager {
 
             // Handle required fields
             if (value === null && populateConfig.required) {
-                this.app.sendNotice('Création annulée : champ requis non rempli');
-                return null; // Cancel entire creation
+                return null; // Signal cancellation - caller will handle notice
             }
 
             // Store value if not null
@@ -269,11 +316,27 @@ export class PopulateManager {
     /**
      * Merge populated values with default values from class config.
      * Populated values take precedence over defaults.
+     * @param classNameOrConfig Name of the class OR class configuration object (for tests)
+     * @param populatedValues Values already populated from user
+     * @returns Merged values with defaults applied
      */
-    mergeWithDefaults(
-        classConfig: ClassConfig,
+    async mergeWithDefaults(
+        classNameOrConfig: string | ClassConfig,
         populatedValues: { [key: string]: any }
-    ): { [key: string]: any } {
+    ): Promise<{ [key: string]: any }> {
+        let classConfig: ClassConfig | null;
+        
+        if (typeof classNameOrConfig === 'string') {
+            // Load from cache/factory
+            classConfig = await this.getClassConfig(classNameOrConfig);
+        } else {
+            // Use provided config directly (for tests)
+            classConfig = classNameOrConfig;
+        }
+        
+        if (!classConfig) {
+            return populatedValues;
+        }
         const finalValues: { [key: string]: any } = {};
 
         // First, apply default values

@@ -9,7 +9,6 @@ export class Classe {
     public static parentPropertyName?: string;
     public static parentPropertyNames?: string[]; // Support multiple parent properties with fallback
     public static parentFolderName?: string; // Optional subfolder in parent where to place this file
-    public static autoRename?: string; // Template for automatic file renaming
     protected properties: Property[] = [];
     protected file?: File;
     public name: string = '';
@@ -128,15 +127,20 @@ export class Classe {
         
         // Let updateParentFolder decide if it needs to do anything
         await this.updateParentFolder(oldMetadata, oldParentProperty);
-
-        await this.handleAutoRename();
     }
     
     async updatePropertyValue(propertyName: string, value: any): Promise<void> {
         // Get old metadata and parent property before update
         const metadata = await this.getMetadata();
+        const oldValue = metadata[propertyName];
+        
         metadata[propertyName] = value;
         await this.updateMetadata(metadata);
+
+        // Trigger onPropertyChange processes only if value actually changed
+        if (oldValue !== value) {
+            await this.runProcesses('onPropertyChange', propertyName);
+        }
     }
     
     async getPropertyValue(propertyName: string): Promise<any> {
@@ -204,187 +208,7 @@ export class Classe {
         return name.replace(/[<>:"/\\|?*]/g, '-').trim();
     }
     
-    /**
-     * Handle automatic file renaming based on autoRename template
-     */
-    protected async handleAutoRename(): Promise<void> {
-        const autoRenameTemplate = (this.constructor as typeof Classe).autoRename;
-        console.log(`🔄 handleAutoRename called for ${this.file?.getPath()}`);
-        console.log(`📋 autoRename template:`, autoRenameTemplate);
-        
-        if (!autoRenameTemplate || !this.file) {
-            console.log(`⏭️ Skipping rename - template: ${!!autoRenameTemplate}, file: ${!!this.file}`);
-            return;
-        }
-        
-        console.log('🔍 Handling autoRename for file:', this.file.getPath());
-        const newFileName = await this.generateAutoRenameFileName(autoRenameTemplate);
-        console.log('📝 Generated new file name:', newFileName);
-        
-        if (!newFileName) {
-            console.log(`⚠️ Cannot rename - new filename generation failed`);
-            return;
-        }
-        
-        const currentPath = this.file.getPath();
-        const currentFileName = this.file.basename;
-        console.log(`📂 Current: "${currentFileName}" → New: "${newFileName}"`);
-        
-        // Don't rename if the name is already correct
-        if (currentFileName === newFileName) {
-            console.log(`✅ Filename already correct, skipping rename`);
-            return;
-        }
-        
-        // Build new path
-        const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
-        const newPath = `${parentPath}/${newFileName}.md`;
-        console.log(`🎯 Target path: ${newPath}`);
-        
-        // Check if target file already exists (and it's not the same file)
-        const targetExists = await this.vault.app.getFile(newPath);
-        if (targetExists && targetExists.path !== currentPath) {
-            console.warn(`❌ Cannot rename: file already exists at ${newPath}`);
-            return;
-        }
-        
-        // Rename the file
-        try {
-            console.log(`🔄 Moving file: ${currentPath} → ${newPath}`);
-            await this.vault.app.move(this.file, newPath);
-            console.log(`✅ File moved successfully`);
-            
-            // Update internal file reference
-            const newFile = await this.vault.app.getFile(newPath);
-            if (newFile && !this.vault.app.isFolder(newFile as IFile)) {
-                this.setFile(new File(this.vault, newFile as IFile));
-                console.log(`✅ File reference updated`);
-            }
-        } catch (error) {
-            console.error('❌ Error renaming file:', error);
-        }
-    }
-    
-    /**
-     * Generate the new filename based on the autoRename template
-     * Replaces {propertyName} placeholders with property values
-     * Supports {current} for current filename and {property.nested} for nested properties
-     */
-    protected async generateAutoRenameFileName(template: string): Promise<string | null> {
-        if (!this.file) return null;
-        
-        console.log(`🎨 Generating filename from template: "${template}"`);
-        const metadata = await this.getMetadata();
-        console.log(`📊 Metadata:`, metadata);
-        let fileName = template;
-        
-        // Find all placeholders in the template
-        const placeholderRegex = /\{([^}]+)\}/g;
-     
-        // Second pass: replace placeholders
-        for (const match of Array.from(template.matchAll(placeholderRegex))) {
-            const placeholder = match[1];
-            let value: any;
-            
-            if (placeholder === 'current') {
-                // Use current filename, but clean it from previous template applications
-                value = this.file.basename;
-                
-                // Remove parts of the template that were already applied
-                let cleanedCurrent = value;
-                
-                // Find position of {current} in template
-                const currentIndex = template.indexOf('{current}');
-                
-                if (currentIndex > 0) {
-                    // {current} has content BEFORE it - remove prefix
-                    const prefixTemplate = template.substring(0, currentIndex);
-                    
-                    // Convert template placeholders to regex patterns that match any value
-                    let regexPattern = prefixTemplate
-                        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
-                        .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
-                    
-                    const match = value.match(new RegExp('^' + regexPattern + '(.*)$'));
-                    if (match && match[1]) {
-                        cleanedCurrent = match[1].trim();
-                        console.log(`  🧹 Cleaned {current}: pattern "${prefixTemplate}" matched`);
-                        console.log(`    "${value}" → "${cleanedCurrent}"`);
-                    }
-                } else if (currentIndex === 0) {
-                    // {current} is at the START - remove suffix
-                    const suffixIndex = template.indexOf('}', currentIndex) + 1;
-                    if (suffixIndex < template.length) {
-                        const suffixTemplate = template.substring(suffixIndex);
-                        
-                        // Convert template placeholders to regex patterns
-                        let regexPattern = suffixTemplate
-                            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
-                            .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
-                        
-                        const match = value.match(new RegExp('^(.*?)' + regexPattern + '$'));
-                        if (match && match[1]) {
-                            cleanedCurrent = match[1].trim();
-                            console.log(`  🧹 Cleaned {current} at start: pattern "${suffixTemplate}" matched`);
-                            console.log(`    "${value}" → "${cleanedCurrent}"`);
-                        }
-                    }
-                }
-                
-                value = cleanedCurrent;
-                console.log(`  🔄 {${placeholder}} = "${value}" (current filename)`);
-            } else if (placeholder.includes('.')) {
-                // Handle nested properties (e.g., "postes.poste")
-                value = this.getNestedPropertyValue(metadata, placeholder);
-                console.log(`  📦 {${placeholder}} = "${value}" (nested property)`);
-            } else {
-                // Simple property
-                value = metadata[placeholder];
-                console.log(`  📝 {${placeholder}} = "${value}" (simple property)`);
-            }
-            
-            // If any required value is missing or empty, abort renaming
-            if (value === undefined || value === null || value === '') {
-                console.log(`  ❌ Missing or empty value for {${placeholder}}, aborting`);
-                return null;
-            }
-            
-            // Convert value to string and sanitize
-            let stringValue: string;
-            if (value instanceof Date) {
-                stringValue = value.toISOString().split('T')[0]; // YYYY-MM-DD
-            } else {
-                stringValue = String(value);
-            }
-            fileName = fileName.replace(`{${placeholder}}`, stringValue);
-            console.log(`  ✅ Replaced {${placeholder}} with "${stringValue}"`);
-        }
-        
-        console.log(`🎯 Filename before sanitization: "${fileName}"`);
-        // Sanitize the final filename
-        const sanitized = this.sanitizeFileName(fileName);
-        console.log(`✨ Final sanitized filename: "${sanitized}"`);
-        return sanitized;
-    }
-    
-    /**
-     * Get nested property value using dot notation
-     * e.g., "postes.poste" → metadata.postes.poste
-     */
-    protected getNestedPropertyValue(metadata: Record<string, any>, path: string): any {
-        const parts = path.split('.');
-        let value: any = metadata;
-        
-        for (const part of parts) {
-            if (value && typeof value === 'object' && part in value) {
-                value = value[part];
-            } else {
-                return undefined;
-            }
-        }
-        
-        return value;
-    }
+
     
     protected async ensureFolder(folderPath: string): Promise<void> {
         try {
@@ -826,7 +650,6 @@ export class Classe {
                 await this.updateParentFolder();
             }
         }
-        await this.handleAutoRename();
         await this.migratePropertyAliases();
 
         // Initialize IdProperty if present
@@ -839,19 +662,39 @@ export class Classe {
                 }
             }
         }
+
+        // Run onCreate processes
+        await this.runProcesses('onCreate');
     }
     
     async onUpdate(): Promise<void> {
         // Let updateParentFolder decide if it needs to do anything
         console.log(`🔄 onUpdate called for ${this.file?.getPath()}`);
         await this.updateParentFolder();
-        
-        // Handle automatic renaming if configured
-        await this.handleAutoRename();
+
+        // Run onUpdate processes
+        await this.runProcesses('onUpdate');
     }
     
     async onDelete(): Promise<void> {
-        // Override in subclasses for pre-deletion logic
+        // Run onDelete processes
+        await this.runProcesses('onDelete');
+        // Override in subclasses for additional pre-deletion logic
+    }
+
+    /**
+     * Run configured processes for this instance
+     * @param trigger The trigger type (onCreate, onUpdate, onDelete, onPropertyChange)
+     * @param changedProperty Optional property name that triggered the process
+     */
+    private async runProcesses(trigger: 'onCreate' | 'onUpdate' | 'onDelete' | 'onPropertyChange', changedProperty?: string): Promise<void> {
+        try {
+            // Use Vault's ProcessManager singleton (handles config loading and caching)
+            const processManager = this.vault.getProcessManager();
+            await processManager.runProcesses(this.constructor.name, this, trigger, changedProperty);
+        } catch (error) {
+            console.error(`Error running processes for ${this.constructor.name}:`, error);
+        }
     }
 
     /**

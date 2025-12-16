@@ -259,40 +259,67 @@ Information about the person...
 ### Architecture
 
 ```
-PopulateManager
+Vault (One per application)
     │
-    ├── populateProperties(classConfig)
-    │   └── Loop through populate[]
-    │       └── populateProperty(populateConfig)
-    │           ├── Find propertyConfig
-    │           ├── Route by type
-    │           └── Return value
-    │
-    ├── populateFileProperty()
-    │   └── app.selectFile(classes)
-    │
-    ├── populateSelectProperty()
-    │   └── app.selectFromList(options)
-    │
-    ├── populateMultiSelectProperty()
-    │   └── app.selectFromList(options, multiple)
-    │
-    └── populateBooleanProperty()
-        └── app.selectFromList(["Yes", "No"])
+    └── PopulateManager (Singleton per Vault instance)
+        │
+        ├── configCache: Map<className, ClassConfig>
+        │
+        ├── getClassConfig(className)
+        │   └── Load from DynamicClassFactory + cache
+        │
+        ├── populateProperties(classNameOrConfig)
+        │   └── Loop through populate[]
+        │       └── populateProperty(populateConfig)
+        │           ├── Find propertyConfig
+        │           ├── Route by type
+        │           └── Return value
+        │
+        ├── mergeWithDefaults(classNameOrConfig, values)
+        │   └── Merge populated values with default values
+        │
+        ├── populateFileProperty()
+        │   └── app.selectFile(classes)
+        │
+        ├── populateSelectProperty()
+        │   └── app.selectFromList(options)
+        │
+        ├── populateMultiSelectProperty()
+        │   └── app.selectFromList(options, multiple)
+        │
+        └── populateBooleanProperty()
+            └── app.selectFromList(["Yes", "No"])
 ```
 
 ### Involved Classes
 
 #### PopulateManager (`src/Config/PopulateManager.ts`)
 
-Main class managing the populate process.
+**Architecture**: Singleton per Vault instance (v2.0+)
+
+Main class managing the populate process. Each Vault has its own PopulateManager instance with a configuration cache to optimize performance.
 
 **Main methods:**
 ```typescript
-async populateProperties(classConfig: ClassConfig): Promise<{ [key: string]: any } | null>
+async populateProperties(classNameOrConfig: string | ClassConfig): Promise<{ [key: string]: any } | null>
 ```
+- Accepts either a class name (string) or ClassConfig object
+- When string: loads config from cache or DynamicClassFactory
+- When ClassConfig: uses directly (useful for tests)
 - Iterates through all properties to populate
 - Returns an object with entered values or `null` if cancelled
+
+```typescript
+async mergeWithDefaults(classNameOrConfig: string | ClassConfig, values: { [key: string]: any }): Promise<{ [key: string]: any }>
+```
+- Merges populated values with default property values
+- Ensures all properties have appropriate values
+
+```typescript
+private async getClassConfig(className: string): Promise<ClassConfig | null>
+```
+- Loads configuration from cache or DynamicClassFactory
+- Caches result for performance
 
 ```typescript
 private async populateProperty(classConfig: ClassConfig, populateConfig: PopulateConfig): Promise<any>
@@ -300,41 +327,67 @@ private async populateProperty(classConfig: ClassConfig, populateConfig: Populat
 - Handles popup for a specific property
 - Routes to appropriate handler based on type
 
+**Performance optimization**: Configuration caching reduces repeated loads from disk
+
 #### Vault (`src/vault/Vault.ts`)
 
-The `createFile()` method was modified to integrate populate:
+The `createFile()` method integrates populate using the singleton PopulateManager:
 
 ```typescript
 async createFile(classeType: typeof Classe, name?: string, args?: any): Promise<Data | undefined> {
-    // 1. Load class configuration
-    let classConfig = await Vault.dynamicClassFactory.getClassConfig(classeType.name);
+    // 1. Get PopulateManager singleton for this Vault
+    const populateManager = this.getPopulateManager();
     
-    // 2. If populate configured, launch popups
-    if (classConfig?.populate?.length > 0) {
-        const populateManager = new PopulateManager(this);
-        const values = await populateManager.populateProperties(classConfig);
-        
-        if (values === null) {
-            return undefined; // Cancellation
-        }
-        
-        populatedValues = values;
+    // 2. Try to populate properties (will check if populate is configured)
+    const values = await populateManager.populateProperties(classeType.name);
+    
+    if (values === null) {
+        // User cancelled - send notice and abort file creation
+        this.app.sendNotice('Création annulée : champ requis non rempli');
+        return undefined;
     }
     
-    // 3. Read template
+    // 3. Merge populated values with default values
+    const populatedValues = await populateManager.mergeWithDefaults(classeType.name, values);
+    
+    // 4. Read template
     let templateContent = await this.app.readFile(templateFile);
     
-    // 4. Inject values into frontmatter
+    // 5. Inject values into frontmatter
     if (Object.keys(populatedValues).length > 0) {
-        // Parse and modify frontmatter
+        // Parse frontmatter as YAML
         const frontmatterMatch = templateContent.match(/^---\n([\s\S]*?)\n---/);
-        // ... value injection ...
+        let frontmatterObj = yaml.load(frontmatterMatch[1]) || {};
+        
+        // Merge populated values
+        for (const [propName, value] of Object.entries(populatedValues)) {
+            frontmatterObj[propName] = value;
+        }
+        
+        // Serialize back to YAML
+        const newFrontmatter = yaml.dump(frontmatterObj, {
+            flowLevel: -1,
+            lineWidth: -1,
+            noRefs: true,
+            sortKeys: false,
+            forceQuotes: true,
+            quotingType: '"'
+        });
+        
+        // Reconstruct template
+        templateContent = `---\n${newFrontmatter}---` + templateContent.substring(frontmatterMatch[0].length);
     }
     
-    // 5. Create file with modified template
+    // 6. Create file with modified template
     await this.app.createFile(newFilePath, templateContent);
 }
 ```
+
+**Key improvements in v2.0:**
+- ✅ Uses singleton PopulateManager (one per Vault)
+- ✅ Configuration caching for better performance
+- ✅ Cleaner separation of concerns
+- ✅ Notice sent from Vault (not PopulateManager)
 
 ### TypeScript Interfaces
 

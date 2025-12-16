@@ -533,7 +533,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ statut: 'Done' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('titre', '');
             expect(merged).toHaveProperty('description', 'Description par défaut');
             expect(merged).toHaveProperty('statut', 'Done');
@@ -574,7 +574,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ categorie: 'B' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('prix', 0);
             expect(merged).toHaveProperty('quantite', 1);
             expect(merged).toHaveProperty('categorie', 'B');
@@ -615,7 +615,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ statut: 'Closed' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('actif', true);
             expect(merged).toHaveProperty('archive', false);
             expect(merged).toHaveProperty('statut', 'Closed');
@@ -656,7 +656,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ priorite: 'High' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('dateCreation', '2025-01-01');
             expect(merged).toHaveProperty('dateEcheance', '');
             expect(merged).toHaveProperty('priorite', 'High');
@@ -699,7 +699,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ statut: 'Done' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('responsable', '');
             expect(merged).toHaveProperty('institution', '');
             expect(merged).toHaveProperty('statut', 'Done');
@@ -742,7 +742,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ statut: 'Closed' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('priorite', 'Medium');
             expect(merged).toHaveProperty('categorie', 'A');
             expect(merged).toHaveProperty('statut', 'Closed');
@@ -785,7 +785,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ statut: 'Done' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('tags');
             expect(merged.tags).toEqual([]);
             expect(merged).toHaveProperty('competences');
@@ -852,7 +852,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ statut: 'Done' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('nom', '');
             expect(merged).toHaveProperty('priorite', 1);
             expect(merged).toHaveProperty('actif', true);
@@ -898,7 +898,7 @@ describe('PopulateManager', () => {
             const result = await populateManager.populateProperties(classConfig);
             expect(result).toEqual({ statut: 'B' });
 
-            const merged = populateManager.mergeWithDefaults(classConfig, result);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result);
             expect(merged).toHaveProperty('withDefault', 'value');
             expect(merged).not.toHaveProperty('withoutDefault');
             expect(merged).toHaveProperty('statut', 'B');

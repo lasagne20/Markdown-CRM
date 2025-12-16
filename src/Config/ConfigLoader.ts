@@ -107,9 +107,6 @@ export class ConfigLoader {
                 if (!config.parents && parentConfig.parents) {
                     config.parents = parentConfig.parents;
                 }
-                if (!config.autoRename && parentConfig.autoRename) {
-                    config.autoRename = parentConfig.autoRename;
-                }
                 if (!config.populate && parentConfig.populate) {
                     config.populate = parentConfig.populate;
                 }

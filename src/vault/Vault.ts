@@ -1,5 +1,6 @@
 import { DynamicClassFactory } from "../Config/DynamicClassFactory";
 import { PopulateManager } from "../Config/PopulateManager";
+import { ProcessManager } from "../Config/ProcessManager";
 import { IApp, IFile } from "../interfaces/IApp";
 import { Classe } from "./Classe";
 import { File } from "./File";
@@ -22,12 +23,20 @@ export class Vault {
 
     public static classes: { [key: string]: typeof Classe } = {};
     private static dynamicClassFactory: DynamicClassFactory | null = null;
+    private static processManager: ProcessManager | null = null;
+    private populateManager: PopulateManager; // Instance singleton per Vault
 
     constructor(app: IApp, settings: Settings) {
         this.app = app;
         this.settings = settings;
         // Initialize the dynamic class factory
         this.initializeDynamicClasses();
+        // Initialize the process manager (singleton)
+        if (!Vault.processManager) {
+            Vault.processManager = new ProcessManager(this);
+        }
+        // Initialize the populate manager (one per Vault instance)
+        this.populateManager = new PopulateManager(this);
     }
 
     public getPath(): string {
@@ -57,6 +66,17 @@ export class Vault {
 
     getDynamicClassFactory(): DynamicClassFactory | null {
         return Vault.dynamicClassFactory;
+    }
+
+    getProcessManager(): ProcessManager {
+        if (!Vault.processManager) {
+            Vault.processManager = new ProcessManager(this);
+        }
+        return Vault.processManager;
+    }
+
+    getPopulateManager(): PopulateManager {
+        return this.populateManager;
     }
 
     getPersonalName(){
@@ -230,34 +250,25 @@ export class Vault {
         }
         console.log("Args ; ",args)
         
-        // Get class configuration for populate feature
-        let classConfig = null;
+        // Get populate manager singleton and handle population
         let populatedValues: { [key: string]: any } = {};
         
-        if (Vault.dynamicClassFactory) {
-            try {
-                classConfig = await Vault.dynamicClassFactory.getClassConfig(classeType.name);
-                
-                // If populate is configured, prompt user for values before creating file
-                if (classConfig && classConfig.populate && classConfig.populate.length > 0) {
-                    const populateManager = new PopulateManager(this);
-                    const values = await populateManager.populateProperties(classConfig);
-                    
-                    if (values === null) {
-                        // User cancelled - abort file creation
-                        return undefined;
-                    }
-                    
-                    // Merge populated values with default values
-                    populatedValues = populateManager.mergeWithDefaults(classConfig, values);
-                } else if (classConfig) {
-                    // No populate configured, but we still need to apply default values
-                    const populateManager = new PopulateManager(this);
-                    populatedValues = populateManager.mergeWithDefaults(classConfig, {});
-                }
-            } catch (error) {
-                console.warn(`Could not load populate config for ${classeType.name}:`, error);
+        try {
+            const populateManager = this.getPopulateManager();
+            
+            // Try to populate properties (will check if populate is configured)
+            const values = await populateManager.populateProperties(classeType.name);
+            
+            if (values === null) {
+                // User cancelled - send notice and abort file creation
+                this.app.sendNotice('Création annulée : champ requis non rempli');
+                return undefined;
             }
+            
+            // Merge populated values with default values
+            populatedValues = await populateManager.mergeWithDefaults(classeType.name, values);
+        } catch (error) {
+            console.warn(`Could not populate properties for ${classeType.name}:`, error);
         }
         
         if (!name) {

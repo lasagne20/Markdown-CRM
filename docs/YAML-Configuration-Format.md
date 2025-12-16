@@ -215,10 +215,20 @@ Parent class with auto-rename and parent folder:
 ```yaml
 className: Contact
 classIcon: 👤
-autoRename: "{lastName}, {firstName}"
 parent:
   property: company
   folder: Contacts
+
+# Auto-rename configuration (implemented via Process System)
+process:
+  - name: AutoRenameProcess
+    triggers: [onCreate, onPropertyChange]
+    actions:
+      - type: RenameFileAction
+        template: "{lastName}, {firstName}"
+
+# Legacy shorthand (still supported, converted to process automatically)
+# autoRename: "{lastName}, {firstName}"
 
 properties:
   firstName:
@@ -235,7 +245,7 @@ Child class inherits configuration:
 className: VIPContact
 classIcon: ⭐
 extend: Contact
-# ← Automatically inherits autoRename and parent configuration
+# ← Automatically inherits parent configuration and processes
 
 properties:
   vipLevel:

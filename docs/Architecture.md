@@ -492,7 +492,164 @@ company: [[Acme Corp]]
 
 ---
 
-### 4. Parent-Child Hierarchy System
+### 4. Manager Systems
+
+#### ProcessManager
+**Purpose:** Singleton manager for automated processes and workflows (one per application).
+
+**Architecture:**
+```typescript
+class Vault {
+    private static processManager: ProcessManager | null = null;
+    
+    constructor() {
+        if (!Vault.processManager) {
+            Vault.processManager = new ProcessManager(this);
+        }
+    }
+}
+```
+
+**Key Responsibilities:**
+- Execute processes based on lifecycle triggers (onCreate, onUpdate, onDelete, onPropertyChange)
+- Evaluate conditions before executing actions
+- Manage action execution pipeline
+- Handle autoRename through RenameFileAction
+
+**Key Methods:**
+```typescript
+executeProcesses(trigger: string, context: ProcessContext): Promise<void>
+  → Finds all processes with matching trigger
+  → Evaluates conditions
+  → Executes actions in sequence
+
+getProcessesForClass(className: string): Process[]
+  → Returns all processes configured for a class
+```
+
+**Process Flow:**
+```
+Lifecycle Event (onCreate, onUpdate, etc.)
+         ↓
+ProcessManager.executeProcesses(trigger, context)
+         ↓
+For each matching process:
+  1. Evaluate conditions
+  2. If conditions pass: execute actions
+  3. Handle errors gracefully
+```
+
+**Example Process:**
+```yaml
+process:
+  - name: AutoRenameProcess
+    triggers:
+      - onCreate
+      - onPropertyChange
+    conditions: []
+    actions:
+      - type: RenameFileAction
+        template: "{dateEntree} - {nom}"
+```
+
+---
+
+#### PopulateManager
+**Purpose:** Singleton manager for interactive file creation with property population (one per Vault instance).
+
+**Architecture:**
+```typescript
+class Vault {
+    private populateManager: PopulateManager;
+    
+    constructor() {
+        // Each Vault has its own PopulateManager
+        this.populateManager = new PopulateManager(this);
+    }
+    
+    getPopulateManager(): PopulateManager {
+        return this.populateManager;
+    }
+}
+```
+
+**Key Responsibilities:**
+- Prompt users for property values during file creation
+- Cache class configurations for performance
+- Merge populated values with default values
+- Handle cancellation and validation
+
+**Key Methods:**
+```typescript
+async populateProperties(classNameOrConfig: string | ClassConfig): Promise<{ [key: string]: any } | null>
+  → Accepts class name (loads from cache) or config (for tests)
+  → Shows interactive prompts for each configured property
+  → Returns values object or null if cancelled
+
+async mergeWithDefaults(classNameOrConfig: string | ClassConfig, values: any): Promise<any>
+  → Merges user-provided values with default property values
+  → Ensures all properties have valid values
+
+private async getClassConfig(className: string): Promise<ClassConfig | null>
+  → Loads configuration from DynamicClassFactory
+  → Caches result in Map<className, ClassConfig>
+  → Returns cached config on subsequent calls
+
+clearCache(className?: string): void
+  → Clears cached configuration
+  → If className provided: clears that class only
+  → If omitted: clears entire cache
+```
+
+**Configuration Cache:**
+```typescript
+private configCache: Map<string, ClassConfig> = new Map();
+```
+
+**Populate Flow:**
+```
+User creates file
+       ↓
+Vault.createFile()
+       ↓
+PopulateManager.populateProperties(className)
+       ↓
+Load config (from cache or DynamicClassFactory)
+       ↓
+For each populate entry:
+  1. Show appropriate UI (selectFile, selectFromList, etc.)
+  2. Collect user input
+  3. Validate if required
+       ↓
+Return populated values or null (if cancelled)
+       ↓
+PopulateManager.mergeWithDefaults(className, values)
+       ↓
+Inject into template frontmatter
+       ↓
+Create file with populated values
+```
+
+**Supported Property Types:**
+- FileProperty: `app.selectFile()`
+- SelectProperty: `app.selectFromList()`
+- MultiSelectProperty: `app.selectFromList({ multiple: true })`
+- BooleanProperty: `app.selectFromList(['Yes', 'No'])`
+- ObjectProperty: Recursive population of nested properties
+
+**Performance Benefits:**
+- ✅ Configuration caching reduces disk I/O
+- ✅ One instance per Vault (no repeated initialization)
+- ✅ Efficient for multiple file creations
+
+**Why Instance-Based (not Static)?**
+- Each Vault has its own app instance and context
+- Tests can create multiple Vaults without shared state
+- Better isolation and testability
+
+---
+
+### 5. Parent-Child Hierarchy System
 
 #### Overview
 **Purpose:** Automatically organize files in a hierarchical folder structure based on FileProperty relationships.

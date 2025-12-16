@@ -234,7 +234,7 @@ describe('PopulateManager - ObjectProperty Support', () => {
             const result = await populateManager.populateProperties(classConfig);
 
             expect(result).toBeNull();
-            expect(app.sendNotice).toHaveBeenCalledWith('Création annulée : champ requis non rempli');
+            // sendNotice is Vault's responsibility, not PopulateManager's
         });
 
         it('should return null when user cancels ObjectProperty with SelectProperty', async () => {
@@ -273,7 +273,7 @@ describe('PopulateManager - ObjectProperty Support', () => {
             const result = await populateManager.populateProperties(classConfig);
 
             expect(result).toBeNull();
-            expect(app.sendNotice).toHaveBeenCalledWith('Création annulée : champ requis non rempli');
+            // sendNotice is Vault's responsibility, not PopulateManager's
         });
 
         it('should skip ObjectProperty when optional and user cancels', async () => {
@@ -522,7 +522,7 @@ describe('PopulateManager - ObjectProperty Support', () => {
             
             // But when we check mergeWithDefaults, responsable should be included with its default value
             if (result !== null) {
-                const merged = populateManager.mergeWithDefaults(classConfig, result);
+                const merged = await populateManager.mergeWithDefaults(classConfig, result);
                 expect(merged).toHaveProperty('statut');
                 expect(merged.statut).toBe('Actif');
                 expect(merged).toHaveProperty('responsable');
@@ -568,7 +568,7 @@ describe('PopulateManager - ObjectProperty Support', () => {
             expect(result).toEqual({});
 
             // With defaultValue, it should be included in merged result
-            const merged = populateManager.mergeWithDefaults(classConfig, result!);
+            const merged = await populateManager.mergeWithDefaults(classConfig, result!);
             expect(merged).toHaveProperty('responsable');
             expect(merged.responsable).toEqual([]);
             expect(merged).toHaveProperty('titre');
