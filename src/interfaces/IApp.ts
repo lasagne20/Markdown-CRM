@@ -97,5 +97,6 @@ export interface IApp {
     selectFromList<T>(items: T[], options: {multiple: boolean, title?: string}): Promise<T | T[] | null>;
 
     sendNotice(message: string, timeout?: number): void;
+    needDisplayRefresh(): void;
 
 }

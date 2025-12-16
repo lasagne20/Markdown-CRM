@@ -19,7 +19,16 @@ describe('ProcessManager', () => {
                     classePropertyName: 'Classe'
                 }),
                 getMetadata: jest.fn().mockResolvedValue({}),
-                updateMetadata: jest.fn().mockResolvedValue(undefined)
+                updateMetadata: jest.fn().mockResolvedValue(undefined),
+                createDiv: jest.fn((className?: string) => {
+                    const div = document.createElement('div');
+                    if (className) div.className = className;
+                    return div;
+                }),
+                setIcon: jest.fn((element: HTMLElement, icon: string) => {
+                    element.setAttribute('data-icon', icon);
+                }),
+                needDisplayRefresh: jest.fn()
             },
             getClasseFromName: jest.fn(),
             createFile: jest.fn(),
@@ -330,6 +339,70 @@ describe('ProcessManager', () => {
             await processManager.runProcesses('Personne', mockInstance, 'onUpdate');
 
             expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(mockFile, { 'Classe': 'Salarié' });
+        });
+
+        it('should update display after UpdateClassAction', async () => {
+            const mockProperty = {
+                name: 'relation',
+                read: jest.fn().mockResolvedValue('Salarié'),
+                getDisplay: jest.fn().mockImplementation(() => {
+                    const div = document.createElement('div');
+                    div.className = 'property-display';
+                    div.textContent = 'relation: Salarié';
+                    return Promise.resolve(div);
+                })
+            } as any;
+            mockInstance.addProperty(mockProperty);
+
+            // Initial state: Personne class
+            mockInstance.name = 'Personne';
+            mockInstance.icon = '👤';
+            (mockFile.getClassePropertyValue as jest.Mock).mockResolvedValue('Personne');
+
+            const classConfig = {
+                className: 'Personne',
+                classIcon: '👤',
+                properties: {},
+                process: [
+                    {
+                        name: 'ClassChangeProcess',
+                        triggers: ['onPropertyChange' as const],
+                        conditions: [
+                            {
+                                property: 'relation',
+                                type: 'equals' as const,
+                                value: 'Salarié'
+                            }
+                        ],
+                        actions: [
+                            {
+                                type: 'UpdateClassAction' as const,
+                                newClass: 'Salarié'
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            mockVault.getDynamicClassFactory().getClassConfig.mockResolvedValue(classConfig);
+
+            // Get initial display
+            const initialDisplay = await mockInstance.getDisplay();
+            expect(initialDisplay.querySelector('.classe-header')?.textContent).toBe('Personne');
+
+            // Execute the process that changes the class
+            await processManager.runProcesses('Personne', mockInstance, 'onPropertyChange', 'relation');
+
+            // Update the instance to reflect the new class (simulating what would happen in real scenario)
+            mockInstance.name = 'Salarié';
+            mockInstance.icon = '💼';
+            (mockFile.getClassePropertyValue as jest.Mock).mockResolvedValue('Salarié');
+
+            // Get display after class change
+            const updatedDisplay = await mockInstance.getDisplay();
+            expect(updatedDisplay.querySelector('.classe-header')?.textContent).toBe('Salarié');
+            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(mockFile, { 'Classe': 'Salarié' });
+            expect(mockVault.app.needDisplayRefresh).toHaveBeenCalled();
         });
     });
 

@@ -233,6 +233,9 @@ export class ProcessManager {
             await file.updateMetadata(classePropertyName, newClass);
             
             console.log(`✅ Class updated successfully to ${newClass}`);
+            
+            // Trigger display refresh since the class has changed
+            this.vault.app.needDisplayRefresh();
         } catch (error) {
             console.error(`❌ Error updating class:`, error);
             throw error;
