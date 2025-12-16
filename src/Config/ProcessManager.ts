@@ -234,6 +234,29 @@ export class ProcessManager {
             
             console.log(`✅ Class updated successfully to ${newClass}`);
             
+            // Update the Vault cache with a new instance of the correct class
+            const filePath = file.getPath();
+            const factory = this.vault.getDynamicClassFactory();
+            
+            if (factory && filePath) {
+                try {
+                    // Get the new class constructor
+                    const newClassConstructor = await factory.getClass(newClass);
+                    
+                    if (newClassConstructor) {
+                        // Create new instance with the correct class type
+                        const newInstance = new newClassConstructor(this.vault, file);
+                        
+                        // Update the Vault cache
+                        (this.vault as any).files[filePath] = newInstance;
+                        
+                        console.log(`✅ Vault cache updated with new ${newClass} instance`);
+                    }
+                } catch (error) {
+                    console.warn(`⚠️  Could not update Vault cache:`, error);
+                }
+            }
+            
             // Trigger display refresh since the class has changed
             this.vault.app.needDisplayRefresh();
         } catch (error) {

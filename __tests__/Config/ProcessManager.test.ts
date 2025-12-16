@@ -404,6 +404,81 @@ describe('ProcessManager', () => {
             expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(mockFile, { 'Classe': 'Salarié' });
             expect(mockVault.app.needDisplayRefresh).toHaveBeenCalled();
         });
+
+        it('should update Vault cache after UpdateClassAction', async () => {
+            const mockProperty = {
+                name: 'relation',
+                read: jest.fn().mockResolvedValue('Salarié'),
+                getDisplay: jest.fn().mockImplementation(() => {
+                    const div = document.createElement('div');
+                    div.className = 'property-display';
+                    div.textContent = 'relation: Salarié';
+                    return Promise.resolve(div);
+                })
+            } as any;
+            mockInstance.addProperty(mockProperty);
+
+            // Set up initial cache state
+            const filePath = 'test/path.md';
+            mockFile.path = filePath;
+            mockVault.files = { [filePath]: mockInstance };
+
+            // Initial state: Personne class
+            mockInstance.name = 'Personne';
+            (mockFile.getClassePropertyValue as jest.Mock).mockResolvedValue('Personne');
+
+            const classConfig = {
+                className: 'Personne',
+                classIcon: '👤',
+                properties: {},
+                process: [
+                    {
+                        name: 'ClassChangeProcess',
+                        triggers: ['onPropertyChange' as const],
+                        conditions: [
+                            {
+                                property: 'relation',
+                                type: 'equals' as const,
+                                value: 'Salarié'
+                            }
+                        ],
+                        actions: [
+                            {
+                                type: 'UpdateClassAction' as const,
+                                newClass: 'Salarié'
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            // Mock the new class constructor
+            const SalarieConstructor = class extends Classe {
+                constructor(vault: any, file: any) {
+                    super(vault, file);
+                    this.name = 'Salarié';
+                    this.icon = '💼';
+                }
+            };
+            
+            mockVault.getDynamicClassFactory().getClassConfig.mockResolvedValue(classConfig);
+            mockVault.getDynamicClassFactory().getClass = jest.fn().mockResolvedValue(SalarieConstructor);
+
+            // Execute the process that changes the class
+            await processManager.runProcesses('Personne', mockInstance, 'onPropertyChange', 'relation');
+
+            // Verify metadata was updated
+            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(mockFile, { 'Classe': 'Salarié' });
+
+            // Verify that the vault cache should be updated
+            // The cached instance should now be of the new class type
+            const cachedInstance = mockVault.files[filePath];
+            expect(cachedInstance).toBeDefined();
+            
+            // After UpdateClassAction, the cache should contain a new instance of Salarié class
+            // This is the bug: the cache still contains the old Personne instance
+            expect(cachedInstance.name).toBe('Salarié');
+        });
     });
 
     describe('ProcessManager - CreateFileAction', () => {
