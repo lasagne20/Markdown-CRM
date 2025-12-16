@@ -104,7 +104,10 @@ export class PopulateManager {
         }
 
         try {
-            const selectedFile = await this.app.selectFile(this.vault, propertyConfig.classes, {
+            // Get extended classes (includes classes that inherit from the specified ones)
+            const classesToSelect = await this.vault.getExtendedClasses(propertyConfig.classes);
+
+            const selectedFile = await this.app.selectFile(this.vault, classesToSelect, {
                 hint: title
             });
 

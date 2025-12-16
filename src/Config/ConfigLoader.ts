@@ -131,6 +131,61 @@ export class ConfigLoader {
     }
 
     /**
+     * Check if a class extends another class (directly or indirectly)
+     * @param childClass The potential child class
+     * @param parentClass The potential parent class
+     * @returns true if childClass extends parentClass, false otherwise
+     */
+    async classExtends(childClass: string, parentClass: string): Promise<boolean> {
+        // A class extends itself
+        if (childClass === parentClass) {
+            return true;
+        }
+
+        try {
+            const config = await this.loadClassConfig(childClass);
+            
+            // No extend field = does not extend anything
+            if (!config.extend) {
+                return false;
+            }
+
+            // Check direct parent
+            if (config.extend === parentClass) {
+                return true;
+            }
+
+            // Check recursively up the inheritance chain
+            return await this.classExtends(config.extend, parentClass);
+        } catch (error) {
+            // If class config not found, it doesn't extend the parent
+            return false;
+        }
+    }
+
+    /**
+     * Get all classes (including those that extend) for a list of base classes
+     * @param baseClasses Array of base class names
+     * @param availableClasses Array of all available class names
+     * @returns Array including base classes and all classes that extend them
+     */
+    async getExtendedClasses(baseClasses: string[], availableClasses: string[]): Promise<string[]> {
+        const result = new Set<string>(baseClasses);
+
+        // Check each available class to see if it extends any of the base classes
+        for (const className of availableClasses) {
+            for (const baseClass of baseClasses) {
+                if (await this.classExtends(className, baseClass)) {
+                    result.add(className);
+                    break; // No need to check other base classes
+                }
+            }
+        }
+
+        return Array.from(result);
+    }
+
+    /**
      * Create a Property instance from configuration
      */
     createProperty(config: PropertyConfig): Property {

@@ -110,7 +110,10 @@ export class FileProperty extends LinkProperty{
 
     // Fonction pour gérer le clic sur l'icône
     async handleIconClick(update: (value: string) => Promise<void>, event: Event) {
-        let selectedFileObj = await this.vault.app.selectFile(this.vault, this.classes, {hint:"Choisissez un fichier " + this.getClasses().join(" ou ")});
+        // Get extended classes (includes classes that inherit from the specified ones)
+        const classesToSelect = await this.vault.getExtendedClasses(this.classes);
+
+        let selectedFileObj = await this.vault.app.selectFile(this.vault, classesToSelect, {hint:"Choisissez un fichier " + this.getClasses().join(" ou ")});
         if (selectedFileObj){
           const selectedFile = selectedFileObj.getLink();
           await update(selectedFile);

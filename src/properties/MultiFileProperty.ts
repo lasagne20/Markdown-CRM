@@ -139,7 +139,9 @@ export class MultiFileProperty extends ObjectProperty {
 
     override async addProperty(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
         console.log('📂 Début de sélection multiple, values actuelles:', values);
-        const newFiles = await this.vault.app.selectMultipleFile(this.vault, this.classes, { hint: "Choisissez des fichiers " + this.getClasses().join(" ou ") });
+        // Get extended classes (includes classes that inherit from the specified ones)
+        const classesToSelect = await this.vault.getExtendedClasses(this.classes);
+        const newFiles = await this.vault.app.selectMultipleFile(this.vault, classesToSelect, { hint: "Choisissez des fichiers " + this.getClasses().join(" ou ") });
         console.log('📂 Fichiers sélectionnés:', newFiles);
         
         if (newFiles && newFiles.length > 0) {

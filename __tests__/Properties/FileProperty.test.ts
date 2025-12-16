@@ -33,6 +33,7 @@ describe('FileProperty', () => {
             getFromLink: jest.fn(),
             getFromFile: jest.fn(),
             getName: jest.fn().mockReturnValue('TestVault'),
+            getExtendedClasses: jest.fn().mockImplementation(async (classes) => classes),
             app: {
                 vault: {
                     getName: jest.fn().mockReturnValue('TestVault'),

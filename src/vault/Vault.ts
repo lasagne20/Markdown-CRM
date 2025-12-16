@@ -67,6 +67,31 @@ export class Vault {
         return Vault.classes[name]
     }
 
+    async getAvailableClasses(): Promise<string[]> {
+        if (Vault.dynamicClassFactory) {
+            return await Vault.dynamicClassFactory.getAvailableClasses();
+        }
+        return Object.keys(Vault.classes);
+    }
+
+    /**
+     * Get extended classes including classes that inherit from the specified ones.
+     * @param baseClasses Base class names to expand
+     * @returns Array of class names including base classes and their children
+     */
+    async getExtendedClasses(baseClasses: string[]): Promise<string[]> {
+        try {
+            const configLoader = (this as any).configLoader;
+            if (configLoader && typeof configLoader.getExtendedClasses === 'function') {
+                const availableClasses = await this.getAvailableClasses();
+                return await configLoader.getExtendedClasses(baseClasses, availableClasses);
+            }
+        } catch (error) {
+            console.warn('Could not get extended classes:', error);
+        }
+        return baseClasses;
+    }
+
     async listFiles(): Promise<IFile[]>{
         let files = await this.app.listFiles();
         const filtered: IFile[] = [];

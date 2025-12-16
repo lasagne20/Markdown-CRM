@@ -40,6 +40,7 @@ describe('MultiFileProperty', () => {
         mockVault = {
             readFile: jest.fn(),
             getFiles: jest.fn(),
+            getExtendedClasses: jest.fn().mockImplementation(async (classes) => classes),
             app: {
                 selectMultipleFile: selectMultipleFile,
                 setIcon: jest.fn((element: HTMLElement, iconName: string) => {
