@@ -266,6 +266,26 @@ export class ProcessManager {
                                         dataObject = new Data(instanceName);
                                         Object.assign(dataObject, matchingData);
                                         console.log(`📊 Loaded data for ${instanceName} from ${newClass} data file`);
+                                        
+                                        // Write data properties to file metadata
+                                        const metadataUpdate: Record<string, any> = {};
+                                        
+                                        // Get class config to know which properties are defined
+                                        const newClassConfig = await factory.getClassConfig(newClass);
+                                        const definedProperties = newClassConfig?.properties ? Object.keys(newClassConfig.properties) : [];
+                                        
+                                        // Only write properties that are defined in the class config (exclude 'nom', 'name', 'type')
+                                        for (const [key, value] of Object.entries(matchingData)) {
+                                            if (key !== 'nom' && key !== 'name' && key !== 'type' && definedProperties.includes(key)) {
+                                                metadataUpdate[key] = value;
+                                            }
+                                        }
+                                        
+                                        // Update file metadata with data properties
+                                        if (Object.keys(metadataUpdate).length > 0) {
+                                            await this.vault.app.updateMetadata(file as IFile, metadataUpdate);
+                                            console.log(`📝 Updated file metadata with data properties:`, Object.keys(metadataUpdate));
+                                        }
                                     }
                                 }
                             } catch (error) {

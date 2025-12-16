@@ -389,5 +389,62 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
             expect(testLocation.superficie).toBe(10.5);
             expect(testLocation.maire).toBe('Jean Dupont');
         });
+
+        it('should write data properties to file metadata after class conversion', async () => {
+            // Create initial Lieu instance with name matching TestLocation
+            const LieuClass = await factory.getClass('Lieu');
+            
+            const testLocationFile = {
+                ...mockFileInstance,
+                path: 'Lieux/TestLocation/TestLocation.md',
+                basename: 'TestLocation',
+                getPath: jest.fn(() => 'Lieux/TestLocation/TestLocation.md'),
+                getMetadata: jest.fn().mockResolvedValue({
+                    Classe: 'Lieu',
+                    nom: 'TestLocation',
+                    type: 'Commune'
+                })
+            };
+            
+            const lieuInstance = new LieuClass(mockVault, testLocationFile);
+            lieuInstance.data = { nom: 'TestLocation', type: 'Commune' } as any;
+
+            lieuInstance.getProperty = jest.fn((propName: string) => {
+                if (propName === 'type') {
+                    return { read: jest.fn().mockResolvedValue('Commune') };
+                }
+                if (propName === 'nom') {
+                    return { read: jest.fn().mockResolvedValue('TestLocation') };
+                }
+                return { read: jest.fn().mockResolvedValue(null) };
+            }) as any;
+
+            // Spy on updateMetadata
+            const updateMetadataSpy = jest.spyOn(mockApp, 'updateMetadata');
+
+            // Execute the process
+            await processManager.runProcesses('Lieu', lieuInstance, 'onUpdate');
+
+            // Verify class was updated
+            const classUpdateCall = updateMetadataSpy.mock.calls.find((call: any) => 
+                call[1]?.Classe === 'Commune'
+            );
+            expect(classUpdateCall).toBeDefined();
+
+            // Verify data properties were written to file metadata
+            // After conversion, the data should be written to the file
+            const dataUpdateCall = updateMetadataSpy.mock.calls.find((call: any) => 
+                call[1]?.population !== undefined
+            );
+            
+            // This should pass - data properties should be written to file
+            expect(dataUpdateCall).toBeDefined();
+            expect(dataUpdateCall[1]).toMatchObject({
+                population: 50000,
+                code_postal: '75001',
+                superficie: 10.5,
+                maire: 'Jean Dupont'
+            });
+        });
     });
 });
