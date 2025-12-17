@@ -62,22 +62,24 @@ describe('ProcessManager - CreateFileAction', () => {
         await processManager.execute(process, mockInstance);
 
         expect(mockFactory.getClass).toHaveBeenCalledWith('Personne');
-        expect(mockVault.createFile).toHaveBeenCalledWith(mockClassConstructor, 'New Person', {});
+        expect(mockVault.createFile).toHaveBeenCalledWith(
+            mockClassConstructor,
+            'New Person',
+            {
+                properties: {
+                    statut: 'Actif'
+                }
+            }
+        );
     });
 
-    it('should update properties on newly created file', async () => {
+    it('should pass properties to Vault.createFile', async () => {
         const mockClassConstructor = class extends Classe {
             static className = 'Personne';
         };
         
-        const mockUpdatePropertyValue = jest.fn();
-        const mockNewInstance = {
-            updatePropertyValue: mockUpdatePropertyValue
-        };
-        
         mockFactory.getClass.mockResolvedValue(mockClassConstructor);
         mockVault.createFile.mockResolvedValue({ path: 'test.md' });
-        mockVault.getFromFile.mockResolvedValue(mockNewInstance);
 
         const process = {
             name: 'CreatePersonProcess',
@@ -100,9 +102,17 @@ describe('ProcessManager - CreateFileAction', () => {
 
         await processManager.execute(process, mockInstance);
 
-        expect(mockUpdatePropertyValue).toHaveBeenCalledWith('statut', 'Actif');
-        expect(mockUpdatePropertyValue).toHaveBeenCalledWith('institution', 'Test Corp');
-        expect(mockUpdatePropertyValue).toHaveBeenCalledTimes(2);
+        // Properties should be passed to Vault.createFile via args
+        expect(mockVault.createFile).toHaveBeenCalledWith(
+            mockClassConstructor,
+            'New Person',
+            {
+                properties: {
+                    statut: 'Actif',
+                    institution: 'Test Corp'
+                }
+            }
+        );
     });
 
     it('should open the newly created file', async () => {

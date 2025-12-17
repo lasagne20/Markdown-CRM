@@ -34,7 +34,6 @@ export interface CreateFileAction extends BaseAction {
     className: string;
     name?: string;
     properties?: { [key: string]: any };
-    parent?: string; // Property name to use as parent
 }
 
 /**
@@ -316,42 +315,50 @@ export class ProcessManager {
                 throw new Error(`Class ${action.className} not found`);
             }
 
-            // Determine file name
-            let fileName = action.name;
-            if (!fileName) {
-                // Generate default name
-                fileName = `New ${action.className}`;
+            const file = instance.getFile();
+            const currentName = file ? file.basename : '';
+
+            // Process file name with placeholders
+            let fileName = action.name || `New ${action.className}`;
+            if (fileName.includes('{')) {
+                const processedName = await TemplateEngine.processTemplateFromInstance(
+                    fileName,
+                    instance,
+                    currentName
+                );
+                if (processedName) {
+                    fileName = processedName;
+                }
             }
 
-            // Prepare args
-            const args: any = {};
-
-            // Set parent if specified
-            if (action.parent) {
-                const parentProperty = instance.getProperty(action.parent);
-                if (parentProperty) {
-                    const parentValue = await parentProperty.read(instance);
-                    if (parentValue) {
-                        args.parent = await this.vault.getFromLink(parentValue);
+            // Process all property values with placeholders
+            const processedProperties: { [key: string]: any } = {};
+            if (action.properties) {
+                for (const [propName, propValue] of Object.entries(action.properties)) {
+                    // Process placeholders in property values using TemplateEngine
+                    if (typeof propValue === 'string' && propValue.includes('{')) {
+                        processedProperties[propName] = await TemplateEngine.processTemplateFromInstance(
+                            propValue,
+                            instance,
+                            currentName
+                        );
+                    } else {
+                        processedProperties[propName] = propValue;
                     }
                 }
             }
 
-            // Create the file
+            // Prepare args with properties - Vault will handle populate and property updates
+            const args: any = {};
+            if (Object.keys(processedProperties).length > 0) {
+                args.properties = processedProperties;
+            }
+
+            // Create the file - Vault will handle populate and property injection
             const newFile = await this.vault.createFile(classConstructor, fileName, args);
             
             if (!newFile) {
                 throw new Error('File creation returned null');
-            }
-
-            // Set properties if specified
-            if (action.properties) {
-                const newInstance = await this.vault.getFromFile(newFile);
-                if (newInstance) {
-                    for (const [propName, propValue] of Object.entries(action.properties)) {
-                        await newInstance.updatePropertyValue(propName, propValue);
-                    }
-                }
             }
 
             // Open the newly created file

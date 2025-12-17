@@ -58,9 +58,13 @@ export class PopulateManager {
     /**
      * Process all populate configurations for a class and return the populated values.
      * @param classNameOrConfig Name of the class to populate OR class configuration object (for tests)
+     * @param existingProperties Optional object with properties already provided (from ProcessManager args)
      * @returns Object with property names as keys and populated values, or null if cancelled
      */
-    async populateProperties(classNameOrConfig: string | ClassConfig): Promise<{ [key: string]: any } | null> {
+    async populateProperties(
+        classNameOrConfig: string | ClassConfig, 
+        existingProperties?: { [key: string]: any }
+    ): Promise<{ [key: string]: any } | null> {
         let classConfig: ClassConfig | null;
         
         if (typeof classNameOrConfig === 'string') {
@@ -78,6 +82,12 @@ export class PopulateManager {
         const populatedValues: { [key: string]: any } = {};
 
         for (const populateConfig of classConfig.populate) {
+            // Skip properties that are already provided in existingProperties
+            if (existingProperties && populateConfig.property in existingProperties) {
+                console.log(`⏭️  Skipping populate for "${populateConfig.property}" (already provided)`);
+                continue;
+            }
+
             const value = await this.populateProperty(classConfig, populateConfig);
 
             // Handle required fields

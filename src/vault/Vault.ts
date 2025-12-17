@@ -243,7 +243,7 @@ export class Vault {
         return await this.createClasse(file);
     }
 
-    async createFile(classeType: null | typeof Classe = null, name: string = "", args: {parent? : Classe} = {}): Promise<File | undefined> {
+    async createFile(classeType: null | typeof Classe = null, name: string = "", args: {parent? : Classe, properties?: { [key: string]: any }} = {}): Promise<File | undefined> {
         // Create the new file from the className template
         if (!classeType) {
             const dynamicClasses = Object.keys(Vault.classes);
@@ -259,7 +259,11 @@ export class Vault {
             const populateManager = this.getPopulateManager();
             
             // Try to populate properties (will check if populate is configured)
-            const values = await populateManager.populateProperties(classeType.name);
+            // Pass existing properties from args so they won't be prompted
+            const values = await populateManager.populateProperties(
+                classeType.name,
+                args.properties
+            );
             
             if (values === null) {
                 // User cancelled - send notice and abort file creation
@@ -271,6 +275,13 @@ export class Vault {
             populatedValues = await populateManager.mergeWithDefaults(classeType.name, values);
         } catch (error) {
             console.warn(`Could not populate properties for ${classeType.name}:`, error);
+        }
+        
+        // Merge properties from args (from ProcessManager) with populated values
+        // Properties from args take priority over populated values
+        if (args.properties) {
+            populatedValues = { ...populatedValues, ...args.properties };
+            console.log("📦 Properties from args merged with populate:", populatedValues);
         }
         
         if (!name) {
