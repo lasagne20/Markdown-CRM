@@ -15,6 +15,18 @@ export class TimeProperty extends Property {
 
     // Affiche le champ temps
     override fillDisplay(value: any, update: (value: any) => Promise<void>) {
+        const field = this.createFieldContainer();
+
+        if (this.title) {
+            const title = document.createElement("div");
+            title.textContent = this.title;
+            title.classList.add("metadata-title");
+            field.appendChild(title);
+        }
+
+        const iconContainer = this.createIconContainer(update);
+        field.appendChild(iconContainer);
+
         const container = document.createElement("div");
         container.classList.add("field-container");
 
@@ -32,8 +44,9 @@ export class TimeProperty extends Property {
 
         container.appendChild(link);
         container.appendChild(input);
+        field.appendChild(container);
 
-        return container;
+        return field;
     }
 
     // Crée un input pour l'heure (hh:mm) avec flatpickr

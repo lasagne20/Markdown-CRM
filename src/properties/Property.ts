@@ -179,9 +179,14 @@ export class Property {
      * @param args.title - Custom title for the property
      * @returns The DOM element representing the property
      */
-    async getDisplay(classe: any, args : {staticMode? : boolean, title?: string} = {staticMode : false, title:""}) {
+    async getDisplay(classe: any, args : {staticMode? : boolean, title?: string, displayMode?: string} = {staticMode : false, title:""}) {
         this.static = args.staticMode ? true : this.static;
         this.title = args.title ? args.title : "";
+        
+        // Apply display mode if provided (for ObjectProperty)
+        if (args.displayMode && 'display' in this) {
+            (this as any).display = args.displayMode;
+        }
         
         let value = await this.read(classe);
         

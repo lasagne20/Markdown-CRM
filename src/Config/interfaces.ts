@@ -67,6 +67,7 @@ export interface PropertyDisplayItem extends BaseDisplayItem {
     name: string;
     title?: string; // Custom display title
     static?: boolean;
+    display?: string; // Display mode for ObjectProperty: "object", "table", or "list"
 }
 
 // Button display item

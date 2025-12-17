@@ -119,7 +119,7 @@ export class ClassConfigManager {
                     return null;
                 }
                 
-                const display = await property.getDisplay(this, {title: item.title, staticMode: item.static});
+                const display = await property.getDisplay(this, {title: item.title, staticMode: item.static, displayMode: item.display});
                 
                 return display;
             }

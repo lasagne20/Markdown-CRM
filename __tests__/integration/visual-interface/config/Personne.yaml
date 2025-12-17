@@ -41,7 +41,7 @@ properties:
     type: TextProperty
     title: Prénom
     icon: 👤
-    required: false
+ 
     defaultValue: ""
     tooltip: "Prénom de la personne"
     
@@ -51,7 +51,7 @@ properties:
     aliases: ["Institution"]
     icon: 🏢
     tooltip: "Institution de rattachement principal"
-    required: false
+ 
     defaultValue: ""
     
     classes:
@@ -61,7 +61,7 @@ properties:
     type: ObjectProperty
     title: Poste/Fonction
     icon: 💼
-    required: false
+ 
     defaultValue: {}
     aliases: ["Postes"]
     properties:
@@ -70,7 +70,7 @@ properties:
         title: Institution
         aliases: ["Institution"]
         icon: 🏢
-        required: false
+     
         classes:
           - Institution
           - Lieu
@@ -80,7 +80,7 @@ properties:
         title: Poste
         aliases: ["Poste"]
         icon: 💼
-        required: false
+     
         defaultValue: ""
     
   email:
@@ -88,30 +88,38 @@ properties:
     title: Email professionnel
     tooltip: "Adresse e-mail professionnelle de la personne"
     icon: 📧
-    required: false
+
+  heure:
+    type: TimeProperty
+    title: Heure de contact préférée
+    icon: ⏰
+ 
     defaultValue: ""
-    validation:
-      pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
-      message: "Veuillez entrer une adresse e-mail valide"
     
   telephone:
     type: PhoneProperty
     title: Téléphone
     icon: 📞
-    required: false
+ 
     defaultValue: ""
     
   statut:
     type: SelectProperty
     title: Statut
     icon: 🏷️
-    required: false
+ 
     defaultValue: Actif
     options:
       - Actif
       - Inactif
       - En congé
       - Parti
+
+  date:
+    type: DateProperty
+    title: Date de début
+    icon: 📅
+    defaultValue: ""
 
   relation:
     type: SelectProperty
@@ -182,4 +190,9 @@ display:
               name: email
             - type: property
               name: telephone
+
+            - type: property
+              name: date
+            - type: property
+              name: heure
   

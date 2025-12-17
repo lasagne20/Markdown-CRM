@@ -21,6 +21,7 @@ import { RangeDateProperty } from '../properties/RangeDateProperty';
 import { RatingProperty } from '../properties/RatingProperty';
 import { SelectProperty } from '../properties/SelectProperty';
 import { TextProperty } from '../properties/TextProperty';
+import { TimeProperty } from '../properties/TimeProperty';
 import { IdProperty } from '../properties/IdProperty';
 import { Vault } from '../vault/Vault';
 import { ClassConfig, PropertyConfig, PropertyTableRow } from './interfaces';
@@ -306,6 +307,9 @@ export class ConfigLoader {
             
             case 'RangeDateProperty':
                 return new RangeDateProperty(propertyName, this.vault, options);
+            
+            case 'TimeProperty':
+                return new TimeProperty(propertyName, this.vault, options);
             
             case 'AdressProperty':
                 return new AdressProperty(propertyName, this.vault, options);

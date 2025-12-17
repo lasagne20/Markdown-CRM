@@ -32,13 +32,14 @@ All items can have an optional `className` for custom styling.
 
 ### Property - Display a Property
 
-Displays a single property with optional custom title and static mode.
+Displays a single property with optional custom title, static mode, and display mode.
 
 ```yaml
 - type: property
   name: email
   title: "Email Address"  # Optional: custom display title
   static: true            # Optional: display as read-only
+  display: table          # Optional: display mode for ObjectProperty ("object", "table", or "list")
   className: "custom-property"  # Optional: CSS class
 ```
 
@@ -50,9 +51,15 @@ Displays a single property with optional custom title and static mode.
 | `name` | string | ✅ | Property key from properties section |
 | `title` | string | ❌ | Custom title override |
 | `static` | boolean | ❌ | Display as read-only |
+| `display` | string | ❌ | Display mode for ObjectProperty: `"object"` (default), `"table"`, or `"list"` |
 | `className` | string | ❌ | Custom CSS class |
 
-**Note:** The `title` and `static` parameters are now passed to the property's `getDisplay()` method as arguments, rather than modifying the property object directly.
+**Note:** The `title`, `static`, and `display` parameters are passed to the property's `getDisplay()` method as arguments. The `display` parameter only affects `ObjectProperty` instances.
+
+**Display Modes for ObjectProperty:**
+- `object` (default): Displays each object as a separate card/section
+- `table`: Displays objects in a table format with columns for each property
+- `list`: Displays objects in a compact list format
 
 ### Button - Action Trigger
 
@@ -691,6 +698,101 @@ properties:
   # ... property definitions
 ```
 
+### Example 4: ObjectProperty Display Modes
+
+This example demonstrates the different display modes available for ObjectProperty.
+
+```yaml
+className: Company
+classIcon: 🏢
+
+display:
+  items:
+    - type: property
+      name: name
+    
+    # Display contacts as a table (default is "object")
+    - type: property
+      name: contacts
+      title: "Contact List"
+      display: table
+    
+    # Display addresses as objects (default, explicitly set)
+    - type: property
+      name: addresses
+      title: "Company Addresses"
+      display: object
+    
+    # Display notes as a list
+    - type: property
+      name: notes
+      title: "Notes"
+      display: list
+
+properties:
+  name:
+    type: text
+    title: Company Name
+  
+  contacts:
+    type: object
+    title: Contacts
+    properties:
+      name:
+        type: text
+        title: Contact Name
+      email:
+        type: email
+        title: Email
+      phone:
+        type: phone
+        title: Phone
+      role:
+        type: text
+        title: Role
+  
+  addresses:
+    type: object
+    title: Addresses
+    properties:
+      type:
+        type: select
+        title: Type
+        options:
+          - name: Headquarters
+            color: blue
+          - name: Branch
+            color: green
+      street:
+        type: text
+        title: Street
+      city:
+        type: text
+        title: City
+      country:
+        type: text
+        title: Country
+  
+  notes:
+    type: object
+    title: Notes
+    properties:
+      date:
+        type: date
+        title: Date
+      content:
+        type: text
+        title: Content
+```
+
+**Display Mode Comparison:**
+
+| Mode | Use Case | Appearance |
+|------|----------|------------|
+| `object` | Complex items with many fields | Each item in its own card/section |
+| `table` | Structured data with consistent fields | Columnar table with headers |
+| `list` | Simple items, compact view | Minimal vertical list |
+
 ## Nested Containers
 
 Containers can be nested for complex layouts:
@@ -869,6 +971,7 @@ async getDisplay(
     args?: {
         staticMode?: boolean;  // Display as read-only
         title?: string;        // Custom display title
+        displayMode?: string;  // Display mode for ObjectProperty ("object", "table", or "list")
     }
 ): Promise<HTMLElement>
 ```
@@ -876,20 +979,24 @@ async getDisplay(
 **Example in ClassConfigManager:**
 
 ```typescript
-// Property item with custom title and static mode
+// Property item with custom title, static mode, and display mode
 {
     type: 'property',
-    name: 'email',
-    title: 'Professional Email',
-    static: true
+    name: 'contacts',
+    title: 'Contact List',
+    static: true,
+    display: 'table'
 }
 
 // Internally calls:
 await property.getDisplay(classeInstance, {
-    title: 'Professional Email',
-    staticMode: true
+    title: 'Contact List',
+    staticMode: true,
+    displayMode: 'table'
 });
 ```
+
+**Note:** The `displayMode` parameter only affects `ObjectProperty` instances. When provided, it sets the `display` property on the ObjectProperty before rendering, determining whether the objects are displayed as individual cards (`object`), in a table (`table`), or as a compact list (`list`).
 
 ### Display Item Rendering Flow
 

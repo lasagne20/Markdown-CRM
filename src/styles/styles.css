@@ -639,6 +639,22 @@ If your plugin does not need CSS, delete this file.
     max-width: 100%; /* Ajuste la largeur maximale */
 }
 
+/* TimeProperty - Style identique à DateProperty */
+.time-field-link {
+    padding: 6px 12px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--text-accent);
+    color: var(--text-normal);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-variant-numeric: tabular-nums; /* Pour aligner les chiffres */
+}
+
 
 .metadata-multiFiles-container {
     display: flex;
