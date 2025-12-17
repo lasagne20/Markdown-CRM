@@ -119,6 +119,15 @@ export class TemplateEngine {
                     value = this.getNestedPropertyValue(metadata, placeholder);
                     console.log(`  📦 {${placeholder}} = "${value}" (nested property)`);
                 }
+
+                // Clean Obsidian links in array/nested values
+                if (typeof value === 'string') {
+                    const cleanedValue = this.cleanObsidianLink(value);
+                    if (cleanedValue !== value) {
+                        console.log(`  🧹 Cleaned link: "${value}" → "${cleanedValue}"`);
+                        value = cleanedValue;
+                    }
+                }
             } else {
                 // Simple property - try to get from instance's Property first (for getPretty)
                 const property = instance.getProperty(placeholder);
@@ -269,5 +278,26 @@ export class TemplateEngine {
             return value.toISOString().split('T')[0]; // YYYY-MM-DD
         }
         return String(value);
+    }
+
+    /**
+     * Clean Obsidian link format from a value
+     * Extracts the display name from [[path/to/file.md|Display Name]] or [[File Name]]
+     */
+    private static cleanObsidianLink(value: string): string {
+        if (typeof value !== 'string') {
+            return value;
+        }
+
+        // Match [[file|alias]] or [[file]]
+        const match = value.match(/^\[\[(.*?)(?:\|([^\]]+?))?\]\]$/);
+        if (match) {
+            const fileName = match[1]?.trim();
+            const alias = match[2]?.trim();
+            // Return alias if present, otherwise extract filename from path
+            return alias ? alias : fileName.split("/").pop()?.replace(".md","") || fileName;
+        }
+
+        return value;
     }
 }

@@ -171,15 +171,14 @@ describe('TemplateEngine - FileProperty Integration', () => {
 
         const instance = new Classe(mockVault, mockFile);
 
-        // Note: Array access doesn't use getPretty (uses metadata directly)
-        // This is expected behavior for complex nested paths
+        // Note: Array access now cleans Obsidian links automatically
         const result = await TemplateEngine.processTemplateFromInstance(
             '{clients[0].client} - {nom}',
             instance
         );
 
-        // Array values come from metadata, not through getPretty
-        expect(result).toBe('[[Client A]] - Multi-Client Project');
+        // Array values are now cleaned from [[]] format
+        expect(result).toBe('Client A - Multi-Client Project');
     });
 
     it('should handle complex Obsidian link format with path and alias', async () => {
