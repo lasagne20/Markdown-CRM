@@ -4,6 +4,7 @@ import { ConditionManager, Condition } from './ConditionManager';
 import { ClassConfig } from './interfaces';
 import { Data } from '../vault/Data';
 import { IFile } from '../interfaces/IApp';
+import { TemplateEngine } from './TemplateEngine';
 
 /**
  * Process trigger types
@@ -394,123 +395,26 @@ export class ProcessManager {
 
     /**
      * Generate filename from template
-     * Replaces {propertyName} placeholders with property values
-     * Supports {current} for current filename and {property.nested} for nested properties
+     * Uses TemplateEngine to replace placeholders with property values
      */
     private async generateFileName(template: string, instance: Classe): Promise<string | null> {
         const file = instance.getFile();
         if (!file) return null;
 
-        console.log(`🎨 Generating filename from template: "${template}"`);
-        const metadata = await instance.getMetadata();
-        console.log(`📊 Metadata:`, metadata);
-        let fileName = template;
+        // Process template using TemplateEngine
+        const fileName = await TemplateEngine.processTemplateFromInstance(
+            template,
+            instance,
+            file.basename // Current filename for {current} placeholder
+        );
 
-        // Find all placeholders in the template
-        const placeholderRegex = /\{([^}]+)\}/g;
-
-        // Replace placeholders
-        for (const match of Array.from(template.matchAll(placeholderRegex))) {
-            const placeholder = match[1];
-            let value: any;
-
-            if (placeholder === 'current') {
-                // Use current filename, but clean it from previous template applications
-                value = file.basename;
-
-                // Remove parts of the template that were already applied
-                let cleanedCurrent = value;
-
-                // Find position of {current} in template
-                const currentIndex = template.indexOf('{current}');
-
-                if (currentIndex > 0) {
-                    // {current} has content BEFORE it - remove prefix
-                    const prefixTemplate = template.substring(0, currentIndex);
-
-                    // Convert template placeholders to regex patterns that match any value
-                    let regexPattern = prefixTemplate
-                        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
-                        .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
-
-                    const match = value.match(new RegExp('^' + regexPattern + '(.*)$'));
-                    if (match && match[1]) {
-                        cleanedCurrent = match[1].trim();
-                        console.log(`  🧹 Cleaned {current}: pattern "${prefixTemplate}" matched`);
-                        console.log(`    "${value}" → "${cleanedCurrent}"`);
-                    }
-                } else if (currentIndex === 0) {
-                    // {current} is at the START - remove suffix
-                    const suffixIndex = template.indexOf('}', currentIndex) + 1;
-                    if (suffixIndex < template.length) {
-                        const suffixTemplate = template.substring(suffixIndex);
-
-                        // Convert template placeholders to regex patterns
-                        let regexPattern = suffixTemplate
-                            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
-                            .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
-
-                        const match = value.match(new RegExp('^(.*?)' + regexPattern + '$'));
-                        if (match && match[1]) {
-                            cleanedCurrent = match[1].trim();
-                            console.log(`  🧹 Cleaned {current} at start: pattern "${suffixTemplate}" matched`);
-                            console.log(`    "${value}" → "${cleanedCurrent}"`);
-                        }
-                    }
-                }
-
-                value = cleanedCurrent;
-                console.log(`  🔄 {${placeholder}} = "${value}" (current filename)`);
-            } else if (placeholder.includes('.')) {
-                // Handle nested properties (e.g., "postes.poste")
-                value = this.getNestedPropertyValue(metadata, placeholder);
-                console.log(`  📦 {${placeholder}} = "${value}" (nested property)`);
-            } else {
-                // Simple property
-                value = metadata[placeholder];
-                console.log(`  📝 {${placeholder}} = "${value}" (simple property)`);
-            }
-
-            // If any required value is missing or empty, abort renaming
-            if (value === undefined || value === null || value === '') {
-                console.log(`  ❌ Missing or empty value for {${placeholder}}, aborting`);
-                return null;
-            }
-
-            // Convert value to string and sanitize
-            let stringValue: string;
-            if (value instanceof Date) {
-                stringValue = value.toISOString().split('T')[0]; // YYYY-MM-DD
-            } else {
-                stringValue = String(value);
-            }
-            fileName = fileName.replace(`{${placeholder}}`, stringValue);
-            console.log(`  ✅ Replaced {${placeholder}} with "${stringValue}"`);
+        if (!fileName) {
+            return null;
         }
 
-        console.log(`🎯 Filename before sanitization: "${fileName}"`);
         // Sanitize the final filename
         const sanitized = this.sanitizeFileName(fileName);
-        console.log(`✨ Final sanitized filename: "${sanitized}"`);
         return sanitized;
-    }
-
-    /**
-     * Get nested property value using dot notation
-     */
-    private getNestedPropertyValue(metadata: Record<string, any>, path: string): any {
-        const parts = path.split('.');
-        let value: any = metadata;
-
-        for (const part of parts) {
-            if (value && typeof value === 'object' && part in value) {
-                value = value[part];
-            } else {
-                return undefined;
-            }
-        }
-
-        return value;
     }
 
     /**

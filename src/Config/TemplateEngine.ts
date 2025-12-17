@@ -1,0 +1,207 @@
+import { Classe } from '../vault/Classe';
+
+/**
+ * TemplateEngine handles template string replacement with property values
+ * Supports various placeholder formats:
+ * - {propertyName} - Simple property access
+ * - {current} - Current filename (for rename operations)
+ * - {property.nested} - Nested object properties
+ * - {array[0].property} - Array element access with nested properties
+ */
+export class TemplateEngine {
+    /**
+     * Process a template string by replacing placeholders with values from metadata
+     * @param template Template string with {placeholder} syntax
+     * @param metadata Metadata object containing the values
+     * @param currentValue Optional current value (e.g., current filename) for {current} placeholder
+     * @returns Processed string with all placeholders replaced, or null if any required value is missing
+     */
+    public static async processTemplate(
+        template: string,
+        metadata: Record<string, any>,
+        currentValue?: string
+    ): Promise<string | null> {
+        console.log(`🎨 Processing template: "${template}"`);
+        console.log(`📊 Metadata:`, metadata);
+        
+        let result = template;
+
+        // Find all placeholders in the template
+        const placeholderRegex = /\{([^}]+)\}/g;
+
+        // Replace placeholders
+        for (const match of Array.from(template.matchAll(placeholderRegex))) {
+            const placeholder = match[1];
+            let value: any;
+
+            if (placeholder === 'current') {
+                if (currentValue === undefined) {
+                    console.log(`  ❌ {current} used but no currentValue provided`);
+                    return null;
+                }
+
+                // Clean current value from previous template applications
+                value = this.cleanCurrentValue(currentValue, template);
+                console.log(`  🔄 {${placeholder}} = "${value}" (current value)`);
+            } else if (placeholder.includes('[') && placeholder.includes(']')) {
+                // Handle array access (e.g., "clients[0].client")
+                value = this.getArrayPropertyValue(metadata, placeholder);
+                console.log(`  📦 {${placeholder}} = "${value}" (array property)`);
+            } else if (placeholder.includes('.')) {
+                // Handle nested properties (e.g., "postes.poste")
+                value = this.getNestedPropertyValue(metadata, placeholder);
+                console.log(`  📦 {${placeholder}} = "${value}" (nested property)`);
+            } else {
+                // Simple property
+                value = metadata[placeholder];
+                console.log(`  📝 {${placeholder}} = "${value}" (simple property)`);
+            }
+
+            // If any required value is missing or empty, abort processing
+            if (value === undefined || value === null || value === '') {
+                console.log(`  ❌ Missing or empty value for {${placeholder}}, aborting`);
+                return null;
+            }
+
+            // Convert value to string
+            const stringValue = this.valueToString(value);
+            result = result.replace(`{${placeholder}}`, stringValue);
+            console.log(`  ✅ Replaced {${placeholder}} with "${stringValue}"`);
+        }
+
+        console.log(`✨ Final result: "${result}"`);
+        return result;
+    }
+
+    /**
+     * Process a template from a Classe instance
+     * @param template Template string
+     * @param instance Classe instance to get metadata from
+     * @param currentValue Optional current value for {current} placeholder
+     * @returns Processed template or null if processing failed
+     */
+    public static async processTemplateFromInstance(
+        template: string,
+        instance: Classe,
+        currentValue?: string
+    ): Promise<string | null> {
+        const metadata = await instance.getMetadata();
+        return this.processTemplate(template, metadata, currentValue);
+    }
+
+    /**
+     * Clean the current value from previous template applications
+     * This removes parts of the template that were already applied to avoid duplication
+     */
+    private static cleanCurrentValue(currentValue: string, template: string): string {
+        let cleanedValue = currentValue;
+
+        // Find position of {current} in template
+        const currentIndex = template.indexOf('{current}');
+
+        if (currentIndex > 0) {
+            // {current} has content BEFORE it - remove prefix
+            const prefixTemplate = template.substring(0, currentIndex);
+
+            // Convert template placeholders to regex patterns that match any value
+            const regexPattern = prefixTemplate
+                .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
+                .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
+
+            const match = currentValue.match(new RegExp('^' + regexPattern + '(.*)$'));
+            if (match && match[1]) {
+                cleanedValue = match[1].trim();
+                console.log(`  🧹 Cleaned {current}: pattern "${prefixTemplate}" matched`);
+                console.log(`    "${currentValue}" → "${cleanedValue}"`);
+            }
+        } else if (currentIndex === 0) {
+            // {current} is at the START - remove suffix
+            const suffixIndex = template.indexOf('}', currentIndex) + 1;
+            if (suffixIndex < template.length) {
+                const suffixTemplate = template.substring(suffixIndex);
+
+                // Convert template placeholders to regex patterns
+                const regexPattern = suffixTemplate
+                    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
+                    .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
+
+                const match = currentValue.match(new RegExp('^(.*?)' + regexPattern + '$'));
+                if (match && match[1]) {
+                    cleanedValue = match[1].trim();
+                    console.log(`  🧹 Cleaned {current} at start: pattern "${suffixTemplate}" matched`);
+                    console.log(`    "${currentValue}" → "${cleanedValue}"`);
+                }
+            }
+        }
+
+        return cleanedValue;
+    }
+
+    /**
+     * Get array property value with index notation
+     * Examples: "clients[0].client", "items[2].name"
+     */
+    private static getArrayPropertyValue(metadata: Record<string, any>, path: string): any {
+        // Parse array notation: "clients[0].client" -> ["clients", "0", "client"]
+        // Match pattern: propertyName[index].nestedProperty or propertyName[index]
+        const arrayMatch = path.match(/^([^\[]+)\[(\d+)\](.*)$/);
+        
+        if (!arrayMatch) {
+            return undefined;
+        }
+
+        const [, arrayName, indexStr, rest] = arrayMatch;
+        const index = parseInt(indexStr, 10);
+
+        // Get the array
+        let value = metadata[arrayName];
+        
+        if (!Array.isArray(value)) {
+            return undefined;
+        }
+
+        // Check bounds
+        if (index < 0 || index >= value.length) {
+            return undefined;
+        }
+
+        // Get the array element
+        value = value[index];
+
+        // If there's a nested path after the array index (e.g., ".client")
+        if (rest && rest.startsWith('.')) {
+            const nestedPath = rest.substring(1); // Remove leading dot
+            return this.getNestedPropertyValue(value, nestedPath);
+        }
+
+        return value;
+    }
+
+    /**
+     * Get nested property value using dot notation
+     */
+    private static getNestedPropertyValue(metadata: Record<string, any>, path: string): any {
+        const parts = path.split('.');
+        let value: any = metadata;
+
+        for (const part of parts) {
+            if (value && typeof value === 'object' && part in value) {
+                value = value[part];
+            } else {
+                return undefined;
+            }
+        }
+
+        return value;
+    }
+
+    /**
+     * Convert a value to string for template replacement
+     */
+    private static valueToString(value: any): string {
+        if (value instanceof Date) {
+            return value.toISOString().split('T')[0]; // YYYY-MM-DD
+        }
+        return String(value);
+    }
+}
