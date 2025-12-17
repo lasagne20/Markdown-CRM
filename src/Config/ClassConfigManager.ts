@@ -8,6 +8,8 @@ import { SubClassProperty } from '../properties/SubClassProperty';
 import { ConfigLoader } from './ConfigLoader';
 import { ClassConfig, DisplayContainer } from './interfaces';
 import { DynamicTable } from '../display/DynamicTable';
+import { ProcessManager } from './ProcessManager';
+import { addFold } from '../utils/Utils';
 
 
 export class ClassConfigManager {
@@ -62,106 +64,145 @@ export class ClassConfigManager {
             override async getDisplay(): Promise<any> {
                 const container = document.createElement("div");
                 
-                if (config.display && config.display.containers) {
-                    for (const containerConfig of config.display.containers) {
-                        const displayContainer = await this.createDisplayContainer(containerConfig);
-                        container.appendChild(displayContainer);
-                    }
+                if (config.display && config.display.items) {
+                    await this.renderDisplayItems(container, config.display.items);
                 } else {
-                    // Default display: show all properties
-                    const properties = document.createElement("div");
+                    // Default display: show all properties in columns
                     for (let property of this.getProperties()) {
-                        properties.appendChild(await property.getDisplay(this));
+                        container.appendChild(await property.getDisplay(this));
                     }
-                    container.appendChild(properties);
                 }
                 
                 return container;
             }
 
-            private async createDisplayContainer(containerConfig: DisplayContainer): Promise<HTMLElement> {
-                const wrapper = document.createElement("div");
-                wrapper.classList.add("display-container-wrapper");
+            private async renderDisplayItems(container: HTMLElement, items: any[]): Promise<void> {
+                for (const item of items) {
+                    const element = await this.renderDisplayItem(item);
+                    if (element) {
+                        container.appendChild(element);
+                    }
+                }
+            }
+
+            private async renderDisplayItem(item: any): Promise<HTMLElement | null> {
+                switch (item.type) {
+                    case 'property':
+                        return await this.renderProperty(item);
+                    
+                    case 'button':
+                        return this.renderButton(item);
+                    
+                    case 'line':
+                    case 'column':
+                        return await this.renderContainer(item);
+                    
+                    case 'tabs':
+                        return await this.renderTabs(item);
+                    
+                    case 'fold':
+                        return await this.renderFold(item);
+                    
+                    case 'table':
+                        return await this.renderTable(item);
+                    
+                    default:
+                        console.warn(`Unknown display item type: ${item.type}`);
+                        return null;
+                }
+            }
+
+            private async renderProperty(item: any): Promise<HTMLElement | null> {
+                const property = (this.constructor as typeof Classe).Properties[item.name];
+                if (!property) {
+                    console.warn(`Property not found: ${item.name}`);
+                    return null;
+                }
                 
-                // Add title above the container
-                if (containerConfig.title) {
+                const display = await property.getDisplay(this, {title: item.title, staticMode: item.static});
+                
+                return display;
+            }
+
+            private renderButton(item: any): HTMLElement {
+                const button = document.createElement("button");
+                button.classList.add("mod-cta", "crm-action-button");
+                button.textContent = item.label || "Action";
+                
+                if (item.icon) {
+                    const icon = document.createElement("span");
+                    icon.classList.add("button-icon");
+                    this.vault.app.setIcon(icon, item.icon);
+                    button.insertBefore(icon, button.firstChild);
+                }
+                
+                button.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    await this.executeProcess(item.process);
+                });
+                
+                return button;
+            }
+
+            private async renderContainer(item: any): Promise<HTMLElement> {
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("metadata-container-wrapper");
+                
+                if (item.className) {
+                    wrapper.classList.add(item.className);
+                }
+                
+                if (item.title) {
                     const title = document.createElement("h3");
-                    title.textContent = containerConfig.title;
+                    title.textContent = item.title;
                     title.classList.add("container-section-title");
                     wrapper.appendChild(title);
                 }
                 
                 const container = document.createElement("div");
                 
-                if (containerConfig.className) {
-                    container.classList.add(containerConfig.className);
+                if (item.type === 'line') {
+                    container.classList.add("metadata-line");
+                } else if (item.type === 'column') {
+                    container.classList.add("metadata-column");
                 }
                 
-                // Handle different container types
-                switch (containerConfig.type) {
-                    case 'line':
-                        container.classList.add("metadata-line");
-                        await this.addPropertiesToContainer(container, containerConfig.properties);
-                        break;
-                        
-                    case 'column':
-                        container.classList.add("metadata-column");
-                        await this.addPropertiesToContainer(container, containerConfig.properties);
-                        break;
-                        
-                    case 'tabs':
-                        await this.createTabsContainer(container, containerConfig);
-                        break;
-                        
-                    case 'fold':
-                        await this.createFoldContainer(container, containerConfig);
-                        break;
-                    
-                    case 'table':
-                        await this.createTableContainer(container, containerConfig, this);
-                        break;
-                        
-                    default:
-                        await this.addPropertiesToContainer(container, containerConfig.properties);
-                        break;
+                if (item.items) {
+                    await this.renderDisplayItems(container, item.items);
                 }
                 
                 wrapper.appendChild(container);
                 return wrapper;
             }
-            
-            private async addPropertiesToContainer(container: HTMLElement, propertyNames?: string[]): Promise<void> {
-                if (propertyNames) {
-                    for (const propKey of propertyNames) {
-                        // Get property by key from static Properties map
-                        const property = (this.constructor as typeof Classe).Properties[propKey];
-                        if (property) {
-                            container.appendChild(await property.getDisplay(this));
-                        }
-                    }
-                }
-            }
-            
-            private async createTabsContainer(container: HTMLElement, containerConfig: DisplayContainer): Promise<void> {
-                if (!containerConfig.tabs || containerConfig.tabs.length === 0) return;
-                
+
+            private async renderTabs(item: any): Promise<HTMLElement> {
+                const container = document.createElement("div");
                 container.classList.add("metadata-tabs-container");
                 
-                // Create tab headers
+                if (item.className) {
+                    container.classList.add(item.className);
+                }
+                
+                if (item.title) {
+                    const title = document.createElement("h3");
+                    title.textContent = item.title;
+                    title.classList.add("container-section-title");
+                    container.appendChild(title);
+                }
+                
                 const tabHeaders = document.createElement("div");
                 tabHeaders.classList.add("tab-headers");
                 container.appendChild(tabHeaders);
                 
-                // Create tab contents
                 const tabContents = document.createElement("div");
                 tabContents.classList.add("tab-contents");
                 container.appendChild(tabContents);
                 
-                // Create each tab
-                for (let i = 0; i < containerConfig.tabs.length; i++) {
-                    const tabConfig = containerConfig.tabs[i];
+                if (!item.tabs) return container;
+                
+                for (let i = 0; i < item.tabs.length; i++) {
+                    const tabConfig = item.tabs[i];
                     
-                    // Create tab header
                     const tabHeader = document.createElement("button");
                     tabHeader.textContent = tabConfig.name;
                     tabHeader.classList.add("tab-header");
@@ -169,209 +210,132 @@ export class ClassConfigManager {
                     tabHeader.dataset.tabIndex = i.toString();
                     tabHeaders.appendChild(tabHeader);
                     
-                    // Create tab content
                     const tabContent = document.createElement("div");
                     tabContent.classList.add("tab-content");
                     if (i === 0) tabContent.classList.add("active");
                     tabContent.dataset.tabIndex = i.toString();
                     
-                    // Add properties to tab
-                    await this.addPropertiesToContainer(tabContent, tabConfig.properties);
+                    if (tabConfig.items) {
+                        await this.renderDisplayItems(tabContent, tabConfig.items);
+                    }
                     tabContents.appendChild(tabContent);
                     
-                    // Add click handler
                     tabHeader.addEventListener("click", () => {
-                        // Remove active from all tabs
                         tabHeaders.querySelectorAll(".tab-header").forEach(h => h.classList.remove("active"));
                         tabContents.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-                        
-                        // Add active to clicked tab
                         tabHeader.classList.add("active");
                         tabContent.classList.add("active");
                     });
                 }
+                
+                return container;
             }
-            
-            private async createFoldContainer(container: HTMLElement, containerConfig: DisplayContainer): Promise<void> {
+
+            private async renderFold(item: any): Promise<HTMLElement> {
+                const container = document.createElement("div");
                 container.classList.add("metadata-fold-container");
                 
-                // Create fold header (clickable)
-                const foldHeader = document.createElement("button");
-                foldHeader.textContent = containerConfig.foldTitle || "Afficher plus";
+                if (item.className) {
+                    container.classList.add(item.className);
+                }
+                
+                const foldHeader = document.createElement("div");
                 foldHeader.classList.add("fold-header");
+                foldHeader.textContent = item.title || "Details";
                 container.appendChild(foldHeader);
                 
-                // Create fold content (collapsible)
                 const foldContent = document.createElement("div");
                 foldContent.classList.add("fold-content");
-                foldContent.classList.add("collapsed"); // Start collapsed
                 
-                // Add properties to fold
-                await this.addPropertiesToContainer(foldContent, containerConfig.properties);
+                if (item.items) {
+                    await this.renderDisplayItems(foldContent, item.items);
+                }
                 container.appendChild(foldContent);
                 
-                // Add click handler to toggle
-                foldHeader.addEventListener("click", () => {
-                    foldContent.classList.toggle("collapsed");
-                    foldHeader.classList.toggle("expanded");
-                });
-            }
-            
-            private async createTableContainer(container: HTMLElement, containerConfig: DisplayContainer, instance: Classe): Promise<void> {
-                if (!containerConfig.source) {
-                    console.error('Table container requires a source configuration');
-                    return;
-                }
+                addFold(foldHeader, foldContent, this.vault.app);
                 
+                return container;
+            }
+
+            private async renderTable(item: any): Promise<HTMLElement> {
+                const container = document.createElement("div");
                 container.classList.add("metadata-table-container");
                 
-                // Get files based on filter
-                const files = await this.getFilesForTable(containerConfig.source, instance);
+                if (item.className) {
+                    container.classList.add(item.className);
+                }
                 
-                // Create table container
-                const tableContainer = document.createElement('div');
-                tableContainer.className = 'data-table-container';
+                if (item.title) {
+                    const title = document.createElement("h3");
+                    title.textContent = item.title;
+                    title.classList.add("container-section-title");
+                    container.appendChild(title);
+                }
                 
-                if (files.length === 0) {
-                    const emptyState = document.createElement('div');
-                    emptyState.className = 'data-table-empty';
-                    emptyState.textContent = `Aucun(e) ${containerConfig.source.class} trouvé(e)`;
-                    tableContainer.appendChild(emptyState);
-                    container.appendChild(tableContainer);
+                if (item.source) {
+                    // Get files based on source configuration
+                    let files: Classe[] = [];
+                    
+                    switch (item.source.filter) {
+                        case 'children':
+                            // Get files where parent = current file
+                            files = await (this as any).findChildren();
+                            
+                            // Filter by target class if specified
+                            if (item.source.class) {
+                                files = files.filter((child: Classe) => {
+                                    const constructorName = child.constructor.name;
+                                    const staticClassName = (child.constructor as any).className;
+                                    return constructorName === item.source.class || 
+                                           staticClassName === item.source.class;
+                                });
+                            }
+                            break;
+                        
+                        case 'all':
+                            // TODO: Get all instances of the class
+                            console.warn('filter: all not yet implemented');
+                            files = [];
+                            break;
+                        
+                        default:
+                            console.warn(`Unknown filter type: ${item.source.filter}`);
+                            files = [];
+                    }
+                    
+                    const tableConfig = {
+                        source: item.source,
+                        columns: item.columns,
+                        totals: item.totals
+                    };
+                    const table = new DynamicTable(files, tableConfig, this.vault);
+                    const tableElement = await table.getTable();
+                    container.appendChild(tableElement);
+                }
+                
+                return container;
+            }
+
+            private async executeProcess(processName: string): Promise<void> {
+                if (!processName) {
+                    console.warn('No process name specified for button');
                     return;
                 }
                 
-                // Use DynamicTable class to create and configure the table
-                const dynamicTable = new DynamicTable(files, containerConfig, this.vault);
-                const table = dynamicTable.getTable();
+                const processes = config.process || [];
+                const process = processes.find(p => p.name === processName);
                 
-                tableContainer.appendChild(table);
-                container.appendChild(tableContainer);
-            }
-            
-            private async getFilesForTable(source: any, instance: Classe): Promise<Classe[]> {
-                // Get the target class from the vault's dynamicClassFactory
-                let targetClassConstructor: typeof Classe;
+                if (!process) {
+                    console.warn(`Process not found: ${processName}`);
+                    return;
+                }
+                
                 try {
-                    targetClassConstructor = await this.vault.getClasseFromName(source.class) as typeof Classe;
+                    const processManager = new ProcessManager(this.vault);
+                    await processManager.execute(process, this);
                 } catch (error) {
-                    console.error(`Class ${source.class} not found:`, error);
-                    return [];
+                    console.error(`Error executing process ${processName}:`, error);
                 }
-                
-                let files: Classe[] = [];
-                
-                switch (source.filter) {
-                    case 'all':
-                        // Get all instances of the class
-                        console.warn('filter: all not yet implemented');
-                        files = [];
-                        break;
-                    
-                    case 'children':
-                        // Get files where parent = current file
-                        const children = await (instance as any).findChildren();
-                        
-                        // Filter by target class if specified
-                        if (source.class) {
-                            files = children.filter((child: Classe) => {
-                                const constructorName = child.constructor.name;
-                                const staticClassName = (child.constructor as any).className;
-                                const instanceClassName = (child as any).className;
-                                const childName = child.getName();
-                                
-                                // Try multiple ways to match the class
-                                return constructorName === source.class || 
-                                       staticClassName === source.class ||
-                                       instanceClassName === source.class ||
-                                       childName === source.class ||
-                                       (child as any).name === source.class;
-                            });
-                        } else {
-                            files = children;
-                        }
-                        break;
-                    
-                    case 'parent':
-                        // Get the parent file
-                        const parentFile = await (instance as any).getParentFile();
-                        files = parentFile ? [parentFile as any] : [];
-                        break;
-                    
-                    case 'siblings':
-                        // Get files with the same parent
-                        const parent = await (instance as any).getParentFile();
-                        if (!parent) {
-                            files = [];
-                        } else {
-                            console.warn('filter: siblings not yet fully implemented');
-                            files = [];
-                        }
-                        break;
-                    
-                    case 'roots':
-                        // Get files without a parent
-                        console.warn('filter: roots not yet implemented');
-                        files = [];
-                        break;
-                    
-                    default:
-                        files = [];
-                }
-                
-                // Apply property value filters if specified
-                if (source.filterBy && Object.keys(source.filterBy).length > 0) {
-                    files = await this.filterFilesByPropertyValues(files, source.filterBy);
-                }
-                
-                return files;
-            }
-            
-            private async filterFilesByPropertyValues(files: Classe[], filters: { [propertyName: string]: string | string[] | number | boolean }): Promise<Classe[]> {
-                const filteredFiles: Classe[] = [];
-                
-                for (const file of files) {
-                    let includeFile = true;
-                    
-                    // Check each filter condition
-                    for (const [propertyName, expectedValue] of Object.entries(filters)) {
-                        const actualValue = await file.getPropertyValue(propertyName);
-                        
-                        // Handle array of acceptable values (OR condition)
-                        if (Array.isArray(expectedValue)) {
-                            const matchesAny = expectedValue.some(val => {
-                                if (typeof actualValue === 'string' && typeof val === 'string') {
-                                    return actualValue.toLowerCase() === val.toLowerCase();
-                                }
-                                return actualValue === val;
-                            });
-                            
-                            if (!matchesAny) {
-                                includeFile = false;
-                                break;
-                            }
-                        } else {
-                            // Single value comparison
-                            if (typeof actualValue === 'string' && typeof expectedValue === 'string') {
-                                // Case-insensitive string comparison
-                                if (actualValue.toLowerCase() !== expectedValue.toLowerCase()) {
-                                    includeFile = false;
-                                    break;
-                                }
-                            } else if (actualValue !== expectedValue) {
-                                // Direct comparison for numbers and booleans
-                                includeFile = false;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (includeFile) {
-                        filteredFiles.push(file);
-                    }
-                }
-                
-                return filteredFiles;
             }
             
             private getFormulaFunction(formula: string): (values: any[]) => any {

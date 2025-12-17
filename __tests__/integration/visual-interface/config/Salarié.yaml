@@ -40,33 +40,45 @@ properties:
 
 # Configuration d'affichage
 display:
-  containers:
+  items:
     - type: line
       title: "Identité"
       className: "personne-identity-section"
-      properties:
-        - classe
-        - nom
-        - prenom
-        - institution
+      items:
+        - type: property
+          name: classe
+        - type: property
+          name: nom
+          title: Nom de famille
+        - type: property
+          name: prenom
+        - type: property
+          name: institution
     
     - type: tabs
       title: "Informations"
       className: "personne-info-tabs"
       tabs:
         - name: "Professionnel"
-          properties:
-            - postes
-            - dateEntree
-            - statut
-            - competences
+          items:
+            - type: property
+              name: postes
+            - type: property
+              name: dateEntree
+            - type: property
+              name: statut
+            - type: property
+              name: competences
         - name: "Contact"
-          properties:
-            - email
-            - telephone
+          items:
+            - type: property
+              name: email
+            - type: property
+              name: telephone
     
     - type: fold
-      foldTitle: "Notes supplémentaires"
+      title: "Notes supplémentaires"
       className: "personne-notes-fold"
-      properties:
-        - notes
+      items:
+        - type: property
+          name: notes

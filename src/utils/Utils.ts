@@ -1,8 +1,4 @@
-import { setIcon } from "../App";
-
-
-
-export function addFold(parentContainer: HTMLElement, childContainer: HTMLElement) {
+export function addFold(parentContainer: HTMLElement, childContainer: HTMLElement, app?: any) {
     let isFolded = false;
     const arrow = document.createElement("span");
     arrow.style.cursor = "pointer";
@@ -12,7 +8,9 @@ export function addFold(parentContainer: HTMLElement, childContainer: HTMLElemen
     const updateArrow = () => {
         arrow.innerHTML = '';
         const iconName = isFolded ? 'chevron-right' : 'chevron-down';
-        setIcon(arrow, iconName);
+        if (app?.setIcon) {
+            app.setIcon(arrow, iconName);
+        }
     };
 
     updateArrow();

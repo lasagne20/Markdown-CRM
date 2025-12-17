@@ -93,30 +93,40 @@ properties:
 
 # Configuration d'affichage
 display:
-  containers:
+  items:
     - type: line
       title: "Informations principales"
       className: "institution-info-section"
-      properties:
-        - nom
-        - type
-        - secteur
+      items:
+        - type: property
+          name: nom
+        - type: property
+          name: type
+        - type: property
+          name: secteur
     
     - type: tabs
       title: "Détails"
       className: "institution-details-tabs"
       tabs:
         - name: "Contact"
-          properties:
-            - siteWeb
-            - email
-            - telephonePrincipal
-            - adresse
+          items:
+            - type: property
+              name: siteWeb
+            - type: property
+              name: email
+            - type: property
+              name: telephonePrincipal
+            - type: property
+              name: adresse
         - name: "Informations"
-          properties:
-            - dateCreation
-            - nombreEmployes
-            - description
+          items:
+            - type: property
+              name: dateCreation
+            - type: property
+              name: nombreEmployes
+            - type: property
+              name: description
     
     - type: table
       title: "Membres de l'institution"

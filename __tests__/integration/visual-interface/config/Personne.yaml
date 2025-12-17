@@ -150,27 +150,36 @@ process:
         
 # Configuration d'affichage
 display:
-  containers:
+  items:
     - type: line
       title: "Identité"
       className: "personne-identity-section"
-      properties:
-        - classe
-        - nom
-        - prenom
-        - institution
+      items:
+        - type: property
+          name: classe
+        - type: property
+          name: nom
+        - type: property
+          name: prenom
+        - type: property
+          name: institution
     
     - type: tabs
       title: "Informations"
       className: "personne-info-tabs"
       tabs:
         - name: "Professionnel"
-          properties:
-            - postes
-            - relation
-            - statut
+          items:
+            - type: property
+              name: postes
+            - type: property
+              name: relation
+            - type: property
+              name: statut
         - name: "Contact"
-          properties:
-            - email
-            - telephone
+          items:
+            - type: property
+              name: email
+            - type: property
+              name: telephone
   

@@ -115,41 +115,57 @@ properties:
     icon: 📅
 
 display:
-  containers:
+  items:
     - type: line
       title: "Identification"
       className: "lieu-identity-section"
-      properties:
-        - nom
-        - type
-        - parent
+      items:
+        - type: property
+          name: nom
+        - type: property
+          name: type
+        - type: property
+          name: parent
         
     - type: tabs
       title: "Informations"
       className: "lieu-info-tabs"
       tabs:
         - name: "Général"
-          properties:
-            - code_postal
-            - code_insee
-            - population
-            - superficie
+          items:
+            - type: property
+              name: code_postal
+            - type: property
+              name: code_insee
+            - type: property
+              name: population
+            - type: property
+              name: superficie
         - name: "Coordonnées"
-          properties:
-            - adresse
-            - telephone
-            - email
-            - site_web
+          items:
+            - type: property
+              name: adresse
+            - type: property
+              name: telephone
+            - type: property
+              name: email
+            - type: property
+              name: site_web
         - name: "Relations"
-          properties:
-            - contacts
-            - institutions
-            - projets
+          items:
+            - type: property
+              name: contacts
+            - type: property
+              name: institutions
+            - type: property
+              name: projets
         
     - type: fold
-      foldTitle: "Description"
+      title: "Description"
       className: "lieu-description-fold"
-      properties:
-        - description
-        - date_creation
+      items:
+        - type: property
+          name: description
+        - type: property
+          name: date_creation
 

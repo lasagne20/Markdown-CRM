@@ -56,17 +56,76 @@ export interface TableTotalConfig {
     propertyName?: string; // Property to calculate on (for sum, avg, min, max)
 }
 
-export interface DisplayContainer {
-    type: 'line' | 'column' | 'custom' | 'tabs' | 'fold' | 'table';
-    properties?: string[];
+// Base interface for all display items
+interface BaseDisplayItem {
+    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table';
+}
+
+// Property display item
+export interface PropertyDisplayItem extends BaseDisplayItem {
+    type: 'property';
+    name: string;
+    title?: string; // Custom display title
+    static?: boolean;
+}
+
+// Button display item
+export interface ButtonDisplayItem extends BaseDisplayItem {
+    type: 'button';
+    label: string;
+    process: string;
+    icon?: string;
+    className?: string;
+}
+
+// Container display items (line, column)
+export interface ContainerDisplayItem extends BaseDisplayItem {
+    type: 'line' | 'column';
     className?: string;
     title?: string;
-    tabs?: TabConfig[]; // Pour le type tabs
-    foldTitle?: string; // Pour le type fold
-    // Pour le type table
-    source?: TableSourceConfig;
+    items: DisplayItem[];
+}
+
+// Tabs display item
+export interface TabsDisplayItem extends BaseDisplayItem {
+    type: 'tabs';
+    className?: string;
+    title?: string;
+    tabs: Array<{
+        name: string;
+        items: DisplayItem[];
+    }>;
+}
+
+// Fold display item
+export interface FoldDisplayItem extends BaseDisplayItem {
+    type: 'fold';
+    title: string;
+    className?: string;
+    items: DisplayItem[];
+}
+
+// Table display item
+export interface TableDisplayItem extends BaseDisplayItem {
+    type: 'table';
+    title?: string;
+    className?: string;
+    source: TableSourceConfig;
     columns?: TableColumnConfig[];
     totals?: TableTotalConfig[];
+}
+
+// Union type for all display items
+export type DisplayItem = 
+    | PropertyDisplayItem 
+    | ButtonDisplayItem 
+    | ContainerDisplayItem 
+    | TabsDisplayItem 
+    | FoldDisplayItem 
+    | TableDisplayItem;
+
+export interface DisplayContainer {
+    items: DisplayItem[];
 }
 
 export interface SubClassConfig {
@@ -111,11 +170,9 @@ export interface ClassConfig {
         subClasses: SubClassConfig[];
     };
     properties: { [key: string]: PropertyConfig };
-    display?: {
-        layout?: 'default' | 'custom';
-        containers?: DisplayContainer[];
-    };
+    display?: DisplayContainer;
     data?: DataSourceConfig[]; // Data sources for pre-populating instances
     populate?: PopulateConfig[]; // Properties to prompt for during file creation
     process?: ProcessConfig[]; // Automated processes to run on triggers
+    rename?: string; // Template for renaming files (e.g., "{date} - {client} - {current}")
 }

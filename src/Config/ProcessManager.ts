@@ -144,6 +144,31 @@ export class ProcessManager {
     }
 
     /**
+     * Execute a process manually (e.g., from a button)
+     */
+    async execute(processConfig: ProcessConfig, instance: Classe): Promise<void> {
+        console.log(`🔘 Manually executing process: ${processConfig.name}`);
+        
+        // Evaluate conditions
+        const conditionsMet = await this.conditionManager.evaluateConditions(
+            processConfig.conditions,
+            instance
+        );
+
+        if (!conditionsMet) {
+            console.log(`⏭️  Process ${processConfig.name} conditions not met`);
+            return;
+        }
+
+        console.log(`✅ Executing actions for process ${processConfig.name}...`);
+
+        // Execute all actions in order
+        for (const action of processConfig.actions) {
+            await this.executeAction(action, instance, undefined);
+        }
+    }
+
+    /**
      * Run a single process
      */
     private async runProcess(

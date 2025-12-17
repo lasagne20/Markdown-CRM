@@ -1,6 +1,15 @@
 import { Classe } from '../vault/Classe';
 import { Vault } from '../vault/Vault';
-import { DisplayContainer } from '../Config/interfaces';
+import { TableSourceConfig, TableColumnConfig, TableTotalConfig } from '../Config/interfaces';
+
+/**
+ * Table configuration interface
+ */
+export interface TableConfig {
+    source?: TableSourceConfig;
+    columns?: TableColumnConfig[];
+    totals?: TableTotalConfig[];
+}
 
 /**
  * DynamicTable - Manages dynamic table rendering with filters, sorting, and totals
@@ -14,10 +23,10 @@ export class DynamicTable {
         currentSort: { column: number; ascending: boolean };
         filters: Map<number, string>;
     };
-    private config: DisplayContainer;
+    private config: TableConfig;
     private vault: Vault;
 
-    constructor(files: Classe[], config: DisplayContainer, vault: Vault) {
+    constructor(files: Classe[], config: TableConfig, vault: Vault) {
         this.config = config;
         this.vault = vault;
         

@@ -1,11 +1,13 @@
 # Display Configuration
 
-The display configuration allows you to completely customize the presentation of class properties in the interface. You can organize your properties into sections, tabs, and collapsible areas.
+The display configuration allows you to completely customize the presentation of class properties in the interface. You can organize your properties into sections, tabs, collapsible areas, buttons, and more using a flexible item-based system.
 
 ## Table of Contents
 
 - [Basic Structure](#basic-structure)
-- [Container Types](#container-types)
+- [Display Item Types](#display-item-types)
+  - [Property - Display a Property](#property---display-a-property)
+  - [Button - Action Trigger](#button---action-trigger)
   - [Line - Horizontal Layout](#line---horizontal-layout)
   - [Column - Vertical Layout](#column---vertical-layout)
   - [Tabs - Tabbed Interface](#tabs---tabbed-interface)
@@ -19,41 +21,76 @@ The display configuration goes in the `display` section of the class YAML config
 
 ```yaml
 display:
-  containers:
-    - type: line | column | tabs | fold
-      title: "Section Title"
-      className: "custom-css-class"
-      properties:
-        - property1
-        - property2
+  items:
+    - type: property | button | line | column | tabs | fold | table
+      # type-specific properties...
 ```
 
-### Common Properties
+All items can have an optional `className` for custom styling.
 
-All containers share these base properties:
+## Display Item Types
+
+### Property - Display a Property
+
+Displays a single property with optional custom title and static mode.
+
+```yaml
+- type: property
+  name: email
+  title: "Email Address"  # Optional: custom display title
+  static: true            # Optional: display as read-only
+  className: "custom-property"  # Optional: CSS class
+```
+
+**Properties:**
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `type` | string | ✅ | Container type (`line`, `column`, `tabs`, `fold`) |
-| `title` | string | ❌ | Title displayed above the container |
-| `className` | string | ❌ | Custom CSS class for styling |
-| `properties` | string[] | ❌* | List of property names to display |
+| `type` | string | ✅ | Must be `"property"` |
+| `name` | string | ✅ | Property key from properties section |
+| `title` | string | ❌ | Custom title override |
+| `static` | boolean | ❌ | Display as read-only |
+| `className` | string | ❌ | Custom CSS class |
 
-*Required except for `tabs` type which uses `tabs` instead
+**Note:** The `title` and `static` parameters are now passed to the property's `getDisplay()` method as arguments, rather than modifying the property object directly.
 
-## Container Types
+### Button - Action Trigger
+
+Displays a button that triggers a named process.
+
+```yaml
+- type: button
+  label: "Convert to Customer"
+  process: convertToCustomer  # Name of process defined in process section
+  icon: user-plus             # Optional: icon name
+  className: "primary-button"  # Optional: CSS class
+```
+
+**Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | string | ✅ | Must be `"button"` |
+| `label` | string | ✅ | Button text |
+| `process` | string | ✅ | Process name to execute |
+| `icon` | string | ❌ | Icon identifier |
+| `className` | string | ❌ | Custom CSS class |
 
 ### Line - Horizontal Layout
 
-Displays properties on a single horizontal line, ideal for short information.
+Displays items horizontally, ideal for short information.
 
 ```yaml
 - type: line
   title: "Basic Information"
-  properties:
-    - name
-    - email
-    - phone
+  className: "header-line"
+  items:
+    - type: property
+      name: name
+    - type: property
+      name: email
+    - type: property
+      name: phone
 ```
 
 **Result:**
@@ -65,24 +102,35 @@ Displays properties on a single horizontal line, ideal for short information.
 └──────────────────────────────────────┘
 ```
 
+**Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | string | ✅ | Must be `"line"` |
+| `title` | string | ❌ | Title displayed above |
+| `items` | array | ✅ | Array of display items |
+| `className` | string | ❌ | Custom CSS class |
+
 **Best for:**
 - Key identifiers (ID, code, reference)
-- Status indicators
+- Status indicators with action buttons
 - Quick metadata
 - Fields with short values
 
 ### Column - Vertical Layout
 
-Displays properties in a vertical column, perfect for wider fields.
+Displays items vertically, perfect for wider fields.
 
 ```yaml
 - type: column
   title: "Contact Details"
-  properties:
-    - address
-    - city
-    - postal_code
-    - country
+  items:
+    - type: property
+      name: address
+    - type: property
+      name: city
+    - type: property
+      name: postal_code
 ```
 
 **Result:**
@@ -93,9 +141,17 @@ Displays properties in a vertical column, perfect for wider fields.
 │ Address: [________________]          │
 │ City: [________________]             │
 │ Postal Code: [________________]      │
-│ Country: [________________]          │
 └──────────────────────────────────────┘
 ```
+
+**Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | string | ✅ | Must be `"column"` |
+| `title` | string | ❌ | Title displayed above |
+| `items` | array | ✅ | Array of display items |
+| `className` | string | ❌ | Custom CSS class |
 
 **Best for:**
 - Address fields
@@ -105,29 +161,34 @@ Displays properties in a vertical column, perfect for wider fields.
 
 ### Tabs - Tabbed Interface
 
-Organizes properties into clickable tabs to save vertical space.
+Organizes items into clickable tabs to save vertical space.
 
 ```yaml
 - type: tabs
   title: "Complete Profile"
   tabs:
-    - title: "General"
-      properties:
-        - name
-        - email
-        - phone
+    - name: "General"
+      items:
+        - type: property
+          name: name
+        - type: property
+          name: email
+        - type: property
+          name: phone
         
-    - title: "Address"
-      properties:
-        - street
-        - city
-        - country
+    - name: "Address"
+      items:
+        - type: property
+          name: street
+        - type: property
+          name: city
         
-    - title: "Professional"
-      properties:
-        - company
-        - job_title
-        - department
+    - name: "Professional"
+      items:
+        - type: property
+          name: company
+        - type: property
+          name: job_title
 ```
 
 **Result:**
@@ -143,6 +204,17 @@ Organizes properties into clickable tabs to save vertical space.
 └──────────────────────────────────────┘
 ```
 
+**Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | string | ✅ | Must be `"tabs"` |
+| `title` | string | ❌ | Title displayed above |
+| `tabs` | array | ✅ | Array of tab objects |
+| `tabs[].name` | string | ✅ | Tab label |
+| `tabs[].items` | array | ✅ | Items in this tab |
+| `className` | string | ❌ | Custom CSS class |
+
 **Best for:**
 - Grouping related properties
 - Large number of fields
@@ -156,11 +228,11 @@ A section that can be collapsed/expanded, useful for secondary information.
 ```yaml
 - type: fold
   title: "Advanced Options"
-  collapsed: true  # Optional: starts collapsed
-  properties:
-    - advanced_setting_1
-    - advanced_setting_2
-    - debug_mode
+  items:
+    - type: property
+      name: advanced_setting_1
+    - type: property
+      name: advanced_setting_2
 ```
 
 **Result (collapsed):**
@@ -177,9 +249,17 @@ A section that can be collapsed/expanded, useful for secondary information.
 ├──────────────────────────────────────┤
 │ Advanced Setting 1: [____]           │
 │ Advanced Setting 2: [____]           │
-│ Debug Mode: [✓]                      │
 └──────────────────────────────────────┘
 ```
+
+**Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | string | ✅ | Must be `"fold"` |
+| `title` | string | ✅ | Fold header text |
+| `items` | array | ✅ | Items in fold |
+| `className` | string | ❌ | Custom CSS class |
 
 **Best for:**
 - Optional/advanced fields
@@ -773,20 +853,70 @@ containers:
 4. Test with simple configuration first
 
 ### Tab Not Showing
-1. Ensure using `tabs` array, not `properties`
-2. Each tab needs `title` and `properties`
+1. Ensure using `tabs` array with `items`
+2. Each tab needs `name` and `items`
 3. Check for proper nesting
+
+## Technical Implementation
+
+### getDisplay() Method Signature
+
+Properties receive display configuration as arguments:
+
+```typescript
+async getDisplay(
+    classe: Classe,
+    args?: {
+        staticMode?: boolean;  // Display as read-only
+        title?: string;        // Custom display title
+    }
+): Promise<HTMLElement>
+```
+
+**Example in ClassConfigManager:**
+
+```typescript
+// Property item with custom title and static mode
+{
+    type: 'property',
+    name: 'email',
+    title: 'Professional Email',
+    static: true
+}
+
+// Internally calls:
+await property.getDisplay(classeInstance, {
+    title: 'Professional Email',
+    staticMode: true
+});
+```
+
+### Display Item Rendering Flow
+
+1. `getDisplay()` is called on the Classe instance
+2. Iterates through `display.items` array
+3. For each item, calls `renderDisplayItem(item)`
+4. Routes to specific renderer based on `item.type`:
+   - `property` → `renderProperty()` → calls `property.getDisplay()`
+   - `button` → `renderButton()` → creates button with process handler
+   - `line`/`column` → `renderContainer()` → recursively renders nested items
+   - `tabs` → `renderTabs()` → creates tab interface
+   - `fold` → `renderFold()` → creates collapsible section
+   - `table` → `renderTable()` → creates DynamicTable instance
+5. Returns complete DOM tree
 
 ## Performance Considerations
 
-- **Light containers**: `line` and `column` render quickly
-- **Heavy containers**: `tabs` with many tabs may slow down
-- **Nested containers**: Limit nesting depth to 2-3 levels
+- **Light items**: `property` and `button` render instantly
+- **Heavy items**: `tabs` with many tabs may slow down initial render
+- **Nested items**: Limit nesting depth to 2-3 levels for optimal performance
 - **Property count**: Keep total visible properties under 50
+- **Table performance**: Tables with 100+ rows may require pagination
 
 ## See Also
 
 - [Property Types](./Property-Types.md) - All available property types
 - [Static Properties](./Static-Properties.md) - Non-editable fields
+- [Process System](./Process-System.md) - Creating button actions
 - [Architecture](./Architecture.md) - System design
 - [Data Loading](./Data-Loading.md) - Loading data from JSON
