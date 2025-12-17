@@ -88,7 +88,15 @@ export class TemplateEngine {
     ): Promise<string | null> {
         console.log(`🎨 Processing template from instance: "${template}"`);
         
+        const originalTemplate = template.trim();
         let result = template;
+
+        // Only treat as direct property expression if it contains {placeholders} already
+        // or if it's explicitly "current" or matches array/nested notation
+        if (!template.includes('{') && this.isPropertyAccessPattern(template)) {
+            console.log(`📝 Direct property expression detected: "${template}"`);            
+            result = `{${template}}`;
+        }
 
         // Find all placeholders in the template
         const placeholderRegex = /\{([^}]+)\}/g;
@@ -98,7 +106,7 @@ export class TemplateEngine {
         console.log(`📊 Metadata:`, metadata);
 
         // Replace placeholders
-        for (const match of Array.from(template.matchAll(placeholderRegex))) {
+        for (const match of Array.from(result.matchAll(placeholderRegex))) {
             const placeholder = match[1];
             let value: any;
 
@@ -108,9 +116,22 @@ export class TemplateEngine {
                     return null;
                 }
 
-                // Clean current value from previous template applications
-                value = this.cleanCurrentValue(currentValue, template);
-                console.log(`  🔄 {${placeholder}} = "${value}" (current value)`);
+                // If original template is ONLY "current" or "{current}", return full link
+                // This is typically for FileProperty assignments
+                if (originalTemplate === 'current' || originalTemplate === '{current}') {
+                    const file = instance.getFile();
+                    if (file) {
+                        value = `[[${file.path}|${currentValue}]]`;
+                        console.log(`  🔗 {${placeholder}} = "${value}" (current as full link)`);
+                    } else {
+                        value = currentValue;
+                        console.log(`  🔄 {${placeholder}} = "${value}" (current value, no file)`);
+                    }
+                } else {
+                    // Part of a larger template - clean current value from previous template applications
+                    value = this.cleanCurrentValue(currentValue, result);
+                    console.log(`  🔄 {${placeholder}} = "${value}" (current value)`);
+                }
             } else if (placeholder.includes('[') || placeholder.includes('.')) {
                 // For complex paths, use metadata directly
                 if (placeholder.includes('[') && placeholder.includes(']')) {
@@ -301,6 +322,18 @@ export class TemplateEngine {
             return value.toISOString().split('T')[0]; // YYYY-MM-DD
         }
         return String(value);
+    }
+
+    /**
+     * Check if a string looks like a property access pattern
+     * Only matches: "current", array notation like "array[0]", or nested like "prop.nested"
+     * Does NOT match simple strings that look like values (no special chars)
+     */
+    private static isPropertyAccessPattern(value: string): boolean {
+        // Must be "current" keyword or contain array/dot notation
+        return value === 'current' || 
+               value.includes('[') || 
+               value.includes('.');
     }
 
     /**

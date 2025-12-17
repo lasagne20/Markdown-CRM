@@ -335,8 +335,8 @@ export class ProcessManager {
             const processedProperties: { [key: string]: any } = {};
             if (action.properties) {
                 for (const [propName, propValue] of Object.entries(action.properties)) {
-                    // Process placeholders in property values using TemplateEngine
-                    if (typeof propValue === 'string' && propValue.includes('{')) {
+                    // Treat property values as template expressions
+                    if (typeof propValue === 'string') {
                         processedProperties[propName] = await TemplateEngine.processTemplateFromInstance(
                             propValue,
                             instance,

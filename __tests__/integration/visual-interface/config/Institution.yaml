@@ -102,7 +102,7 @@ process:
         className: Personne
         name: "Nouvelle Personne"
         properties:
-          institution: "{current}"
+          institution: current
           statut: "Actif"
 
 # Configuration d'affichage

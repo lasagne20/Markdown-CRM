@@ -10,7 +10,21 @@ describe('ProcessManager - CreateFileAction with placeholders', () => {
 
     beforeEach(() => {
         mockFactory = {
-            getClass: jest.fn()
+            getClass: jest.fn(),
+            getClassConfig: jest.fn().mockResolvedValue({
+                className: 'Personne',
+                classIcon: '👤',
+                properties: {
+                    institution: {
+                        type: 'FileProperty',
+                        classes: ['Institution']
+                    },
+                    statut: {
+                        type: 'SelectProperty',
+                        options: ['Actif', 'Inactif']
+                    }
+                }
+            })
         };
 
         mockPopulateManager = {
@@ -77,7 +91,7 @@ describe('ProcessManager - CreateFileAction with placeholders', () => {
                 'New Person',
                 {
                     properties: {
-                        institution: 'Global Corp',
+                        institution: '[[Institutions/Global Corp/Global Corp.md|Global Corp]]',
                         statut: 'Actif'
                     }
                 }
@@ -171,6 +185,54 @@ describe('ProcessManager - CreateFileAction with placeholders', () => {
                 {
                     properties: {
                         company: 'Global Corp',
+                        statut: 'Actif'
+                    }
+                }
+            );
+        });
+
+        it('should convert {current} to Obsidian link for FileProperty', async () => {
+            const mockClassConstructor = class extends Classe {
+                static className = 'Personne';
+            };
+            
+            const mockCurrentFile = {
+                path: 'Institutions/Global Corp.md',
+                basename: 'Global Corp',
+                getPath: () => 'Institutions/Global Corp.md'
+            };
+
+            const mockInstance = new Classe(mockVault, mockCurrentFile as any);
+            
+            mockFactory.getClass.mockResolvedValue(mockClassConstructor);
+            mockVault.createFile.mockResolvedValue({ path: 'Personnes/New Person.md' });
+
+            const process = {
+                name: 'CreatePersonProcess',
+                triggers: [],
+                conditions: [],
+                actions: [
+                    {
+                        type: 'CreateFileAction' as const,
+                        className: 'Personne',
+                        name: 'New Person',
+                        properties: {
+                            institution: 'current',  // Direct expression without braces
+                            statut: 'Actif'
+                        }
+                    }
+                ]
+            };
+
+            await processManager.execute(process, mockInstance);
+
+            // For FileProperty, the value should be converted to an Obsidian link
+            expect(mockVault.createFile).toHaveBeenCalledWith(
+                mockClassConstructor,
+                'New Person',
+                {
+                    properties: {
+                        institution: '[[Institutions/Global Corp.md|Global Corp]]',
                         statut: 'Actif'
                     }
                 }
