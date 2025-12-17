@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { TimeProperty } from '../../src/properties/TimeProperty ';
+import { TimeProperty } from '../../src/properties/TimeProperty';
 
 // Mock flatpickr
 jest.mock('flatpickr', () => {
@@ -250,10 +250,13 @@ describe('TimeProperty', () => {
             const container = timeProperty.fillDisplay('14:30', mockUpdate);
             
             expect(container.tagName).toBe('DIV');
-            expect(container.classList.contains('field-container')).toBe(true);
+            expect(container.classList.contains('metadata-field')).toBe(true);
             
-            const link = container.querySelector('.time-field-link') as HTMLElement;
-            const input = container.querySelector('input') as HTMLInputElement;
+            const fieldContainer = container.querySelector('.field-container') as HTMLElement;
+            expect(fieldContainer).toBeTruthy();
+            
+            const link = fieldContainer?.querySelector('.time-field-link') as HTMLElement;
+            const input = fieldContainer?.querySelector('input') as HTMLInputElement;
             
             expect(link).toBeTruthy();
             expect(input).toBeTruthy();
@@ -266,8 +269,9 @@ describe('TimeProperty', () => {
             const mockUpdate = jest.fn();
             const container = timeProperty.fillDisplay('invalid', mockUpdate);
             
-            const link = container.querySelector('.time-field-link') as HTMLElement;
-            const input = container.querySelector('input') as HTMLInputElement;
+            const fieldContainer = container.querySelector('.field-container') as HTMLElement;
+            const link = fieldContainer?.querySelector('.time-field-link') as HTMLElement;
+            const input = fieldContainer?.querySelector('input') as HTMLInputElement;
             
             expect(input?.style.display).toBe('block');
             expect(link?.style.display).toBe('none');
@@ -277,8 +281,9 @@ describe('TimeProperty', () => {
             const mockUpdate = jest.fn();
             const container = timeProperty.fillDisplay('', mockUpdate);
             
-            const link = container.querySelector('.time-field-link') as HTMLElement;
-            const input = container.querySelector('input') as HTMLInputElement;
+            const fieldContainer = container.querySelector('.field-container') as HTMLElement;
+            const link = fieldContainer?.querySelector('.time-field-link') as HTMLElement;
+            const input = fieldContainer?.querySelector('input') as HTMLInputElement;
             
             expect(input?.style.display).toBe('block');
             expect(link?.style.display).toBe('none');

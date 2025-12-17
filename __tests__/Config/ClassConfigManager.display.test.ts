@@ -59,8 +59,8 @@ describe('ClassConfigManager - Display Configuration', () => {
             // Default display should be 'object'
             expect(mockObjectProperty.display).toBe('object');
             
-            // Call getDisplay with displayMode: 'table'
-            await mockObjectProperty.getDisplay(mockClasse, { displayMode: 'table' });
+            // Call getDisplay with display: 'table'
+            await mockObjectProperty.getDisplay(mockClasse, { display: 'table' });
             
             // Verify display was updated to 'table'
             expect(mockObjectProperty.display).toBe('table');
@@ -82,7 +82,7 @@ describe('ClassConfigManager - Display Configuration', () => {
             
             expect(mockObjectProperty.display).toBe('object');
             
-            await mockObjectProperty.getDisplay(mockClasse, { displayMode: 'list' });
+            await mockObjectProperty.getDisplay(mockClasse, { display: 'list' });
             
             expect(mockObjectProperty.display).toBe('list');
         });
@@ -151,7 +151,7 @@ describe('ClassConfigManager - Display Configuration', () => {
             };
             
             await mockObjectProperty.getDisplay(mockClasse, { 
-                displayMode: 'table',
+                display: 'table',
                 title: 'Test Title',
                 staticMode: true
             });
@@ -160,7 +160,7 @@ describe('ClassConfigManager - Display Configuration', () => {
             expect(getDisplaySpy).toHaveBeenCalledWith(
                 mockClasse,
                 expect.objectContaining({
-                    displayMode: 'table',
+                    display: 'table',
                     title: 'Test Title',
                     staticMode: true
                 })
@@ -190,7 +190,7 @@ describe('ClassConfigManager - Display Configuration', () => {
                 display: {
                     items: [
                         {
-                            type: 'property',
+                            type: 'property' as const,
                             name: 'items',
                             title: 'Items Table',
                             display: 'table'
@@ -204,7 +204,8 @@ describe('ClassConfigManager - Display Configuration', () => {
             const config = await configManager.getClassConfig('TestClass');
             
             // Verify the display configuration includes the display field
-            expect(config.display.items[0]).toEqual({
+            expect(config.display).toBeDefined();
+            expect(config.display!.items[0]).toEqual({
                 type: 'property',
                 name: 'items',
                 title: 'Items Table',

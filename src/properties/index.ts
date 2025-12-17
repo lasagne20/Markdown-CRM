@@ -13,7 +13,7 @@ export { MultiSelectProperty } from './MultiSelectProperty';
 export { EmailProperty } from './EmailProperty';
 export { PhoneProperty } from './PhoneProperty';
 export { RatingProperty } from './RatingProperty';
-export { TimeProperty } from './TimeProperty ';
+export { TimeProperty } from './TimeProperty';
 export { HearderProperty } from './HeaderProperty';
 export { FormulaProperty } from './FormulaProperty';
 export { AdressProperty } from './AdressProperty';
