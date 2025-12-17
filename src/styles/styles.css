@@ -312,10 +312,9 @@ If your plugin does not need CSS, delete this file.
 
 /* Lignes des objets (les champs dynamiques) : alignement des données */
 .metadata-object-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Colonnes dynamiques */
+    display: flex;
+    flex-direction: column;
     gap: 10px;
-    align-items: center; /* Aligne les champs avec les en-têtes */
     padding: 8px;
     border-radius: 5px;
     background-color: var(--background-secondary);
@@ -323,6 +322,13 @@ If your plugin does not need CSS, delete this file.
     transition: background-color 0.2s ease-in-out, transform 0.2s;
 }
 
+/* Mode grille pour affichage objet standard (non custom) */
+.metadata-object-row.table-mode {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    flex-direction: unset;
+    align-items: center;
+}
 
 /* Effet au survol d'une ligne */
 .metadata-object-row:hover {
@@ -334,6 +340,22 @@ If your plugin does not need CSS, delete this file.
     opacity: 0.5;
     transform: scale(1.03);
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Container for custom display layout in ObjectProperty */
+.metadata-object-custom-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+/* Wrapper for display containers (line, column, etc.) */
+.metadata-container-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 4px;
 }
 
 /* Style du bouton de suppression et d'ajout */

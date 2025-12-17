@@ -467,6 +467,7 @@ export class ObjectProperty extends Property{
     createObjectRow(values : any, update : (value: any) => Promise<void>, objects: any, index: number, container: HTMLDivElement): HTMLDivElement {
         const row = document.createElement("div");
         row.classList.add("metadata-object-row");
+        row.classList.add("table-mode"); // Mode grille pour l'affichage objet standard
 
         if (this.allowMove){
             row.draggable = true;

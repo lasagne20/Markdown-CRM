@@ -132,6 +132,40 @@ properties:
       - Salarié
       - Autre
 
+  evenements:
+    type: ObjectProperty
+    title: Événements
+    icon: 📅
+    defaultValue: []
+    properties:
+      date:
+        type: DateProperty
+        title: Date
+        icon: 📅
+      etat:
+        type: SelectProperty
+        title: État
+        icon: 🏷️
+        options:
+          - name: À planifier
+            color: gray
+          - name: Confirmé
+            color: green
+          - name: En cours
+            color: yellow
+          - name: Terminé
+            color: blue
+          - name: Annulé
+            color: red
+      animation:
+        type: TextProperty
+        title: Animation
+        icon: 🎭
+      animateurs:
+        type: TextProperty
+        title: Animateurs
+        icon: 👥
+
 
 process:
   - name: AutoRenameProcess
@@ -192,6 +226,22 @@ display:
               name: relation
             - type: property
               name: statut
+            - type: property
+              name: evenements
+              display:
+                items:
+                  - type: line
+                    items:
+                      - type: property
+                        name: date
+                      - type: property
+                        name: etat
+                      - type: property
+                        name: animation
+                  - type: line
+                    items:
+                      - type: property
+                        name: animateurs
         - name: "Contact"
           items:
             - type: property

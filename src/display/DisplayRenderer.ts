@@ -69,6 +69,13 @@ export class DisplayRenderer {
             return null;
         }
         
+        // If item has custom display config for ObjectProperty, apply it temporarily
+        let originalDisplay: any;
+        if (item.display && property instanceof Object && 'display' in property) {
+            originalDisplay = (property as any).display;
+            (property as any).display = item.display;
+        }
+        
         // For ObjectProperty context (array of objects), get value from context
         let value: any;
         if (Array.isArray(this.context)) {
@@ -89,15 +96,23 @@ export class DisplayRenderer {
             };
 
         // For Classe context, use getDisplay
+        let result: HTMLElement | null;
         if (this.context.getProperties) {
-            return await property.getDisplay(this.context, {
+            result = await property.getDisplay(this.context, {
                 title: item.title, 
                 staticMode: item.static
             });
+        } else {
+            // For ObjectProperty context, use fillDisplay directly
+            result = property.fillDisplay(value, updateFn);
         }
         
-        // For ObjectProperty context, use fillDisplay directly
-        return property.fillDisplay(value, updateFn);
+        // Restore original display config
+        if (originalDisplay !== undefined) {
+            (property as any).display = originalDisplay;
+        }
+        
+        return result;
     }
 
     private renderButton(item: any): HTMLElement {
