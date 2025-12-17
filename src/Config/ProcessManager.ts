@@ -305,8 +305,13 @@ export class ProcessManager {
         console.log(`📄 Creating new file of class ${action.className}`);
 
         try {
-            // Get the class constructor
-            const classConstructor = this.vault.getClasseFromName(action.className);
+            // Get the class constructor from dynamic factory
+            const factory = this.vault.getDynamicClassFactory();
+            if (!factory) {
+                throw new Error('DynamicClassFactory not found');
+            }
+            
+            const classConstructor = await factory.getClass(action.className);
             if (!classConstructor) {
                 throw new Error(`Class ${action.className} not found`);
             }
@@ -348,6 +353,9 @@ export class ProcessManager {
                     }
                 }
             }
+
+            // Open the newly created file
+            await this.vault.app.open(newFile.path);
 
             console.log(`✅ File created successfully: ${newFile.path}`);
         } catch (error) {

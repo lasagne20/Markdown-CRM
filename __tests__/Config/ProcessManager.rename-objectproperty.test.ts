@@ -225,7 +225,7 @@ describe('ProcessManager - RenameFileAction with ObjectProperty placeholders', (
                 getFile: jest.fn().mockReturnValue({
                     path: 'Contrats/Acme Corp - Old Name.md'
                 })
-            };
+            } as any;
 
             // Create new instance with the test file
             const testInstance = new Classe(mockVault, testFile);

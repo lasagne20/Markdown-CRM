@@ -28,15 +28,17 @@ describe('ProcessManager', () => {
                 setIcon: jest.fn((element: HTMLElement, icon: string) => {
                     element.setAttribute('data-icon', icon);
                 }),
-                needDisplayRefresh: jest.fn()
+                needDisplayRefresh: jest.fn(),
+                open: jest.fn()
             },
+            files: {},
             getClasseFromName: jest.fn(),
             createFile: jest.fn(),
             getFromFile: jest.fn(),
             getFromLink: jest.fn(),
             updateFileFromData: jest.fn().mockResolvedValue(undefined),
             getDynamicClassFactory: jest.fn().mockReturnValue({
-                getClass: jest.fn(),
+                getClass: jest.fn().mockResolvedValue(Classe),
                 getClassConfig: jest.fn(),
                 getConfigManager: jest.fn().mockReturnValue({
                     loadClassData: jest.fn().mockResolvedValue([])
@@ -495,7 +497,7 @@ describe('ProcessManager', () => {
             mockInstance.addProperty(mockProperty);
 
             const mockClassConstructor = jest.fn();
-            mockVault.getClasseFromName.mockReturnValue(mockClassConstructor);
+            mockVault.getDynamicClassFactory().getClass.mockResolvedValue(mockClassConstructor);
 
             const mockNewFile = {
                 path: 'tasks/new-task.md'
@@ -532,7 +534,7 @@ describe('ProcessManager', () => {
 
             await processManager.runProcesses('Personne', mockInstance, 'onCreate');
 
-            expect(mockVault.getClasseFromName).toHaveBeenCalledWith('Tache');
+            expect(mockVault.getDynamicClassFactory().getClass).toHaveBeenCalledWith('Tache');
             expect(mockVault.createFile).toHaveBeenCalledWith(
                 mockClassConstructor,
                 'Nouvelle tâche',

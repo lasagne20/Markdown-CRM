@@ -91,6 +91,20 @@ properties:
     defaultValue: ""
     multiline: true
 
+# Processus
+process:
+  - name: CreatePersonProcess
+    description: Crée une nouvelle personne rattachée à cette institution
+    triggers: []
+    conditions: []
+    actions:
+      - type: CreateFileAction
+        className: Personne
+        name: "Nouvelle Personne"
+        properties:
+          institution: "{current}"
+          statut: "Actif"
+
 # Configuration d'affichage
 display:
   items:
@@ -104,6 +118,11 @@ display:
           name: type
         - type: property
           name: secteur
+        - type: button
+          label: "Nouvelle Personne"
+          icon: user-plus
+          process: CreatePersonProcess
+          className: "create-person-button"
     
     - type: tabs
       title: "Détails"
