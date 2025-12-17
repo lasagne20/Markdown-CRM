@@ -117,12 +117,34 @@ export class RangeDateProperty extends DateProperty {
         }
     }
 
-    // Valide la plage de dates au format "YYYY-MM-DD to YYYY-MM-DD"
+    // Valide la plage de dates au format "YYYY-MM-DD to YYYY-MM-DD" ou "YYYY-MM-DD/YYYY-MM-DD"
     override validate(value: string): string {
-        const dateRangeRegex = /^\d{4}-\d{2}-\d{2}( to \d{4}-\d{2}-\d{2})?$/;
+        const dateRangeRegex = /^\d{4}-\d{2}-\d{2}(( to |\/)\d{4}-\d{2}-\d{2})?$/;
         return dateRangeRegex.test(value) ? value : "";
     }
 
+    /**
+     * Extract the start date from a daterange value
+     * Supports both "YYYY-MM-DD/YYYY-MM-DD" and "YYYY-MM-DD to YYYY-MM-DD" formats
+     * Returns only the first date if it's a range, otherwise returns the value as is
+     */
+    public static extractStartDateFromRange(value: string): string {
+        if (!value || typeof value !== 'string') {
+            return value;
+        }
+
+        // Check for "/" separator (YYYY-MM-DD/YYYY-MM-DD)
+        if (value.includes('/') && /^\d{4}-\d{2}-\d{2}\/\d{4}-\d{2}-\d{2}$/.test(value)) {
+            return value.split('/')[0];
+        }
+
+        // Check for " to " separator (YYYY-MM-DD to YYYY-MM-DD)
+        if (value.includes(' to ') && /^\d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}$/.test(value)) {
+            return value.split(' to ')[0];
+        }
+
+        return value;
+    }
 
     // Fonction pour extraire la première date d'une chaîne et la convertir en objet Date
     public static extractFirstDate (dateStr: string): Date | null {

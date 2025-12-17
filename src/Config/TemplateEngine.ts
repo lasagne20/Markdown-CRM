@@ -1,4 +1,5 @@
 import { Classe } from '../vault/Classe';
+import { RangeDateProperty } from '../properties/RangeDateProperty';
 
 /**
  * TemplateEngine handles template string replacement with property values
@@ -127,6 +128,13 @@ export class TemplateEngine {
                         console.log(`  🧹 Cleaned link: "${value}" → "${cleanedValue}"`);
                         value = cleanedValue;
                     }
+
+                    // Extract start date from daterange
+                    const extractedDate = RangeDateProperty.extractStartDateFromRange(value);
+                    if (extractedDate !== value) {
+                        console.log(`  📅 Extracted start date: "${value}" → "${extractedDate}"`);
+                        value = extractedDate;
+                    }
                 }
             } else {
                 // Simple property - try to get from instance's Property first (for getPretty)
@@ -145,6 +153,21 @@ export class TemplateEngine {
                     // Fallback to metadata value
                     value = metadata[placeholder];
                     console.log(`  📝 {${placeholder}} = "${value}" (metadata)`);
+                }
+
+                // Clean Obsidian links and extract daterange for simple properties too
+                if (typeof value === 'string') {
+                    const cleanedValue = this.cleanObsidianLink(value);
+                    if (cleanedValue !== value) {
+                        console.log(`  🧹 Cleaned link: "${value}" → "${cleanedValue}"`);
+                        value = cleanedValue;
+                    }
+
+                    const extractedDate = RangeDateProperty.extractStartDateFromRange(value);
+                    if (extractedDate !== value) {
+                        console.log(`  📅 Extracted start date: "${value}" → "${extractedDate}"`);
+                        value = extractedDate;
+                    }
                 }
             }
 
