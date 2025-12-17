@@ -8,7 +8,7 @@ export interface PropertyConfig {
     hint?: string;
     defaultValue?: any;
     formula?: string; // Pour FormulaProperty
-    display?: string; // Pour mode d'affichage (table, fold, etc.)
+    display?: string | DisplayContainer; // Pour mode d'affichage - string pour rétrocompat (table, list) ou DisplayContainer pour config avancée
     static?: boolean; // Pour rendre une propriété non-modifiable
     unit?: string; // Pour NumberProperty - unité de mesure (€, kg, %, etc.)
     aliases?: string[]; // Old property names for automatic migration

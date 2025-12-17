@@ -5,6 +5,8 @@ import { FileProperty } from "./FileProperty";
 import { TextProperty } from "./TextProperty";
 import { MultiFileProperty } from "./MultiFileProperty";
 import { Vault } from "../vault/Vault";
+import { DisplayContainer } from "../Config/interfaces";
+import { DisplayRenderer } from "../display/DisplayRenderer";
 
 export class ObjectProperty extends Property{
     // Used for property object
@@ -14,13 +16,18 @@ export class ObjectProperty extends Property{
     public override flexSpan = 2;
     public appendFirst : boolean = false;
     public allowMove : boolean = true;
-    public display : string = "object"; // Can be "object", "table" or "list"
+    public display : string | DisplayContainer = "object"; // Can be "object", "table", "list" or DisplayContainer
 
-    constructor(name: string, vault: Vault, properties: { [key: string]: Property }, args: { allowMove?: boolean, appendFirst?: boolean, tooltip?: string, [key: string]: any} = {}) {
+    constructor(name: string, vault: Vault, properties: { [key: string]: Property }, args: { allowMove?: boolean, appendFirst?: boolean, tooltip?: string, display?: string | DisplayContainer, [key: string]: any} = {}) {
         super(name, vault, args);
         this.appendFirst = args?.appendFirst || false;
         this.properties = properties;
         this.allowMove = args?.allowMove || true;
+        
+        // Handle display configuration
+        if (args?.display) {
+            this.display = args.display;
+        }
 
         // Assign any additional arguments to the instance
         Object.assign(this, args);
@@ -224,17 +231,36 @@ export class ObjectProperty extends Property{
         return undefined;
     }
 
-    override async getDisplay(classe: any, args?: { staticMode?: boolean; title?: string; display? : string}): Promise<HTMLDivElement> {
-        this.display = args?.display || this.display;
+    override async getDisplay(classe: any, args?: { staticMode?: boolean; title?: string; display? : string | DisplayContainer}): Promise<HTMLDivElement> {
+        if (args?.display) {
+            this.display = args.display;
+        }
         return super.getDisplay(classe, args);
     }
 
-     // Méthode principale pour obtenir l'affichage
+     // Méthode principale pour obtenir l'affichage - synchrone pour les modes standards
      override fillDisplay(values: any, update: (value: any) => Promise<void>) {
         console.log("Fill display ObjectProperty ", this.name)
         const container = document.createElement("div");
         container.classList.add("metadata-object-container");
         container.classList.add("metadata-object-container-" + this.name.toLowerCase().replace(/\s+/g, '-'));
+
+        // Si display est un DisplayContainer, la création est asynchrone donc on doit utiliser une approche différente
+        if (typeof this.display === 'object' && this.display.items) {
+            this.createHeaderForCustomDisplay(values, update, container);
+            // Créer un placeholder et lancer le rendu async
+            const placeholder = document.createElement("div");
+            placeholder.classList.add("loading-custom-display");
+            container.appendChild(placeholder);
+            
+            // Lancer le rendu asynchrone
+            this.createCustomDisplay(values, update, container).then(() => {
+                // Retirer le placeholder une fois le rendu terminé
+                placeholder.remove();
+            });
+            
+            return container;
+        }
 
         // Créer l'en-tête
         this.createHeader(values, update, container);
@@ -250,6 +276,93 @@ export class ObjectProperty extends Property{
 
         return container;
       }
+
+    // Créer un header simplifié pour le display personnalisé (sans l'en-tête title par défaut)
+    private createHeaderForCustomDisplay(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
+        const header = document.createElement("div");
+        header.classList.add("metadata-object-header");
+        
+        // Bouton d'ajout
+        const addButton = document.createElement("button");
+        this.vault.app.setIcon(addButton, "circle-plus");
+        addButton.classList.add("metadata-add-button");
+        addButton.onclick = async () => await this.addProperty(values, update, container);
+        header.appendChild(addButton);
+        
+        container.appendChild(header);
+    }
+
+    // Créer l'affichage personnalisé avec DisplayRenderer
+    private async createCustomDisplay(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
+        const displayConfig = this.display as DisplayContainer;
+        
+        // Parser les valeurs
+        let parsedValues = values;
+        if (typeof values === 'string') {
+            try {
+                parsedValues = JSON.parse(values);
+            } catch (e) {
+                parsedValues = [];
+            }
+        }
+        
+        if (!Array.isArray(parsedValues)) {
+            parsedValues = [];
+        }
+
+        const objectsContainer = document.createElement("div");
+        objectsContainer.classList.add("metadata-objects-custom-container");
+        
+        // Créer un renderer pour chaque objet
+        for (let i = 0; i < parsedValues.length; i++) {
+            const objectData = parsedValues[i];
+            const objectRow = document.createElement("div");
+            objectRow.classList.add("metadata-object-row");
+            objectRow.classList.add("metadata-object-custom-row");
+            
+            if (this.allowMove) {
+                objectRow.draggable = true;
+                objectRow.dataset.index = i.toString();
+                objectRow.style.cursor = "grab";
+            }
+
+            // Bouton de suppression
+            const deleteButton = this.createDeleteButton(values, update, i, container);
+            deleteButton.style.position = "absolute";
+            deleteButton.style.top = "0";
+            deleteButton.style.right = "0";
+            objectRow.style.position = "relative";
+            objectRow.appendChild(deleteButton);
+
+            // Créer le callback de mise à jour pour cet objet
+            const updateObjectCallback = async (propertyName: string, newValue: any) => {
+                await this.updateObject(values, update, i, this.properties[propertyName], newValue);
+            };
+
+            // Utiliser DisplayRenderer pour rendre les items
+            const renderer = new DisplayRenderer(
+                this.vault,
+                this.properties,
+                parsedValues, // Passer le contexte des données
+                updateObjectCallback
+            );
+
+            const contentContainer = document.createElement("div");
+            contentContainer.classList.add("metadata-object-custom-content");
+            await renderer.renderDisplayItems(contentContainer, displayConfig.items);
+            objectRow.appendChild(contentContainer);
+            
+            objectsContainer.appendChild(objectRow);
+        }
+
+        container.appendChild(objectsContainer);
+
+        // Activer le drag & drop si allowMove
+        if (this.allowMove) {
+            this.enableDragAndDrop(values, update, objectsContainer);
+        }
+    }
+
     createTable(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
         // Créer un tableau pour les objets
         const tableWrapper = document.createElement("div");
@@ -549,12 +662,24 @@ export class ObjectProperty extends Property{
             container.innerHTML = "";
             // Recréer l'en-tête et les objets
             console.log("Values : ", values)
-            this.createHeader(values, update, container);
-            if (this.display == "table") {
+            
+            // Si display est un DisplayContainer, utiliser le mode personnalisé
+            if (typeof this.display === 'object' && this.display.items) {
+                this.createHeaderForCustomDisplay(values, update, container);
+                const placeholder = document.createElement("div");
+                placeholder.classList.add("loading-custom-display");
+                container.appendChild(placeholder);
+                
+                await this.createCustomDisplay(values, update, container);
+                placeholder.remove();
+            }
+            else if (this.display == "table") {
+                this.createHeader(values, update, container);
                 this.createTable(values, update, container);
             }
             else {
                 // Affichage par défaut (objet)
+                this.createHeader(values, update, container);
                 this.createObjects(values, update, container);
             }
         }

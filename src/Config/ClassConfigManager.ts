@@ -10,6 +10,7 @@ import { ClassConfig, DisplayContainer } from './interfaces';
 import { DynamicTable } from '../display/DynamicTable';
 import { ProcessManager } from './ProcessManager';
 import { addFold } from '../utils/Utils';
+import { DisplayRenderer } from '../display/DisplayRenderer';
 
 
 export class ClassConfigManager {
@@ -65,7 +66,13 @@ export class ClassConfigManager {
                 const container = document.createElement("div");
                 
                 if (config.display && config.display.items) {
-                    await this.renderDisplayItems(container, config.display.items);
+                    // Utiliser DisplayRenderer pour rendre l'affichage
+                    const renderer = new DisplayRenderer(
+                        this.vault,
+                        DynamicClasseBase.Properties,
+                        this
+                    );
+                    await renderer.renderDisplayItems(container, config.display.items);
                 } else {
                     // Default display: show all properties in columns
                     for (let property of this.getProperties()) {
@@ -76,247 +83,7 @@ export class ClassConfigManager {
                 return container;
             }
 
-            private async renderDisplayItems(container: HTMLElement, items: any[]): Promise<void> {
-                for (const item of items) {
-                    const element = await this.renderDisplayItem(item);
-                    if (element) {
-                        container.appendChild(element);
-                    }
-                }
-            }
-
-            private async renderDisplayItem(item: any): Promise<HTMLElement | null> {
-                switch (item.type) {
-                    case 'property':
-                        return await this.renderProperty(item);
-                    
-                    case 'button':
-                        return this.renderButton(item);
-                    
-                    case 'line':
-                    case 'column':
-                        return await this.renderContainer(item);
-                    
-                    case 'tabs':
-                        return await this.renderTabs(item);
-                    
-                    case 'fold':
-                        return await this.renderFold(item);
-                    
-                    case 'table':
-                        return await this.renderTable(item);
-                    
-                    default:
-                        console.warn(`Unknown display item type: ${item.type}`);
-                        return null;
-                }
-            }
-
-            private async renderProperty(item: any): Promise<HTMLElement | null> {
-                const property = (this.constructor as typeof Classe).Properties[item.name];
-                if (!property) {
-                    console.warn(`Property not found: ${item.name}`);
-                    return null;
-                }
-                
-                const display = await property.getDisplay(this, {title: item.title, staticMode: item.static, displayMode: item.display});
-                
-                return display;
-            }
-
-            private renderButton(item: any): HTMLElement {
-                const button = document.createElement("button");
-                button.classList.add("mod-cta", "crm-action-button");
-                button.textContent = item.label || "Action";
-                
-                if (item.icon) {
-                    const icon = document.createElement("span");
-                    icon.classList.add("button-icon");
-                    this.vault.app.setIcon(icon, item.icon);
-                    button.insertBefore(icon, button.firstChild);
-                }
-                
-                button.addEventListener("click", async (e) => {
-                    e.stopPropagation();
-                    await this.executeProcess(item.process);
-                });
-                
-                return button;
-            }
-
-            private async renderContainer(item: any): Promise<HTMLElement> {
-                const wrapper = document.createElement("div");
-                wrapper.classList.add("metadata-container-wrapper");
-                
-                if (item.className) {
-                    wrapper.classList.add(item.className);
-                }
-                
-                if (item.title) {
-                    const title = document.createElement("h3");
-                    title.textContent = item.title;
-                    title.classList.add("container-section-title");
-                    wrapper.appendChild(title);
-                }
-                
-                const container = document.createElement("div");
-                
-                if (item.type === 'line') {
-                    container.classList.add("metadata-line");
-                } else if (item.type === 'column') {
-                    container.classList.add("metadata-column");
-                }
-                
-                if (item.items) {
-                    await this.renderDisplayItems(container, item.items);
-                }
-                
-                wrapper.appendChild(container);
-                return wrapper;
-            }
-
-            private async renderTabs(item: any): Promise<HTMLElement> {
-                const container = document.createElement("div");
-                container.classList.add("metadata-tabs-container");
-                
-                if (item.className) {
-                    container.classList.add(item.className);
-                }
-                
-                if (item.title) {
-                    const title = document.createElement("h3");
-                    title.textContent = item.title;
-                    title.classList.add("container-section-title");
-                    container.appendChild(title);
-                }
-                
-                const tabHeaders = document.createElement("div");
-                tabHeaders.classList.add("tab-headers");
-                container.appendChild(tabHeaders);
-                
-                const tabContents = document.createElement("div");
-                tabContents.classList.add("tab-contents");
-                container.appendChild(tabContents);
-                
-                if (!item.tabs) return container;
-                
-                for (let i = 0; i < item.tabs.length; i++) {
-                    const tabConfig = item.tabs[i];
-                    
-                    const tabHeader = document.createElement("button");
-                    tabHeader.textContent = tabConfig.name;
-                    tabHeader.classList.add("tab-header");
-                    if (i === 0) tabHeader.classList.add("active");
-                    tabHeader.dataset.tabIndex = i.toString();
-                    tabHeaders.appendChild(tabHeader);
-                    
-                    const tabContent = document.createElement("div");
-                    tabContent.classList.add("tab-content");
-                    if (i === 0) tabContent.classList.add("active");
-                    tabContent.dataset.tabIndex = i.toString();
-                    
-                    if (tabConfig.items) {
-                        await this.renderDisplayItems(tabContent, tabConfig.items);
-                    }
-                    tabContents.appendChild(tabContent);
-                    
-                    tabHeader.addEventListener("click", () => {
-                        tabHeaders.querySelectorAll(".tab-header").forEach(h => h.classList.remove("active"));
-                        tabContents.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-                        tabHeader.classList.add("active");
-                        tabContent.classList.add("active");
-                    });
-                }
-                
-                return container;
-            }
-
-            private async renderFold(item: any): Promise<HTMLElement> {
-                const container = document.createElement("div");
-                container.classList.add("metadata-fold-container");
-                
-                if (item.className) {
-                    container.classList.add(item.className);
-                }
-                
-                const foldHeader = document.createElement("div");
-                foldHeader.classList.add("fold-header");
-                foldHeader.textContent = item.title || "Details";
-                container.appendChild(foldHeader);
-                
-                const foldContent = document.createElement("div");
-                foldContent.classList.add("fold-content");
-                
-                if (item.items) {
-                    await this.renderDisplayItems(foldContent, item.items);
-                }
-                container.appendChild(foldContent);
-                
-                addFold(foldHeader, foldContent, this.vault.app);
-                
-                return container;
-            }
-
-            private async renderTable(item: any): Promise<HTMLElement> {
-                const container = document.createElement("div");
-                container.classList.add("metadata-table-container");
-                
-                if (item.className) {
-                    container.classList.add(item.className);
-                }
-                
-                if (item.title) {
-                    const title = document.createElement("h3");
-                    title.textContent = item.title;
-                    title.classList.add("container-section-title");
-                    container.appendChild(title);
-                }
-                
-                if (item.source) {
-                    // Get files based on source configuration
-                    let files: Classe[] = [];
-                    
-                    switch (item.source.filter) {
-                        case 'children':
-                            // Get files where parent = current file
-                            files = await (this as any).findChildren();
-                            
-                            // Filter by target class if specified
-                            if (item.source.class) {
-                                files = files.filter((child: Classe) => {
-                                    const constructorName = child.constructor.name;
-                                    const staticClassName = (child.constructor as any).className;
-                                    return constructorName === item.source.class || 
-                                           staticClassName === item.source.class;
-                                });
-                            }
-                            break;
-                        
-                        case 'all':
-                            // TODO: Get all instances of the class
-                            console.warn('filter: all not yet implemented');
-                            files = [];
-                            break;
-                        
-                        default:
-                            console.warn(`Unknown filter type: ${item.source.filter}`);
-                            files = [];
-                    }
-                    
-                    const tableConfig = {
-                        source: item.source,
-                        columns: item.columns,
-                        totals: item.totals
-                    };
-                    const table = new DynamicTable(files, tableConfig, this.vault);
-                    const tableElement = await table.getTable();
-                    container.appendChild(tableElement);
-                }
-                
-                return container;
-            }
-
-            private async executeProcess(processName: string): Promise<void> {
+            async executeProcess(processName: string): Promise<void> {
                 if (!processName) {
                     console.warn('No process name specified for button');
                     return;

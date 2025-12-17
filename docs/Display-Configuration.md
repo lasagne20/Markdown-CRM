@@ -51,15 +51,38 @@ Displays a single property with optional custom title, static mode, and display 
 | `name` | string | ✅ | Property key from properties section |
 | `title` | string | ❌ | Custom title override |
 | `static` | boolean | ❌ | Display as read-only |
-| `display` | string | ❌ | Display mode for ObjectProperty: `"object"` (default), `"table"`, or `"list"` |
+| `display` | string \| DisplayContainer | ❌ | Display mode for ObjectProperty (see below) |
 | `className` | string | ❌ | Custom CSS class |
 
 **Note:** The `title`, `static`, and `display` parameters are passed to the property's `getDisplay()` method as arguments. The `display` parameter only affects `ObjectProperty` instances.
 
 **Display Modes for ObjectProperty:**
-- `object` (default): Displays each object as a separate card/section
-- `table`: Displays objects in a table format with columns for each property
-- `list`: Displays objects in a compact list format
+
+The `display` parameter can be:
+1. **String mode** (legacy, for backward compatibility):
+   - `"object"` (default): Each object as a separate card/section
+   - `"table"`: Objects in a table format with columns
+   
+2. **DisplayContainer mode** (advanced, recommended): A full display configuration object that allows complete customization of how each object is rendered. This enables you to use the same powerful display system (line, column, tabs, fold, table, buttons) inside ObjectProperty items.
+
+**Example with DisplayContainer:**
+```yaml
+- type: property
+  name: positions
+  display:
+    items:
+      - type: line
+        className: "position-line"
+        items:
+          - type: property
+            name: company
+          - type: property
+            name: title
+      - type: property
+        name: description
+```
+
+This renders each position object using the custom layout defined in the display configuration.
 
 ### Button - Action Trigger
 
@@ -996,7 +1019,163 @@ await property.getDisplay(classeInstance, {
 });
 ```
 
-**Note:** The `displayMode` parameter only affects `ObjectProperty` instances. When provided, it sets the `display` property on the ObjectProperty before rendering, determining whether the objects are displayed as individual cards (`object`), in a table (`table`), or as a compact list (`list`).
+**Note:** The `displayMode` parameter only affects `ObjectProperty` instances. When provided, it sets the `display` property on the ObjectProperty before rendering, determining how the objects are displayed. It can be:
+- A string (`"object"`, `"table"`) for simple display modes
+- A DisplayContainer object for advanced custom layouts (see ObjectProperty Custom Display section below)
+
+## ObjectProperty Custom Display
+
+One of the most powerful features is the ability to fully customize how ObjectProperty items are displayed by passing a `DisplayContainer` configuration to the `display` parameter. This allows you to use the same display system (line, column, tabs, fold, table, buttons) to layout the properties within each object.
+
+### Basic Example
+
+Instead of displaying objects in the default "object" or "table" mode, you can define a custom layout:
+
+```yaml
+properties:
+  - name: positions
+    type: ObjectProperty
+    properties:
+      - name: company
+        type: TextProperty
+      - name: title
+        type: TextProperty
+      - name: startDate
+        type: DateProperty
+      - name: description
+        type: TextProperty
+
+display:
+  items:
+    - name: "Professional Experience"
+      items:
+        - type: property
+          name: positions
+          display:
+            items:
+              - type: line
+                className: "position-header"
+                items:
+                  - type: property
+                    name: company
+                  - type: property
+                    name: title
+              - type: property
+                name: startDate
+              - type: property
+                name: description
+```
+
+This renders each position with:
+- Company and title on a single line
+- Start date below
+- Description field at the bottom
+
+### Advanced ObjectProperty Layout
+
+You can use any display item type inside an ObjectProperty:
+
+```yaml
+- type: property
+  name: team_members
+  display:
+    items:
+      - type: tabs
+        tabs:
+          - label: "Info"
+            items:
+              - type: line
+                items:
+                  - type: property
+                    name: name
+                  - type: property
+                    name: role
+              - type: property
+                name: email
+          - label: "Skills"
+            items:
+              - type: property
+                name: skills
+              - type: property
+                name: experience_level
+      - type: fold
+        title: "Additional Details"
+        items:
+          - type: property
+            name: bio
+          - type: property
+            name: notes
+```
+
+This creates a complex layout for each team member with:
+- Tabbed interface separating Info and Skills
+- Line layout for name and role
+- Collapsible section for additional details
+
+### Features
+
+**Supported in ObjectProperty custom display:**
+- ✅ All layout types (line, column, tabs, fold)
+- ✅ Nested layouts
+- ✅ Custom CSS classes
+- ✅ Property titles and static mode
+- ✅ Buttons (can trigger processes with object context)
+- ✅ Table display for nested ObjectProperties
+- ✅ Drag & drop reordering (if `allowMove: true` on ObjectProperty)
+- ✅ Add/delete buttons
+
+**Backward Compatibility:**
+The string modes (`"object"`, `"table"`) still work as before:
+
+```yaml
+- type: property
+  name: contacts
+  display: table  # Simple table view
+```
+
+### Use Cases
+
+**1. Compact Multi-field Display:**
+```yaml
+display:
+  items:
+    - type: line
+      items:
+        - type: property
+          name: code
+        - type: property
+          name: status
+        - type: property
+          name: priority
+```
+
+**2. Hierarchical Information:**
+```yaml
+display:
+  items:
+    - type: property
+      name: title
+    - type: fold
+      title: "Details"
+      items:
+        - type: property
+          name: description
+        - type: property
+          name: metadata
+```
+
+**3. Action-Oriented Display:**
+```yaml
+display:
+  items:
+    - type: line
+      items:
+        - type: property
+          name: task_name
+        - type: button
+          label: "Complete"
+          process: markComplete
+```
 
 ### Display Item Rendering Flow
 
@@ -1005,6 +1184,7 @@ await property.getDisplay(classeInstance, {
 3. For each item, calls `renderDisplayItem(item)`
 4. Routes to specific renderer based on `item.type`:
    - `property` → `renderProperty()` → calls `property.getDisplay()`
+     - For ObjectProperty with DisplayContainer: calls `fillDisplay()` with custom layout
    - `button` → `renderButton()` → creates button with process handler
    - `line`/`column` → `renderContainer()` → recursively renders nested items
    - `tabs` → `renderTabs()` → creates tab interface

@@ -180,6 +180,14 @@ display:
           items:
             - type: property
               name: postes
+              display:
+                items:
+                  - type: column
+                    items:
+                      - type: property
+                        name: institution
+                      - type: property
+                        name: poste
             - type: property
               name: relation
             - type: property
