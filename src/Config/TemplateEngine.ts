@@ -85,8 +85,74 @@ export class TemplateEngine {
         instance: Classe,
         currentValue?: string
     ): Promise<string | null> {
+        console.log(`🎨 Processing template from instance: "${template}"`);
+        
+        let result = template;
+
+        // Find all placeholders in the template
+        const placeholderRegex = /\{([^}]+)\}/g;
+
+        // Get metadata for fallback
         const metadata = await instance.getMetadata();
-        return this.processTemplate(template, metadata, currentValue);
+        console.log(`📊 Metadata:`, metadata);
+
+        // Replace placeholders
+        for (const match of Array.from(template.matchAll(placeholderRegex))) {
+            const placeholder = match[1];
+            let value: any;
+
+            if (placeholder === 'current') {
+                if (currentValue === undefined) {
+                    console.log(`  ❌ {current} used but no currentValue provided`);
+                    return null;
+                }
+
+                // Clean current value from previous template applications
+                value = this.cleanCurrentValue(currentValue, template);
+                console.log(`  🔄 {${placeholder}} = "${value}" (current value)`);
+            } else if (placeholder.includes('[') || placeholder.includes('.')) {
+                // For complex paths, use metadata directly
+                if (placeholder.includes('[') && placeholder.includes(']')) {
+                    value = this.getArrayPropertyValue(metadata, placeholder);
+                    console.log(`  📦 {${placeholder}} = "${value}" (array property)`);
+                } else {
+                    value = this.getNestedPropertyValue(metadata, placeholder);
+                    console.log(`  📦 {${placeholder}} = "${value}" (nested property)`);
+                }
+            } else {
+                // Simple property - try to get from instance's Property first (for getPretty)
+                const property = instance.getProperty(placeholder);
+                if (property && typeof property.getPretty === 'function') {
+                    // Use getPretty to format the value
+                    const rawValue = metadata[placeholder];
+                    if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+                        value = property.getPretty(rawValue);
+                        console.log(`  ✨ {${placeholder}} = "${value}" (via getPretty)`);
+                    } else {
+                        value = rawValue;
+                        console.log(`  📝 {${placeholder}} = "${value}" (raw value)`);
+                    }
+                } else {
+                    // Fallback to metadata value
+                    value = metadata[placeholder];
+                    console.log(`  📝 {${placeholder}} = "${value}" (metadata)`);
+                }
+            }
+
+            // If any required value is missing or empty, abort processing
+            if (value === undefined || value === null || value === '') {
+                console.log(`  ❌ Missing or empty value for {${placeholder}}, aborting`);
+                return null;
+            }
+
+            // Convert value to string
+            const stringValue = this.valueToString(value);
+            result = result.replace(`{${placeholder}}`, stringValue);
+            console.log(`  ✅ Replaced {${placeholder}} with "${stringValue}"`);
+        }
+
+        console.log(`✨ Final result: "${result}"`);
+        return result;
     }
 
     /**

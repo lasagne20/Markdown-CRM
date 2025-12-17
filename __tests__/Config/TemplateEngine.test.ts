@@ -167,6 +167,81 @@ describe('TemplateEngine', () => {
             expect(result).toBe('Test - Test Instance');
         });
 
+        it('should use getPretty for FileProperty values', async () => {
+            const mockFile = {
+                basename: 'TestFile',
+                getMetadata: jest.fn().mockResolvedValue({
+                    client: '[[Client ABC]]',
+                    nom: 'Test'
+                })
+            } as any;
+
+            const mockVault = {
+                app: {
+                    getMetadata: jest.fn().mockImplementation((file) => file.getMetadata())
+                },
+                readLinkFile: jest.fn((link) => {
+                    // Simulate extracting the name from [[Client ABC]]
+                    const match = link.match(/\[\[([^\]]+)\]\]/);
+                    return match ? match[1] : link;
+                })
+            } as any;
+
+            const instance = new Classe(mockVault, mockFile);
+
+            // Add a mock property with getPretty
+            const mockProperty = {
+                name: 'client',
+                getPretty: jest.fn((value) => {
+                    // Simulate FileProperty.getPretty which calls vault.readLinkFile
+                    return mockVault.readLinkFile(value);
+                })
+            };
+            instance.addProperty(mockProperty as any);
+
+            const result = await TemplateEngine.processTemplateFromInstance(
+                '{client} - {nom}',
+                instance
+            );
+
+            // Should use getPretty which returns "Client ABC" instead of "[[Client ABC]]"
+            expect(mockProperty.getPretty).toHaveBeenCalledWith('[[Client ABC]]');
+            expect(result).toBe('Client ABC - Test');
+        });
+
+        it('should fallback to metadata when property has no getPretty', async () => {
+            const mockFile = {
+                basename: 'TestFile',
+                getMetadata: jest.fn().mockResolvedValue({
+                    nom: 'Test Instance',
+                    age: 25
+                })
+            } as any;
+
+            const mockVault = {
+                app: {
+                    getMetadata: jest.fn().mockImplementation((file) => file.getMetadata())
+                }
+            } as any;
+
+            const instance = new Classe(mockVault, mockFile);
+
+            // Add a property without getPretty
+            const mockProperty = {
+                name: 'age',
+                read: jest.fn().mockResolvedValue(25)
+            };
+            instance.addProperty(mockProperty as any);
+
+            const result = await TemplateEngine.processTemplateFromInstance(
+                '{nom} - {age}',
+                instance
+            );
+
+            // Should use metadata value directly
+            expect(result).toBe('Test Instance - 25');
+        });
+
         it('should handle {current} with instance file basename', async () => {
             const mockFile = {
                 basename: 'CurrentName',
