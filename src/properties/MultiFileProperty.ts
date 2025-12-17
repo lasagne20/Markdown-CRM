@@ -86,11 +86,28 @@ export class MultiFileProperty extends ObjectProperty {
         container.classList.add("metadata-multiFiles-container");
         container.classList.add("metadata-multiFiles-container-" + this.name.toLowerCase().replace(/\s+/g, '-'));
 
+        // Créer l'en-tête avec titre et bouton d'ajout seulement si un titre existe
+        if (this.title) {
+            const headerRow = document.createElement("div");
+            headerRow.classList.add("metadata-object-header-row");
+
+            const title = document.createElement("div");
+            title.textContent = this.title;
+            title.classList.add("metadata-header");
+            headerRow.appendChild(title);
+
+            const addButton = this.createAddButton(values, update, container);
+            headerRow.appendChild(addButton);
+
+            container.appendChild(headerRow);
+        } else {
+            // Si pas de titre, ajouter le bouton d'ajout directement
+            const addButton = this.createAddButton(values, update, container);
+            container.appendChild(addButton);
+        }
+
         // Créer les lignes d'objet
         this.createObjects(values, update, container);
-
-        const addButton = this.createAddButton(values, update, container);
-        container.appendChild(addButton);
 
         return container;
     }
@@ -175,14 +192,13 @@ export class MultiFileProperty extends ObjectProperty {
         const container = document.querySelector(".metadata-multiFiles-container-" + this.name.toLowerCase()) as HTMLDivElement;
         if (container) {
             console.log('🔄 MultiFileProperty: Rechargement de l\'interface avec values:', values);
-            container.innerHTML = "";
+            
+            // Garder l'en-tête, supprimer uniquement les lignes d'objets
+            const objectRows = container.querySelectorAll('.metadata-multiFiles-row-inline');
+            objectRows.forEach(row => row.remove());
             
             // Recréer les lignes d'objets
             this.createObjects(values, update, container);
-            
-            // Recréer le bouton d'ajout
-            const addButton = this.createAddButton(values, update, container);
-            container.appendChild(addButton);
             
             console.log('✅ MultiFileProperty: Interface rechargée');
         } else {

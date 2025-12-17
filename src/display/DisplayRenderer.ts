@@ -107,11 +107,6 @@ export class DisplayRenderer {
             result = property.fillDisplay(value, updateFn);
         }
         
-        // Restore original display config
-        if (originalDisplay !== undefined) {
-            (property as any).display = originalDisplay;
-        }
-        
         return result;
     }
 
