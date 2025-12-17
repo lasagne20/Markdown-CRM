@@ -652,17 +652,6 @@ export class Classe {
         }
         await this.migratePropertyAliases();
 
-        // Initialize IdProperty if present
-        for (const property of this.properties) {
-            if (property.type === 'id') {
-                const currentValue = await this.getPropertyValue(property.name);
-                if (!currentValue) {
-                    const newId = await (property as any).generateUUID();
-                    await this.updatePropertyValue(property.name, newId);
-                }
-            }
-        }
-
         // Run onCreate processes
         await this.runProcesses('onCreate');
     }

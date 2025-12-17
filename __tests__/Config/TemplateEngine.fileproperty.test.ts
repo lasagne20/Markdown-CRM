@@ -181,4 +181,91 @@ describe('TemplateEngine - FileProperty Integration', () => {
         // Array values come from metadata, not through getPretty
         expect(result).toBe('[[Client A]] - Multi-Client Project');
     });
+
+    it('should handle complex Obsidian link format with path and alias', async () => {
+        const mockVault = {
+            app: {
+                getMetadata: jest.fn().mockResolvedValue({
+                    client: '[[path/.../Acme Corporation.md|Acme Corporation]]',
+                    projet: 'Project Alpha'
+                }),
+                getSettings: jest.fn().mockReturnValue({})
+            },
+            readLinkFile: jest.fn((link, returnPath = false) => {
+                // This should match the actual Vault.readLinkFile implementation
+                // Match [[file|alias]] or [[file]]
+                const match = link.match(/^\[\[(.*?)(?:\|([^\]]+?))?\]\]$/);
+                if (match) {
+                    const fileName = match[1]?.trim();
+                    const alias = match[2]?.trim();
+                    if (returnPath) {
+                        return /\.[^\/\\]+$/.test(fileName) ? fileName : `${fileName}.md`;
+                    } else {
+                        return alias ? alias : fileName.split("/").pop()?.replace(".md","") || "";
+                    }
+                }
+                return link.trim();
+            })
+        } as any;
+
+        const mockFile = {
+            basename: 'TestFile',
+            getMetadata: jest.fn().mockResolvedValue({
+                client: '[[path/.../Acme Corporation.md|Acme Corporation]]',
+                projet: 'Project Alpha'
+            })
+        } as any;
+
+        const instance = new Classe(mockVault, mockFile);
+
+        // Add FileProperty for 'client'
+        const clientProperty = new FileProperty('client', mockVault, ['Client']);
+        instance.addProperty(clientProperty);
+
+        // Process template
+        const result = await TemplateEngine.processTemplateFromInstance(
+            '{client} - {projet}',
+            instance
+        );
+
+        // Verify readLinkFile was called
+        expect(mockVault.readLinkFile).toHaveBeenCalledWith('[[path/.../Acme Corporation.md|Acme Corporation]]');
+        
+        // Result should use the alias part (Acme Corporation)
+        expect(result).toBe('Acme Corporation - Project Alpha');
+    });
+
+    it('should handle various Obsidian link formats correctly', async () => {
+        const mockVault = {
+            app: {
+                getMetadata: jest.fn().mockResolvedValue({}),
+                getSettings: jest.fn().mockReturnValue({})
+            },
+            readLinkFile: jest.fn((link, returnPath = false) => {
+                const match = link.match(/^\[\[(.*?)(?:\|([^\]]+?))?\]\]$/);
+                if (match) {
+                    const fileName = match[1]?.trim();
+                    const alias = match[2]?.trim();
+                    if (returnPath) {
+                        return /\.[^\/\\]+$/.test(fileName) ? fileName : `${fileName}.md`;
+                    } else {
+                        return alias ? alias : fileName.split("/").pop()?.replace(".md","") || "";
+                    }
+                }
+                return link.trim();
+            })
+        } as any;
+
+        // Test various formats
+        expect(mockVault.readLinkFile('[[Simple Link]]')).toBe('Simple Link');
+        expect(mockVault.readLinkFile('[[File.md]]')).toBe('File');
+        expect(mockVault.readLinkFile('[[File|Alias]]')).toBe('Alias');
+        expect(mockVault.readLinkFile('[[path/to/File.md|Display Name]]')).toBe('Display Name');
+        expect(mockVault.readLinkFile('[[path/.../Acme Corporation.md|Clean Name]]')).toBe('Clean Name');
+        
+        // Test path mode
+        expect(mockVault.readLinkFile('[[File]]', true)).toBe('File.md');
+        expect(mockVault.readLinkFile('[[File.md]]', true)).toBe('File.md');
+        expect(mockVault.readLinkFile('[[path/to/File.md|Alias]]', true)).toBe('path/to/File.md');
+    });
 });

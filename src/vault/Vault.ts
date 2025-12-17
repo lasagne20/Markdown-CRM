@@ -129,8 +129,10 @@ export class Vault {
 
     readLinkFile(link: string, path = false): string {
         if (!link || typeof link !== "string") return "";
+        
         // Match [[file|alias]] or [[file]]
-        const match = link.match(/^\[\[([^\|\]]+?)(?:)?(?:\|([^\]]+))?\]\]$/);
+        // Use non-greedy match up to the last | before ]]
+        const match = link.match(/^\[\[(.*?)(?:\|([^\]]+?))?\]\]$/);
         if (match) {
             const fileName = match[1]?.trim();
             const alias = match[2]?.trim();
