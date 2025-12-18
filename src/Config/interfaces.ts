@@ -1,3 +1,5 @@
+import { Condition } from './ConditionManager';
+
 export interface PropertyConfig {
     type: string;
     title?: string; // Display name for the property
@@ -13,6 +15,7 @@ export interface PropertyConfig {
     unit?: string; // Pour NumberProperty - unité de mesure (€, kg, %, etc.)
     aliases?: string[]; // Old property names for automatic migration
     tooltip?: string; // Tooltip text to display on icon hover
+    conditions?: Condition[]; // Conditions for filtering FileProperty and MultiFileProperty selections
 }
 
 export interface PropertyTableRow {

@@ -3,16 +3,19 @@ import { Property } from "./Property";
 import { Classe } from "../vault/Classe";
 import { LinkProperty } from "./LinkProperty";
 import { Vault } from "../vault/Vault";
+import { Condition } from "../Config/ConditionManager";
 
 
 export class FileProperty extends LinkProperty{
 
     public classes : string[];
+    public conditions?: Condition[];
     public override type : string = "file";
     // Used for property with a single file
-    constructor(name : string, vault: Vault, classes: string[], args: {icon?: string, aliases?: string[], tooltip?: string} = {}){
+    constructor(name : string, vault: Vault, classes: string[], args: {icon?: string, aliases?: string[], tooltip?: string, conditions?: Condition[]} = {}){
       super(name, vault, args);
       this.classes = classes;
+      this.conditions = args.conditions;
     }
 
     getClasses() : string[] {
@@ -113,7 +116,15 @@ export class FileProperty extends LinkProperty{
         // Get extended classes (includes classes that inherit from the specified ones)
         const classesToSelect = await this.vault.getExtendedClasses(this.classes);
 
-        let selectedFileObj = await this.vault.app.selectFile(this.vault, classesToSelect, {hint:"Choisissez un fichier " + this.getClasses().join(" ou ")});
+        // Create validation function from conditions if they exist
+        const validationFunction = this.conditions && this.conditions.length > 0
+            ? this.vault.conditionManager.createValidationFunction(this.conditions)
+            : undefined;
+
+        let selectedFileObj = await this.vault.app.selectFile(this.vault, classesToSelect, {
+            hint: "Choisissez un fichier " + this.getClasses().join(" ou "),
+            validationFunction: validationFunction
+        });
         if (selectedFileObj){
           const selectedFile = selectedFileObj.getLink();
           await update(selectedFile);

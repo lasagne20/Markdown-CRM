@@ -390,7 +390,7 @@ export class ObjectProperty extends Property{
         const headerRow = document.createElement("tr");
         Object.values(this.properties).forEach(property => {
             const th = document.createElement("th");
-            th.textContent = property.name;
+            th.textContent = property.title || property.name;
             headerRow.appendChild(th);
         });
         // Ajouter une colonne pour le bouton de suppression

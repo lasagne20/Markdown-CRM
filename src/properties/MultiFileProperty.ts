@@ -3,6 +3,7 @@ import { ObjectProperty } from "./ObjectProperty";
 import { FileProperty } from "./FileProperty";
 import { File } from "../vault/File";
 import { Vault } from "../vault/Vault";
+import { Condition } from "../Config/ConditionManager";
 
 export class MultiFileProperty extends ObjectProperty {
 
@@ -10,11 +11,13 @@ export class MultiFileProperty extends ObjectProperty {
     public classes: string[];
     public property : FileProperty;
     public override flexSpan = 2;
+    public conditions?: Condition[];
 
 
-    constructor(name: string, vault: Vault, classes : string[], args: {icon?: string, aliases?: string[], tooltip?: string} = {}){
+    constructor(name: string, vault: Vault, classes : string[], args: {icon?: string, aliases?: string[], tooltip?: string, conditions?: Condition[]} = {}){
         super(name, vault, {}, args);
         this.classes = classes;
+        this.conditions = args.conditions;
         this.property = new FileProperty(name, vault, classes, args);
     }
 
@@ -158,7 +161,16 @@ export class MultiFileProperty extends ObjectProperty {
         console.log('📂 Début de sélection multiple, values actuelles:', values);
         // Get extended classes (includes classes that inherit from the specified ones)
         const classesToSelect = await this.vault.getExtendedClasses(this.classes);
-        const newFiles = await this.vault.app.selectMultipleFile(this.vault, classesToSelect, { hint: "Choisissez des fichiers " + this.getClasses().join(" ou ") });
+        
+        // Create validation function from conditions if they exist
+        const validationFunction = this.conditions && this.conditions.length > 0
+            ? this.vault.conditionManager.createValidationFunction(this.conditions)
+            : undefined;
+        
+        const newFiles = await this.vault.app.selectMultipleFile(this.vault, classesToSelect, { 
+            hint: "Choisissez des fichiers " + this.getClasses().join(" ou "),
+            validationFunction: validationFunction
+        });
         console.log('📂 Fichiers sélectionnés:', newFiles);
         
         if (newFiles && newFiles.length > 0) {

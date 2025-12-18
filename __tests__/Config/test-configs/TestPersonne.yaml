@@ -1,0 +1,129 @@
+# Configuration de test pour FileProperty avec conditions
+name: TestPersonne
+icon: 👤
+description: Test class for conditions integration
+
+properties:
+  nom:
+    type: Property
+    title: Nom
+    icon: 📝
+    
+  statut:
+    type: SelectProperty
+    title: Statut
+    icon: 🏷️
+    options:
+      - Actif
+      - Inactif
+      - En congé
+      
+  relation:
+    type: SelectProperty
+    title: Relation
+    icon: 🔗
+    options:
+      - Client
+      - Fournisseur
+      - Partenaire
+      - Salarié
+      
+  # FileProperty avec condition simple
+  institution_active:
+    type: FileProperty
+    title: Institution Active
+    icon: 🏢
+    classes:
+      - Institution
+    conditions:
+      - property: status
+        type: equals
+        value: active
+        
+  # FileProperty avec conditions multiples
+  lieu_filtre:
+    type: FileProperty
+    title: Lieu Filtré
+    icon: 📍
+    classes:
+      - Lieu
+    conditions:
+      - property: type
+        type: equals
+        value: Commune
+      - property: population
+        type: greaterThan
+        value: 10000
+        
+  # MultiFileProperty avec conditions
+  contacts_actifs:
+    type: MultiFileProperty
+    title: Contacts Actifs
+    icon: 👥
+    classes:
+      - Personne
+    conditions:
+      - property: statut
+        type: equals
+        value: Actif
+        
+  # MultiFileProperty avec equalsAny
+  institutions_diverses:
+    type: MultiFileProperty
+    title: Institutions Diverses
+    icon: 🏛️
+    classes:
+      - Institution
+      - Lieu
+    conditions:
+      - property: type
+        type: equalsAny
+        values:
+          - Institution
+          - Lieu
+          
+  # FileProperty avec isEmpty
+  contact_sans_email:
+    type: FileProperty
+    title: Contact sans email
+    icon: 📧
+    classes:
+      - Personne
+    conditions:
+      - property: email
+        type: isEmpty
+        
+  # FileProperty avec isNotEmpty
+  contact_avec_description:
+    type: FileProperty
+    title: Contact avec description
+    icon: 📝
+    classes:
+      - Personne
+    conditions:
+      - property: description
+        type: isNotEmpty
+        
+  # FileProperty avec contains
+  lieu_paris:
+    type: FileProperty
+    title: Lieu contenant Paris
+    icon: 🗼
+    classes:
+      - Lieu
+    conditions:
+      - property: nom
+        type: contains
+        value: Paris
+        
+  # FileProperty avec notEquals
+  personne_non_inactive:
+    type: FileProperty
+    title: Personne non inactive
+    icon: ✅
+    classes:
+      - Personne
+    conditions:
+      - property: statut
+        type: notEquals
+        value: Inactif

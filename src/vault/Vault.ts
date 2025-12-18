@@ -1,6 +1,7 @@
 import { DynamicClassFactory } from "../Config/DynamicClassFactory";
 import { PopulateManager } from "../Config/PopulateManager";
 import { ProcessManager } from "../Config/ProcessManager";
+import { ConditionManager } from "../Config/ConditionManager";
 import { IApp, IFile } from "../interfaces/IApp";
 import { Classe } from "./Classe";
 import { File } from "./File";
@@ -25,6 +26,7 @@ export class Vault {
     private static dynamicClassFactory: DynamicClassFactory | null = null;
     private static processManager: ProcessManager | null = null;
     private populateManager: PopulateManager; // Instance singleton per Vault
+    public conditionManager: ConditionManager; // Instance per Vault
 
     constructor(app: IApp, settings: Settings) {
         this.app = app;
@@ -37,6 +39,8 @@ export class Vault {
         }
         // Initialize the populate manager (one per Vault instance)
         this.populateManager = new PopulateManager(this);
+        // Initialize the condition manager (one per Vault instance)
+        this.conditionManager = new ConditionManager();
     }
 
     public getPath(): string {

@@ -40,7 +40,7 @@ export class ConfigLoader {
     /**
      * Load a class configuration from YAML file
      */
-    async loadClassConfig(className: string): Promise<ClassConfig> {
+    async loadClassConfig(className: string, isLoadingParent: boolean = false): Promise<ClassConfig> {
         console.log(`🔍 Chargement de la config pour ${className}, cache:`, this.loadedConfigs.has(className));
         
         if (this.loadedConfigs.has(className)) {
@@ -67,10 +67,14 @@ export class ConfigLoader {
                 }
             } else {
                 console.log("Configuration file not found in vault, trying plugin folder:", configFilePath);
-                // If not found, create a default config file
+                // If loading a parent class that doesn't exist, throw an error
+                if (isLoadingParent) {
+                    throw new Error(`Parent class configuration not found: ${className}`);
+                }
+                // If not found, create a default config file for the main class
                 fileContent = yaml.dump({
                     name: className,
-                    properties: []
+                    properties: {}
                 });
             }
             
@@ -92,7 +96,7 @@ export class ConfigLoader {
             // Handle class inheritance with extend
             if (config.extend) {
                 console.log(`🔗 ${className} extends ${config.extend}`);
-                const parentConfig = await this.loadClassConfig(config.extend);
+                const parentConfig = await this.loadClassConfig(config.extend, true);
                 
                 // Merge properties from parent (parent properties first, then child can override)
                 const mergedProperties = {
@@ -207,6 +211,11 @@ export class ConfigLoader {
         // Add aliases from config.aliases
         if (config.aliases && Array.isArray(config.aliases)) {
             options.aliases = config.aliases;
+        }
+        
+        // Add conditions from config.conditions (for FileProperty and MultiFileProperty)
+        if (config.conditions && Array.isArray(config.conditions)) {
+            options.conditions = config.conditions;
         }
         
         // Use propertyKey as the name (metadata key)

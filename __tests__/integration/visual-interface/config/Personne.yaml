@@ -70,10 +70,11 @@ properties:
         title: Institution
         aliases: ["Institution"]
         icon: 🏢
-     
         classes:
           - Institution
           - Lieu
+
+
 
       poste:
         type: TextProperty
@@ -183,8 +184,9 @@ process:
     triggers:
        - onPropertyChange
     conditions:
-        - property: relation
-          type: equals
+        - conditionType: PropertyCondition
+          property: relation
+          operator: equals
           value: Salarié
     actions:
       - type: UpdateClassAction
