@@ -148,9 +148,10 @@ export class ProcessManager {
     async execute(processConfig: ProcessConfig, instance: Classe): Promise<void> {
         console.log(`🔘 Manually executing process: ${processConfig.name}`);
         
-        // Evaluate conditions
+        // Evaluate conditions (pass instance as currentDocument for context)
         const conditionsMet = await this.conditionManager.evaluateConditions(
             processConfig.conditions,
+            instance,
             instance
         );
 
@@ -183,9 +184,10 @@ export class ProcessManager {
             return;
         }
 
-        // Evaluate conditions
+        // Evaluate conditions (pass instance as currentDocument for context)
         const conditionsMet = await this.conditionManager.evaluateConditions(
             processConfig.conditions,
+            instance,
             instance
         );
 

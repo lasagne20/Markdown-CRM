@@ -127,11 +127,12 @@ export type Condition =
 export class ConditionManager {
     /**
      * Evaluate a single condition against an instance
+     * @param currentDocument The current document context (used for DirectLinkCondition)
      */
-    async evaluateCondition(condition: Condition, instance: Classe): Promise<boolean> {
+    async evaluateCondition(condition: Condition, instance: Classe, currentDocument?: Classe): Promise<boolean> {
         // Check if this is a DirectLinkCondition
         if ('conditionType' in condition && condition.conditionType === 'directLink') {
-            return await this.evaluateDirectLinkCondition(condition, instance);
+            return await this.evaluateDirectLinkCondition(condition, instance, currentDocument);
         }
 
         // Otherwise, it's a PropertyCondition
@@ -202,9 +203,9 @@ export class ConditionManager {
     /**
      * Evaluate a DirectLinkCondition
      * Checks if the instance has a direct link to the current document
+     * @param currentDocument The current document to check links against (overrides condition.currentDocument if provided)
      */
-    private async evaluateDirectLinkCondition(condition: DirectLinkCondition, instance: Classe): Promise<boolean> {
-        const currentDocument = condition.currentDocument;
+    private async evaluateDirectLinkCondition(condition: DirectLinkCondition, instance: Classe, currentDocument?: Classe): Promise<boolean> {
         
         // If no currentDocument is provided, this condition cannot be evaluated
         if (!currentDocument) {
@@ -267,15 +268,16 @@ export class ConditionManager {
 
     /**
      * Evaluate multiple conditions with AND logic
+     * @param currentDocument The current document context (used for DirectLinkCondition)
      */
-    async evaluateConditions(conditions: Condition[], instance: Classe): Promise<boolean> {
+    async evaluateConditions(conditions: Condition[], instance: Classe, currentDocument?: Classe): Promise<boolean> {
         if (!conditions || conditions.length === 0) {
             return true; // No conditions means always true
         }
 
         // All conditions must be true (AND logic)
         for (const condition of conditions) {
-            const result = await this.evaluateCondition(condition, instance);
+            const result = await this.evaluateCondition(condition, instance, currentDocument);
             if (!result) {
                 return false;
             }
@@ -360,18 +362,7 @@ export class ConditionManager {
      */
     createValidationFunction(conditions: Condition[], currentDocument?: Classe): (instance: Classe) => Promise<boolean> {
         return async (instance: Classe): Promise<boolean> => {
-            // Process conditions and inject currentDocument for DirectLinkCondition
-            const processedConditions = conditions.map(condition => {
-                if ('conditionType' in condition && condition.conditionType === 'directLink') {
-                    // If currentDocument is provided and not already set in condition
-                    if (currentDocument && !condition.currentDocument) {
-                        return { ...condition, currentDocument };
-                    }
-                }
-                return condition;
-            });
-            
-            return await this.evaluateConditions(processedConditions, instance);
+            return await this.evaluateConditions(conditions, instance, currentDocument);
         };
     }
 
