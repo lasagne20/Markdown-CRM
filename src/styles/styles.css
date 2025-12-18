@@ -197,10 +197,29 @@ If your plugin does not need CSS, delete this file.
 .metadata-field-email,
 .metadata-field {
     display: flex;
-    align-items: center;  /* Aligne verticalement les éléments */
+    flex-direction: column;  /* Empile les éléments verticalement */
     padding: 2px 4px;  /* Réduit l'espace intérieur */
     gap: 4px;  /* Réduit l'espacement entre les éléments */
+    align-items: center;  /* Centre tout horizontalement */
 }
+
+/* Titre de la propriété - centré en haut */
+.metadata-title {
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    color: var(--text-muted);
+    font-size: 0.9em;
+    margin-bottom: 4px;
+}
+
+/* Conteneur pour l'icône et le champ - sur une ligne horizontale */
+.metadata-field > .icon-container,
+.metadata-field > .field-container {
+    display: flex;
+    align-items: center;
+}
+
 .metadata-field-email label,
 .metadata-field label {
     flex: 0 0 auto; 

@@ -88,11 +88,18 @@ export class NumberProperty extends Property {
             field.appendChild(title);
         }
 
+        const contentRow = document.createElement("div");
+        contentRow.style.display = "flex";
+        contentRow.style.alignItems = "center";
+        contentRow.style.gap = "4px";
+
         const iconContainer = this.createIconContainer(update);
         const fieldContainer = this.createFieldContainerContent(update, value);
 
-        field.appendChild(iconContainer);
-        field.appendChild(fieldContainer);
+        contentRow.appendChild(iconContainer);
+        contentRow.appendChild(fieldContainer);
+
+        field.appendChild(contentRow);
 
         return field;
     }

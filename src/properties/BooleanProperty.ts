@@ -12,6 +12,21 @@ export class BooleanProperty extends Property {
 
      override fillDisplay(value: any, update: (value: any) => Promise<void>, args? : {}) {
             const container = document.createElement('div');
+            container.classList.add('metadata-field');
+
+            if (this.title) {
+                const title = document.createElement("div");
+                title.textContent = this.title;
+                title.classList.add("metadata-title");
+                container.appendChild(title);
+            }
+
+            const contentRow = document.createElement("div");
+            contentRow.style.display = "flex";
+            contentRow.style.alignItems = "center";
+            contentRow.style.justifyContent = "center";
+            contentRow.style.gap = "4px";
+
             const button = document.createElement('span');
             
             // Ajouter les classes CSS de base
@@ -51,7 +66,8 @@ export class BooleanProperty extends Property {
                 };
             }
 
-            container.appendChild(button);
+            contentRow.appendChild(button);
+            container.appendChild(contentRow);
             return container;
         }
 }

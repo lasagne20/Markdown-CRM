@@ -12,17 +12,15 @@ export class RatingProperty extends Property {
 
     override fillDisplay(value : any, update: (value: string) => Promise<void>, args? : {}) {
         const field = this.createFieldContainer();
-        const fieldContainer = document.createElement("div");
-        fieldContainer.classList.add("field-container-column");
 
-        const header = document.createElement("div");
-        header.classList.add("metadata-header");
-        header.textContent = this.title || this.name;
-        fieldContainer.appendChild(header);
+        const title = document.createElement("div");
+        title.classList.add("metadata-title");
+        title.textContent = this.title ? this.title : this.name;
+        field.appendChild(title);
 
         const stars = this.createStarRating(value, update); 
-        fieldContainer.appendChild(stars);
-        field.appendChild(fieldContainer);
+        field.appendChild(stars);
+
         return field;
     }
 

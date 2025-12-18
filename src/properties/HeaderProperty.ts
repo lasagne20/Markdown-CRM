@@ -16,6 +16,20 @@ export class HearderProperty extends Property {
 
   override fillDisplay(value: any, update: (value: any) => Promise<void>, args : {size ?: string} = {size : "2em"}) {
         const field = this.createFieldContainer();
+
+        if (this.title) {
+            const title = document.createElement("div");
+            title.textContent = this.title;
+            title.classList.add("metadata-title");
+            field.appendChild(title);
+        }
+
+        const contentRow = document.createElement("div");
+        contentRow.style.display = "flex";
+        contentRow.style.alignItems = "center";
+        contentRow.style.justifyContent = "center";
+        contentRow.style.gap = "4px";
+
         const fieldContainer = this.createFieldContainerContent(update, value);
         
         if (fieldContainer && args.size) {
@@ -25,7 +39,9 @@ export class HearderProperty extends Property {
             link.style.fontSize = args.size;
         }
 
-        field.appendChild(fieldContainer);
+        contentRow.appendChild(fieldContainer);
+        field.appendChild(contentRow);
+
         return field;
     }
 

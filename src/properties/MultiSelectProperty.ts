@@ -54,17 +54,14 @@ export class MultiSelectProperty extends Property {
 
     override fillDisplay(value : any, update: (value: string[]) => Promise<void>, args? : {}) {
         const field = this.createFieldContainer();
-        const fieldContainer = document.createElement("div");
-        fieldContainer.classList.add("field-container-column");
 
-        const header = document.createElement("div");
-        header.classList.add("metadata-header");
-        header.textContent = this.name
-        fieldContainer.appendChild(header);
+        const title = document.createElement("div");
+        title.classList.add("metadata-title");
+        title.textContent = this.title ? this.title : this.name;
+        field.appendChild(title);
 
         const buttonContainer = this.createButtonGroup(value, update);
-        fieldContainer.appendChild(buttonContainer);
-        field.appendChild(fieldContainer);
+        field.appendChild(buttonContainer);
 
         return field;
     }

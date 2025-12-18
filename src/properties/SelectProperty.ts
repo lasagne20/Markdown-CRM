@@ -48,22 +48,26 @@ export class SelectProperty extends Property {
 
     override fillDisplay(value : any, update: (value: string) => Promise<void>) {
         const field = this.createFieldContainer();
-        const fieldContainer = document.createElement("div");
-        fieldContainer.classList.add("metadata-field");
 
-        const iconContainer = this.createIconContainer(update);
-        fieldContainer.appendChild(iconContainer);
-        
         if (this.title) {
-            const header = document.createElement("div");
-            header.classList.add("metadata-header");
-            header.textContent = this.title;
-            fieldContainer.appendChild(header);
+            const title = document.createElement("div");
+            title.textContent = this.title;
+            title.classList.add("metadata-title");
+            field.appendChild(title);
         }
 
+        const contentRow = document.createElement("div");
+        contentRow.style.display = "flex";
+        contentRow.style.alignItems = "center";
+        contentRow.style.gap = "4px";
+
+        const iconContainer = this.createIconContainer(update);
+        contentRow.appendChild(iconContainer);
+
         const selectElement = this.createSelectWidget(value, update);
-        fieldContainer.appendChild(selectElement);
-        field.appendChild(fieldContainer);
+        contentRow.appendChild(selectElement);
+
+        field.appendChild(contentRow);
 
         return field;
     }

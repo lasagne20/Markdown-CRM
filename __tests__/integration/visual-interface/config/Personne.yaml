@@ -214,20 +214,15 @@ display:
           items:
             - type: property
               name: postes
-              display:
-                items:
-                  - type: column
-                    items:
-                      - type: property
-                        name: institution
-                      - type: property
-                        name: poste
+              title: "Postes/Fonctions"
             - type: property
               name: relation
             - type: property
               name: statut
+              title: "Statut actuel"
             - type: property
               name: evenements
+              title: "Événements"
               display:
                 items:
                   - type: line
@@ -251,6 +246,7 @@ display:
 
             - type: property
               name: date
+              title: "Date de début"
             - type: property
               name: heure
   

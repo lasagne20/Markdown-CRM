@@ -101,9 +101,6 @@ describe('SelectProperty', () => {
             expect(display).toBeTruthy();
             expect(display.classList.contains('metadata-field')).toBe(true);
             
-            const fieldContainer = display.querySelector('.metadata-field');
-            expect(fieldContainer).toBeTruthy();
-            
             const selectElement = display.querySelector('select');
             expect(selectElement).toBeTruthy();
         });
@@ -113,7 +110,7 @@ describe('SelectProperty', () => {
             const updateFn = jest.fn();
             const display = selectProperty.fillDisplay('todo', updateFn);
             
-            const header = display.querySelector('.metadata-header');
+            const header = display.querySelector('.metadata-title');
             expect(header).toBeTruthy();
             expect(header?.textContent).toBe('Project Status');
         });

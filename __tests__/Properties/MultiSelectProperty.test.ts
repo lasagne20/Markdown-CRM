@@ -93,7 +93,7 @@ describe('MultiSelectProperty', () => {
             const value: string[] = [];
             
             const container = multiSelectProperty.fillDisplay(value, mockUpdate);
-            const header = container.querySelector('.metadata-header');
+            const header = container.querySelector('.metadata-title');
 
             expect(header).toBeDefined();
             expect(header?.textContent).toBe('testSelect');

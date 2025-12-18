@@ -277,19 +277,24 @@ export class ObjectProperty extends Property{
         return container;
       }
 
-    // Créer un header simplifié pour le display personnalisé (sans l'en-tête title par défaut)
+    // Créer un header simplifié pour le display personnalisé
     private createHeaderForCustomDisplay(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
-        const header = document.createElement("div");
-        header.classList.add("metadata-object-header");
+        const headerRow = document.createElement("div");
+        headerRow.classList.add("metadata-object-header-row");
+
+        let title = document.createElement("div");
+        title.textContent = this.title ? this.title : this.name + " : ";
+        title.classList.add("metadata-header");
+        headerRow.appendChild(title);
         
         // Bouton d'ajout
         const addButton = document.createElement("button");
         this.vault.app.setIcon(addButton, "circle-plus");
         addButton.classList.add("metadata-add-button");
         addButton.onclick = async () => await this.addProperty(values, update, container);
-        header.appendChild(addButton);
+        headerRow.appendChild(addButton);
         
-        container.appendChild(header);
+        container.appendChild(headerRow);
     }
 
     // Créer l'affichage personnalisé avec DisplayRenderer

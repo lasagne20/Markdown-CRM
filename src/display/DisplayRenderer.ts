@@ -69,11 +69,14 @@ export class DisplayRenderer {
             return null;
         }
         
-        // If item has custom display config for ObjectProperty, apply it temporarily
-        let originalDisplay: any;
+        // If item has custom display config for ObjectProperty, apply it
         if (item.display && property instanceof Object && 'display' in property) {
-            originalDisplay = (property as any).display;
             (property as any).display = item.display;
+        }
+        
+        // If item has custom title, apply it (overrides property's own title, kept permanently)
+        if (item.title) {
+            (property as any).title = item.title;
         }
         
         // For ObjectProperty context (array of objects), get value from context

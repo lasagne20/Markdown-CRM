@@ -27,22 +27,25 @@ export class DateProperty extends Property {
         const fieldContainer = document.createElement("div");
         fieldContainer.classList.add("metadata-field");
 
-        const iconContainer = this.createIconContainer(update);
-        fieldContainer.appendChild(iconContainer);
-
-        const field = document.createElement("div");
-        field.classList.add("metadata-field");
-        const dateContainer = this.createFieldContainerContent(update, value);
-        field.appendChild(dateContainer);
-
         if (this.title) {
-            const header = document.createElement("div");
-            header.classList.add("metadata-header");
-            header.textContent = this.name
-            fieldContainer.appendChild(header);
+            const title = document.createElement("div");
+            title.textContent = this.title;
+            title.classList.add("metadata-title");
+            fieldContainer.appendChild(title);
         }
-        
-        fieldContainer.appendChild(field);
+
+        const contentRow = document.createElement("div");
+        contentRow.style.display = "flex";
+        contentRow.style.alignItems = "center";
+        contentRow.style.gap = "4px";
+
+        const iconContainer = this.createIconContainer(update);
+        contentRow.appendChild(iconContainer);
+
+        const dateContainer = this.createFieldContainerContent(update, value);
+        contentRow.appendChild(dateContainer);
+
+        fieldContainer.appendChild(contentRow);
 
         return fieldContainer;
     }

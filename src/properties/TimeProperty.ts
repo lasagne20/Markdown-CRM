@@ -24,8 +24,13 @@ export class TimeProperty extends Property {
             field.appendChild(title);
         }
 
+        const contentRow = document.createElement("div");
+        contentRow.style.display = "flex";
+        contentRow.style.alignItems = "center";
+        contentRow.style.gap = "4px";
+
         const iconContainer = this.createIconContainer(update);
-        field.appendChild(iconContainer);
+        contentRow.appendChild(iconContainer);
 
         const container = document.createElement("div");
         container.classList.add("field-container");
@@ -44,7 +49,9 @@ export class TimeProperty extends Property {
 
         container.appendChild(link);
         container.appendChild(input);
-        field.appendChild(container);
+        contentRow.appendChild(container);
+
+        field.appendChild(contentRow);
 
         return field;
     }

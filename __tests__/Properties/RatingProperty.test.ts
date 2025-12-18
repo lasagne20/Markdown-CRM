@@ -69,13 +69,10 @@ describe('RatingProperty', () => {
             
             expect(result.classList.contains('metadata-field')).toBe(true);
             
-            const columnContainer = result.querySelector('.field-container-column');
-            expect(columnContainer).toBeTruthy();
-            
-            const header = columnContainer?.querySelector('.metadata-header');
+            const header = result.querySelector('.metadata-title');
             expect(header?.textContent).toBe('rating');
             
-            const starRating = columnContainer?.querySelector('.star-rating');
+            const starRating = result.querySelector('.star-rating');
             expect(starRating).toBeTruthy();
         });
 
