@@ -93,7 +93,7 @@ export interface IsNotEmptyCondition extends BaseCondition {
  */
 export interface DirectLinkCondition {
     conditionType: 'directLink';
-    currentDocument: Classe; // The current document to compare with
+    currentDocument?: Classe; // The current document to compare with (injected at runtime)
     linkProperty?: string; // Optional: specific property to check (if not provided, checks all FileProperty/MultiFileProperty)
 }
 
@@ -205,6 +205,13 @@ export class ConditionManager {
      */
     private async evaluateDirectLinkCondition(condition: DirectLinkCondition, instance: Classe): Promise<boolean> {
         const currentDocument = condition.currentDocument;
+        
+        // If no currentDocument is provided, this condition cannot be evaluated
+        if (!currentDocument) {
+            console.warn('DirectLinkCondition requires currentDocument to be set at runtime');
+            return false;
+        }
+        
         const currentLink = `[[${currentDocument.getName()}]]`;
 
         // If a specific property is specified, only check that property

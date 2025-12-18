@@ -190,7 +190,7 @@ export class Property {
         
         let value = await this.read(classe);
         
-        return this.fillDisplay(value, async (value: any) => await classe.updatePropertyValue(this.name, value), args);
+        return this.fillDisplay(value, async (value: any) => await classe.updatePropertyValue(this.name, value), { ...args, classe });
     }
 
     /**
@@ -202,7 +202,7 @@ export class Property {
      * @param args - Additional arguments for configuration
      * @returns The complete DOM element of the property
      */
-    fillDisplay(value: any, update: (value: any) => Promise<void>, args? : {}) {
+    fillDisplay(value: any, update: (value: any) => Promise<void>, args? : { classe?: any }) {
         const field = this.createFieldContainer();
 
         if (this.title) {
@@ -212,7 +212,7 @@ export class Property {
             field.appendChild(title);
         }
 
-        const iconContainer = this.createIconContainer(update);
+        const iconContainer = this.createIconContainer(update, args?.classe);
         const fieldContainer = this.createFieldContainerContent(update, value);
 
         field.appendChild(iconContainer);
@@ -240,7 +240,7 @@ export class Property {
      * @param update - Update function to persist changes
      * @returns The icon container element with its events
      */
-    createIconContainer(update: (value: string) => Promise<void>) {
+    createIconContainer(update: (value: string) => Promise<void>, classe?: any) {
         const iconContainer = document.createElement("div");
         iconContainer.classList.add("icon-container");
         if (this.icon) {

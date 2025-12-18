@@ -452,7 +452,7 @@ describe('Property', () => {
             expect(property.fillDisplay).toHaveBeenCalledWith(
                 'test value',
                 expect.any(Function),
-                { staticMode: true, title: 'Test Title' }
+                { staticMode: true, title: 'Test Title', classe: mockClasse }
             );
         });
     });
@@ -481,7 +481,7 @@ describe('Property', () => {
             
             expect(property.vault).toBe(mockVault);
             expect(property.createFieldContainer).toHaveBeenCalled();
-            expect(property.createIconContainer).toHaveBeenCalledWith(updateFn);
+            expect(property.createIconContainer).toHaveBeenCalledWith(updateFn, undefined);
             expect(property.createFieldContainerContent).toHaveBeenCalledWith(updateFn, 'test value');
             
             expect(result.querySelector('.metadata-title')).toBeTruthy();

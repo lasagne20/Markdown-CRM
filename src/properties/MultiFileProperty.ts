@@ -3,6 +3,7 @@ import { ObjectProperty } from "./ObjectProperty";
 import { FileProperty } from "./FileProperty";
 import { File } from "../vault/File";
 import { Vault } from "../vault/Vault";
+import { Classe } from "../vault/Classe";
 import { Condition } from "../Config/ConditionManager";
 
 export class MultiFileProperty extends ObjectProperty {
@@ -157,14 +158,14 @@ export class MultiFileProperty extends ObjectProperty {
         return deleteButton;
     }
 
-    override async addProperty(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
+    override async addProperty(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement, currentDocument?: Classe) {
         console.log('📂 Début de sélection multiple, values actuelles:', values);
         // Get extended classes (includes classes that inherit from the specified ones)
         const classesToSelect = await this.vault.getExtendedClasses(this.classes);
         
         // Create validation function from conditions if they exist
         const validationFunction = this.conditions && this.conditions.length > 0
-            ? this.vault.conditionManager.createValidationFunction(this.conditions)
+            ? this.vault.conditionManager.createValidationFunction(this.conditions, currentDocument)
             : undefined;
         
         const newFiles = await this.vault.app.selectMultipleFile(this.vault, classesToSelect, { 

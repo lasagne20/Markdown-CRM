@@ -91,8 +91,23 @@ export interface IApp {
 
     // Utility to select files & media 
     selectMedia(vault: any, message: string): Promise<any>;
-    selectMultipleFile(vault: any, classes: string[], options: any): Promise<any>;
-    selectFile(vault: any, classes: string[], options: any): Promise<any>;
+    selectMultipleFile(
+        vault: any, 
+        classes: string[], 
+        options: {
+            hint?: string;
+            validationFunction?: (instance: any) => Promise<boolean>;
+        }
+    ): Promise<any>;
+    selectFile(
+        vault: any, 
+        classes: string[], 
+        options: {
+            hint?: string;
+            classeArgs?: any;
+            validationFunction?: (instance: any) => Promise<boolean>;
+        }
+    ): Promise<any>;
     selectClasse(vault: any, classes: string[], options: any): Promise<any>;
     selectFromList<T>(items: T[], options: {multiple: boolean, title?: string}): Promise<T | T[] | null>;
 

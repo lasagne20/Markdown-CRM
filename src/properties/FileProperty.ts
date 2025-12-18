@@ -83,7 +83,7 @@ export class FileProperty extends LinkProperty{
     return "";
    }
   
-   override createIconContainer(update: (value: string) => Promise<void>) {
+   override createIconContainer(update: (value: string) => Promise<void>, classe?: any) {
     const iconContainer = document.createElement("div");
     iconContainer.classList.add("icon-container");
 
@@ -105,20 +105,20 @@ export class FileProperty extends LinkProperty{
 
     if (!this.static) {
       icon.style.cursor = "pointer";
-      iconContainer.addEventListener("click", async (event) => await this.handleIconClick(update, event));
+      iconContainer.addEventListener("click", async (event) => await this.handleIconClick(update, event, classe));
     }
     
     return iconContainer;
     }
 
     // Fonction pour gérer le clic sur l'icône
-    async handleIconClick(update: (value: string) => Promise<void>, event: Event) {
+    async handleIconClick(update: (value: string) => Promise<void>, event: Event, currentDocument?: Classe) {
         // Get extended classes (includes classes that inherit from the specified ones)
         const classesToSelect = await this.vault.getExtendedClasses(this.classes);
 
         // Create validation function from conditions if they exist
         const validationFunction = this.conditions && this.conditions.length > 0
-            ? this.vault.conditionManager.createValidationFunction(this.conditions)
+            ? this.vault.conditionManager.createValidationFunction(this.conditions, currentDocument)
             : undefined;
 
         let selectedFileObj = await this.vault.app.selectFile(this.vault, classesToSelect, {
