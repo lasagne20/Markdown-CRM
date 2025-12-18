@@ -132,13 +132,18 @@ export class Classe {
     async updatePropertyValue(propertyName: string, value: any): Promise<void> {
         // Get old metadata and parent property before update
         const metadata = await this.getMetadata();
-        const oldValue = metadata[propertyName];
+        // Deep copy the old value to preserve it for comparison
+        // Handle undefined/null values that can't be JSON stringified
+        const oldValue = metadata[propertyName] !== undefined && metadata[propertyName] !== null
+            ? JSON.parse(JSON.stringify(metadata[propertyName]))
+            : metadata[propertyName];
         
         metadata[propertyName] = value;
         await this.updateMetadata(metadata);
 
         // Trigger onPropertyChange processes only if value actually changed
-        if (oldValue !== value) {
+        // Compare the deep copy with the new value
+        if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
             await this.runProcesses('onPropertyChange', propertyName);
         }
     }

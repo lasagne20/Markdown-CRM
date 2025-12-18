@@ -129,7 +129,7 @@ export class TemplateEngine {
                     }
                 } else {
                     // Part of a larger template - clean current value from previous template applications
-                    value = this.cleanCurrentValue(currentValue, result);
+                    value = this.cleanCurrentValue(currentValue, originalTemplate);
                     console.log(`  🔄 {${placeholder}} = "${value}" (current value)`);
                 }
             } else if (placeholder.includes('[') || placeholder.includes('.')) {
@@ -219,7 +219,7 @@ export class TemplateEngine {
         const currentIndex = template.indexOf('{current}');
 
         if (currentIndex > 0) {
-            // {current} has content BEFORE it - remove prefix
+            // {current} has content BEFORE it - remove all matching prefixes iteratively
             const prefixTemplate = template.substring(0, currentIndex);
 
             // Convert template placeholders to regex patterns that match any value
@@ -227,14 +227,24 @@ export class TemplateEngine {
                 .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
                 .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
 
-            const match = currentValue.match(new RegExp('^' + regexPattern + '(.*)$'));
-            if (match && match[1]) {
-                cleanedValue = match[1].trim();
-                console.log(`  🧹 Cleaned {current}: pattern "${prefixTemplate}" matched`);
-                console.log(`    "${currentValue}" → "${cleanedValue}"`);
+            let previousValue = '';
+            const regex = new RegExp(regexPattern, 'g');
+            
+            // Keep cleaning until no more matches are found
+            while (previousValue !== cleanedValue) {
+                previousValue = cleanedValue;
+                // Remove ALL occurrences of the pattern, not just at the start
+                const newValue = cleanedValue.replace(regex, '').trim();
+                if (newValue !== cleanedValue && newValue !== previousValue) {
+                    cleanedValue = newValue;
+                    console.log(`  🧹 Cleaned {current}: pattern "${prefixTemplate}" matched`);
+                    console.log(`    "${previousValue}" → "${cleanedValue}"`);
+                } else {
+                    break;
+                }
             }
         } else if (currentIndex === 0) {
-            // {current} is at the START - remove suffix
+            // {current} is at the START - remove all matching suffixes iteratively
             const suffixIndex = template.indexOf('}', currentIndex) + 1;
             if (suffixIndex < template.length) {
                 const suffixTemplate = template.substring(suffixIndex);
@@ -244,11 +254,20 @@ export class TemplateEngine {
                     .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
                     .replace(/\\\{[^}]+\\\}/g, '.+?'); // Replace {prop} with .+? (non-greedy any)
 
-                const match = currentValue.match(new RegExp('^(.*?)' + regexPattern + '$'));
-                if (match && match[1]) {
-                    cleanedValue = match[1].trim();
-                    console.log(`  🧹 Cleaned {current} at start: pattern "${suffixTemplate}" matched`);
-                    console.log(`    "${currentValue}" → "${cleanedValue}"`);
+                let previousValue = '';
+                const regex = new RegExp(regexPattern, 'g');
+                
+                // Keep cleaning until no more matches are found
+                while (previousValue !== cleanedValue) {
+                    previousValue = cleanedValue;
+                    const newValue = cleanedValue.replace(regex, '').trim();
+                    if (newValue !== cleanedValue && newValue !== previousValue) {
+                        cleanedValue = newValue;
+                        console.log(`  🧹 Cleaned {current} at start: pattern "${suffixTemplate}" matched`);
+                        console.log(`    "${previousValue}" → "${cleanedValue}"`);
+                    } else {
+                        break;
+                    }
                 }
             }
         }
