@@ -39,7 +39,7 @@ display:
       title: "Test Table"
       source:
         class: TestClass
-        filter: children
+        smartFilter: children
       columns:
         - name: "Name"
           propertyName: name
@@ -60,12 +60,12 @@ display:
             expect(config.display).toBeDefined();
             expect(config.display?.containers).toHaveLength(1);
             
-            const tableContainer = config.display?.containers?.[0];
+            const tableContainer = config.display?.containers?.[0] as any;
             expect(tableContainer?.type).toBe('table');
             expect(tableContainer?.title).toBe('Test Table');
             expect(tableContainer?.source).toBeDefined();
             expect(tableContainer?.source?.class).toBe('TestClass');
-            expect(tableContainer?.source?.filter).toBe('children');
+            expect(tableContainer?.source?.smartFilter).toBe('children');
             expect(tableContainer?.columns).toHaveLength(1);
             expect(tableContainer?.columns?.[0].name).toBe('Name');
             expect(tableContainer?.columns?.[0].propertyName).toBe('name');
@@ -94,7 +94,7 @@ display:
     - type: table
       source:
         class: Contact
-        filter: all
+        smartFilter: all
       columns:
         - name: "Email"
           propertyName: email
@@ -114,7 +114,7 @@ display:
 
             const config = await configLoader.loadClassConfig('Contact');
 
-            const tableContainer = config.display?.containers?.[0];
+            const tableContainer = config.display?.containers?.[0] as any;
             expect(tableContainer?.columns).toHaveLength(2);
             expect(tableContainer?.columns?.[0].name).toBe('Email');
             expect(tableContainer?.columns?.[1].name).toBe('Phone');
@@ -139,7 +139,7 @@ display:
     - type: table
       source:
         class: Project
-        filter: all
+        smartFilter: all
       columns:
         - name: "Budget"
           propertyName: budget
@@ -159,7 +159,7 @@ display:
 
             const config = await configLoader.loadClassConfig('Project');
 
-            const tableContainer = config.display?.containers?.[0];
+            const tableContainer = config.display?.containers?.[0] as any;
             expect(tableContainer?.totals).toHaveLength(2);
             expect(tableContainer?.totals?.[0].column).toBe('Budget');
             expect(tableContainer?.totals?.[0].formula).toBe('sum');
@@ -182,7 +182,7 @@ display:
     - type: table
       source:
         class: TestClass
-        filter: children
+        smartFilter: children
       columns:
         - name: "Text Filter"
           propertyName: field1
@@ -207,7 +207,7 @@ display:
 
             const config = await configLoader.loadClassConfig('TestClass');
 
-            const tableContainer = config.display?.containers?.[0];
+            const tableContainer = config.display?.containers?.[0] as any;
             expect(tableContainer?.columns?.[0].filter).toBe('text');
             expect(tableContainer?.columns?.[1].filter).toBe('select');
             expect(tableContainer?.columns?.[2].filter).toBe('multi-select');
@@ -246,7 +246,7 @@ display:
     - type: table
       source:
         class: TestClass
-        filter: ${filter}
+        smartFilter: ${filter}
       columns:
         - name: "Name"
           propertyName: name
@@ -261,8 +261,8 @@ display:
 
                 const config = await testConfigLoader.loadClassConfig('TestClass');
 
-                const tableContainer = config.display?.containers?.[0];
-                expect(tableContainer?.source?.filter).toBe(filter);
+                const tableContainer = config.display?.containers?.[0] as any;
+                expect(tableContainer?.source?.smartFilter).toBe(filter);
             }
         });
 
@@ -287,7 +287,7 @@ display:
     - type: table
       source:
         class: Child
-        filter: children
+        smartFilter: children
       columns:
         - name: "Name"
           propertyName: name
@@ -312,7 +312,7 @@ display:
             expect(config.display?.containers?.[2].type).toBe('fold');
         });
 
-        it('should parse filterBy with single value', async () => {
+        it('should parse conditions with PropertyCondition', async () => {
             const yamlContent = `
 className: Person
 classIcon: 👤
@@ -333,9 +333,12 @@ display:
     - type: table
       source:
         class: Person
-        filter: children
-        filterBy:
-          statut: "Actif"
+        smartFilter: children
+        conditions:
+          - conditionType: PropertyCondition
+            property: statut
+            operator: equals
+            value: "Actif"
       columns:
         - name: "Name"
           propertyName: name
@@ -350,12 +353,19 @@ display:
 
             const config = await configLoader.loadClassConfig('Person');
 
-            const tableContainer = config.display?.containers?.[0];
-            expect(tableContainer?.source?.filterBy).toBeDefined();
-            expect(tableContainer?.source?.filterBy?.statut).toBe('Actif');
+            const tableContainer = config.display?.containers?.[0] as any;
+            expect(tableContainer?.source?.conditions).toBeDefined();
+            expect(Array.isArray(tableContainer?.source?.conditions)).toBe(true);
+            expect(tableContainer?.source?.conditions?.length).toBe(1);
+            expect(tableContainer?.source?.conditions?.[0]).toMatchObject({
+                conditionType: 'PropertyCondition',
+                property: 'statut',
+                operator: 'equals',
+                value: 'Actif'
+            });
         });
 
-        it('should parse filterBy with multiple values (array)', async () => {
+        it('should parse conditions with equalsAny operator (array values)', async () => {
             const yamlContent = `
 className: Contact
 classIcon: 👤
@@ -377,9 +387,12 @@ display:
     - type: table
       source:
         class: Contact
-        filter: all
-        filterBy:
-          type: ["Client", "Partner"]
+        smartFilter: all
+        conditions:
+          - conditionType: PropertyCondition
+            property: type
+            operator: equalsAny
+            values: ["Client", "Partner"]
       columns:
         - name: "Name"
           propertyName: name
@@ -394,13 +407,19 @@ display:
 
             const config = await configLoader.loadClassConfig('Contact');
 
-            const tableContainer = config.display?.containers?.[0];
-            expect(tableContainer?.source?.filterBy).toBeDefined();
-            expect(Array.isArray(tableContainer?.source?.filterBy?.type)).toBe(true);
-            expect(tableContainer?.source?.filterBy?.type).toEqual(['Client', 'Partner']);
+            const tableContainer = config.display?.containers?.[0] as any;
+            expect(tableContainer?.source?.conditions).toBeDefined();
+            expect(Array.isArray(tableContainer?.source?.conditions)).toBe(true);
+            expect(tableContainer?.source?.conditions?.length).toBe(1);
+            expect(tableContainer?.source?.conditions?.[0]).toMatchObject({
+                conditionType: 'PropertyCondition',
+                property: 'type',
+                operator: 'equalsAny',
+                values: ['Client', 'Partner']
+            });
         });
 
-        it('should parse filterBy with multiple properties', async () => {
+        it('should parse conditions with multiple PropertyConditions', async () => {
             const yamlContent = `
 className: Project
 classIcon: 📊
@@ -427,12 +446,24 @@ display:
     - type: table
       source:
         class: Project
-        filter: children
-        filterBy:
-          statut: "En cours"
-          priorite: "Haute"
-          archived: false
-          score: 5
+        smartFilter: children
+        conditions:
+          - conditionType: PropertyCondition
+            property: statut
+            operator: equals
+            value: "En cours"
+          - conditionType: PropertyCondition
+            property: priorite
+            operator: equals
+            value: "Haute"
+          - conditionType: PropertyCondition
+            property: archived
+            operator: equals
+            value: false
+          - conditionType: PropertyCondition
+            property: score
+            operator: equals
+            value: 5
       columns:
         - name: "Name"
           propertyName: name
@@ -447,12 +478,34 @@ display:
 
             const config = await configLoader.loadClassConfig('Project');
 
-            const tableContainer = config.display?.containers?.[0];
-            expect(tableContainer?.source?.filterBy).toBeDefined();
-            expect(tableContainer?.source?.filterBy?.statut).toBe('En cours');
-            expect(tableContainer?.source?.filterBy?.priorite).toBe('Haute');
-            expect(tableContainer?.source?.filterBy?.archived).toBe(false);
-            expect(tableContainer?.source?.filterBy?.score).toBe(5);
+            const tableContainer = config.display?.containers?.[0] as any;
+            expect(tableContainer?.source?.conditions).toBeDefined();
+            expect(Array.isArray(tableContainer?.source?.conditions)).toBe(true);
+            expect(tableContainer?.source?.conditions?.length).toBe(4);
+            expect(tableContainer?.source?.conditions?.[0]).toMatchObject({
+                conditionType: 'PropertyCondition',
+                property: 'statut',
+                operator: 'equals',
+                value: 'En cours'
+            });
+            expect(tableContainer?.source?.conditions?.[1]).toMatchObject({
+                conditionType: 'PropertyCondition',
+                property: 'priorite',
+                operator: 'equals',
+                value: 'Haute'
+            });
+            expect(tableContainer?.source?.conditions?.[2]).toMatchObject({
+                conditionType: 'PropertyCondition',
+                property: 'archived',
+                operator: 'equals',
+                value: false
+            });
+            expect(tableContainer?.source?.conditions?.[3]).toMatchObject({
+                conditionType: 'PropertyCondition',
+                property: 'score',
+                operator: 'equals',
+                value: 5
+            });
         });
     });
 });

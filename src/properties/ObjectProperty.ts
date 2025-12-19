@@ -354,7 +354,9 @@ export class ObjectProperty extends Property{
 
             const contentContainer = document.createElement("div");
             contentContainer.classList.add("metadata-object-custom-content");
-            await renderer.renderDisplayItems(contentContainer, displayConfig.items);
+            if (displayConfig.items && displayConfig.items.length > 0) {
+                await renderer.renderDisplayItems(contentContainer, displayConfig.items);
+            }
             objectRow.appendChild(contentContainer);
             
             objectsContainer.appendChild(objectRow);

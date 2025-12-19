@@ -10,7 +10,7 @@ export interface PropertyConfig {
     hint?: string;
     defaultValue?: any;
     formula?: string; // Pour FormulaProperty
-    display?: string | DisplayContainer; // Pour mode d'affichage - string pour rétrocompat (table, list) ou DisplayContainer pour config avancée
+    display?: string | DisplayConfig; // Pour mode d'affichage - string pour rétrocompat (table, list) ou DisplayConfig pour config avancée
     static?: boolean; // Pour rendre une propriété non-modifiable
     unit?: string; // Pour NumberProperty - unité de mesure (€, kg, %, etc.)
     aliases?: string[]; // Old property names for automatic migration
@@ -49,8 +49,8 @@ export interface TableColumnConfig {
 
 export interface TableSourceConfig {
     class: string;
-    filter: 'all' | 'children' | 'parent' | 'siblings' | 'roots';
-    filterBy?: { [propertyName: string]: string | string[] | number | boolean }; // Filter by property values
+    smartFilter?: 'all' | 'children' | 'parent' | 'siblings' | 'roots';
+    conditions?: Condition[];
 }
 
 export interface TableTotalConfig {
@@ -128,9 +128,13 @@ export type DisplayItem =
     | FoldDisplayItem 
     | TableDisplayItem;
 
-export interface DisplayContainer {
-    items: DisplayItem[];
+export interface DisplayConfig {
+    items?: DisplayItem[]; // Legacy format
+    containers?: DisplayItem[]; // New format with containers array
 }
+
+// Alias for backward compatibility
+export type DisplayContainer = DisplayConfig;
 
 export interface SubClassConfig {
     name: string;
@@ -174,7 +178,7 @@ export interface ClassConfig {
         subClasses: SubClassConfig[];
     };
     properties: { [key: string]: PropertyConfig };
-    display?: DisplayContainer;
+    display?: DisplayConfig;
     data?: DataSourceConfig[]; // Data sources for pre-populating instances
     populate?: PopulateConfig[]; // Properties to prompt for during file creation
     process?: ProcessConfig[]; // Automated processes to run on triggers

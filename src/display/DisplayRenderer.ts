@@ -302,7 +302,9 @@ export class DisplayRenderer {
             return [];
         }
 
-        switch (source.filter) {
+        const smartFilter = source.smartFilter || 'all';
+        
+        switch (smartFilter) {
             case 'all':
                 instances = await factory.getAllInstancesForClass(source.class, this.vault);
                 break;
@@ -353,54 +355,22 @@ export class DisplayRenderer {
                 break;
             
             default:
-                console.warn(`Unknown filter type: ${source.filter}`);
+                console.warn(`Unknown smartFilter type: ${smartFilter}`);
         }
 
-        // Apply filterBy conditions if specified
-        if (source.filterBy && Object.keys(source.filterBy).length > 0) {
-            instances = await this.applyFilterBy(instances, source.filterBy, currentInstance);
+        // Apply conditions if specified
+        if (source.conditions && source.conditions.length > 0) {
+            const validationFn = this.vault.conditionManager.createValidationFunction(source.conditions, currentInstance);
+            
+            const filtered: Classe[] = [];
+            for (const instance of instances) {
+                if (await validationFn(instance)) {
+                    filtered.push(instance);
+                }
+            }
+            instances = filtered;
         }
 
         return instances;
-    }
-
-    /**
-     * Apply filterBy conditions to instances
-     * Uses ConditionManager to evaluate conditions with AND logic
-     */
-    private async applyFilterBy(instances: Classe[], filterBy: { [key: string]: any }, currentInstance?: Classe): Promise<Classe[]> {
-        // Convert filterBy to Condition array
-        const conditions: any[] = [];
-        
-        for (const [propertyName, value] of Object.entries(filterBy)) {
-            if (Array.isArray(value)) {
-                // Array of values = OR logic (equalsAny)
-                conditions.push({
-                    type: 'equalsAny',
-                    property: propertyName,
-                    values: value
-                });
-            } else {
-                // Single value = equals
-                conditions.push({
-                    type: 'equals',
-                    property: propertyName,
-                    value: value
-                });
-            }
-        }
-
-        // Use ConditionManager to create validation function
-        const validationFn = this.vault.conditionManager.createValidationFunction(conditions, currentInstance);
-        
-        // Filter instances using validation function
-        const filtered: Classe[] = [];
-        for (const instance of instances) {
-            if (await validationFn(instance)) {
-                filtered.push(instance);
-            }
-        }
-        
-        return filtered;
     }
 }

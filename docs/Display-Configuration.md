@@ -307,7 +307,12 @@ Displays related files in an interactive table with filtering, sorting, and tota
   className: "members-table"
   source:
     class: Person
-    filter: children  # children | all | parent | siblings | roots
+    smartFilter: children  # Optional: children | all | parent | siblings | roots (default: all)
+    conditions:  # Optional: filter by property conditions
+      - conditionType: PropertyCondition
+        property: status
+        operator: equals
+        value: "Active"
   columns:
     - name: "File"
       propertyName: _fileName
@@ -335,8 +340,8 @@ Displays related files in an interactive table with filtering, sorting, and tota
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
 | `source.class` | string | ✅ | Class name to query |
-| `source.filter` | string | ✅ | Filter type (see below) |
-| `source.filterBy` | object | ❌ | Filter by property values (see below) |
+| `source.smartFilter` | string | ❌ | Filter type (default: `all`, see below) |
+| `source.conditions` | array | ❌ | Condition filters (see Property Conditions below) |
 | `columns` | array | ✅ | Column definitions |
 | `columns[].name` | string | ✅ | Column header text |
 | `columns[].propertyName` | string | ✅ | Property to display |
@@ -349,28 +354,62 @@ Displays related files in an interactive table with filtering, sorting, and tota
 
 *Required for `sum`, `avg`, `min`, `max` formulas
 
-**Source Filter Types:**
+**Smart Filter Types:**
 
+- `all` (default): All files of the specified class
 - `children`: Files that are children of the current file
-- `all`: All files of the specified class
 - `parent`: Parent file of the current file
 - `siblings`: Files at the same level
 - `roots`: Top-level files (no parent)
 
-**Property Value Filtering (`filterBy`):**
+**Property Conditions:**
 
-Filter table results by specific property values. All conditions must match (AND logic).
+Filter table results using full condition syntax. All conditions must match (AND logic).
 
 ```yaml
 source:
   class: Person
-  filter: children
-  filterBy:
-    statut: "Actif"              # Single value
-    type: ["Client", "Partner"]   # Multiple values (OR)
-    verified: true                # Boolean
-    score: 5                      # Number
+  smartFilter: children
+  conditions:
+    # Simple equality check
+    - conditionType: PropertyCondition
+      property: status
+      operator: equals
+      value: "Active"
+    
+    # Check if value is in array
+    - conditionType: PropertyCondition
+      property: type
+      operator: equalsAny
+      values: ["Client", "Partner"]
+    
+    # Boolean check
+    - conditionType: PropertyCondition
+      property: verified
+      operator: equals
+      value: true
+    
+    # Numeric comparison
+    - conditionType: PropertyCondition
+      property: score
+      operator: greaterThan
+      value: 80
 ```
+
+**Available Operators:**
+
+- `equals`: Property equals value
+- `notEquals`: Property does not equal value
+- `equalsAny`: Property equals any value in array
+- `notEqualsAny`: Property does not equal any value in array
+- `contains`: String/array contains value
+- `notContains`: String/array does not contain value
+- `greaterThan`: Numeric property greater than value
+- `lessThan`: Numeric property less than value
+- `greaterThanOrEqual`: Numeric property >= value
+- `lessThanOrEqual`: Numeric property <= value
+- `isEmpty`: Property is empty/null/undefined
+- `isNotEmpty`: Property has a value
 
 **Examples:**
 
@@ -378,25 +417,44 @@ source:
 # Show only active members
 source:
   class: Person
-  filter: children
-  filterBy:
-    statut: "Actif"
+  smartFilter: children
+  conditions:
+    - conditionType: PropertyCondition
+      property: status
+      operator: equals
+      value: "Active"
 
 # Show clients or partners with high priority
 source:
   class: Contact
-  filter: all
-  filterBy:
-    type: ["Client", "Partner"]
-    priorite: "Haute"
+  smartFilter: all
+  conditions:
+    - conditionType: PropertyCondition
+      property: type
+      operator: equalsAny
+      values: ["Client", "Partner"]
+    - conditionType: PropertyCondition
+      property: priority
+      operator: equals
+      value: "High"
 
-# Show completed projects
+# Show completed projects with budget > 10000
 source:
   class: Project
-  filter: children
-  filterBy:
-    statut: "Terminé"
-    archived: false
+  smartFilter: children
+  conditions:
+    - conditionType: PropertyCondition
+      property: status
+      operator: equals
+      value: "Completed"
+    - conditionType: PropertyCondition
+      property: archived
+      operator: equals
+      value: false
+    - conditionType: PropertyCondition
+      property: budget
+      operator: greaterThan
+      value: 10000
 ```
 
 **Result:**
@@ -474,7 +532,12 @@ totals:
   className: "projects-table"
   source:
     class: Project
-    filter: children
+    smartFilter: children
+    conditions:
+      - conditionType: PropertyCondition
+        property: status
+        operator: notEquals
+        value: "Archived"
   columns:
     - name: "File"
       propertyName: _fileName

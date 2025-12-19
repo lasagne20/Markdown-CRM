@@ -34,10 +34,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
 
             const condition: DirectLinkCondition = {
                 conditionType: 'directLink',
-                currentDocument: currentDoc
+                
             };
 
-            const result = await conditionManager.evaluateCondition(condition, instance);
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(true);
         });
 
@@ -58,10 +58,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
 
             const condition: DirectLinkCondition = {
                 conditionType: 'directLink',
-                currentDocument: currentDoc
+                
             };
 
-            const result = await conditionManager.evaluateCondition(condition, instance);
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(false);
         });
 
@@ -85,11 +85,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
             // Check only the institution property
             const condition: DirectLinkCondition = {
                 conditionType: 'directLink',
-                currentDocument: currentDoc,
                 linkProperty: 'institution'
             };
 
-            const result = await conditionManager.evaluateCondition(condition, instance);
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(true);
         });
 
@@ -114,10 +113,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
 
             const condition: DirectLinkCondition = {
                 conditionType: 'directLink',
-                currentDocument: currentDoc
+                
             };
 
-            const result = await conditionManager.evaluateCondition(condition, instance);
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(true);
         });
 
@@ -141,10 +140,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
 
             const condition: DirectLinkCondition = {
                 conditionType: 'directLink',
-                currentDocument: currentDoc
+                
             };
 
-            const result = await conditionManager.evaluateCondition(condition, instance);
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(false);
         });
 
@@ -165,10 +164,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
 
             const condition: DirectLinkCondition = {
                 conditionType: 'directLink',
-                currentDocument: currentDoc
+                
             };
 
-            const result = await conditionManager.evaluateCondition(condition, instance);
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(true);
         });
 
@@ -189,10 +188,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
 
             const condition: DirectLinkCondition = {
                 conditionType: 'directLink',
-                currentDocument: currentDoc
+                
             };
 
-            const result = await conditionManager.evaluateCondition(condition, instance);
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(false);
         });
 
@@ -218,10 +217,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
 
             const condition: DirectLinkCondition = {
                 conditionType: 'directLink',
-                currentDocument: currentDoc
+                
             };
 
-            const result = await conditionManager.evaluateCondition(condition, instance);
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(true);
         });
     });
@@ -233,11 +232,10 @@ describe('ConditionManager - DirectLinkCondition', () => {
             (currentDoc as any).name = 'CurrentDocument';
 
             const condition: DirectLinkCondition = {
-                conditionType: 'directLink',
-                currentDocument: currentDoc
+                conditionType: 'directLink'
             };
 
-            const validationFunction = conditionManager.createValidationFunction([condition]);
+            const validationFunction = conditionManager.createValidationFunction([condition], currentDoc);
 
             // Create test instance linked to current document
             const linkedInstance = new Classe(vault);

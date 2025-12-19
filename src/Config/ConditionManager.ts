@@ -213,12 +213,13 @@ export class ConditionManager {
             return false;
         }
         
-        const currentLink = `[[${currentDocument.getFile()?.getPath()}|${currentDocument.getFile()?.getName()}]]`;
+        const currentFileName = currentDocument.getName();
+        const currentFilePath = currentDocument.getPath() || '';
 
         // If a specific property is specified, only check that property
         if (condition.linkProperty) {
             const propertyValue = await this.getPropertyValue(instance, condition.linkProperty);
-            return this.hasLinkToDocument(propertyValue, currentLink);
+            return this.hasLinkToDocument(propertyValue, currentFileName, currentFilePath);
         }
 
         // Otherwise, check all FileProperty and MultiFileProperty in the instance
@@ -227,7 +228,7 @@ export class ConditionManager {
             // Check if this is a FileProperty or MultiFileProperty
             if (property.type === 'file' || property.type === 'multiFile') {
                 const propertyValue = await property.read(instance);
-                if (this.hasLinkToDocument(propertyValue, currentLink)) {
+                if (this.hasLinkToDocument(propertyValue, currentFileName, currentFilePath)) {
                     return true;
                 }
             }
@@ -239,31 +240,38 @@ export class ConditionManager {
     /**
      * Check if a property value contains a link to the specified document
      */
-    private hasLinkToDocument(propertyValue: any, documentLink: string): boolean {
-        if (!propertyValue || !documentLink) {
+    private hasLinkToDocument(propertyValue: any, fileName: string, filePath: string): boolean {
+        if (!propertyValue) {
             return false;
         }
 
         // Single link (string)
         if (typeof propertyValue === 'string') {
-            return this.normalizeLink(propertyValue) === this.normalizeLink(documentLink);
+            // Extract the link name from [[LinkName]] or [[path/to/LinkName|DisplayName]]
+            const linkMatch = propertyValue.match(/\[\[([^\]|]+)/);
+            if (linkMatch) {
+                const linkTarget = linkMatch[1];
+                // Check if it matches the filename or path
+                return linkTarget === fileName || linkTarget === filePath || linkTarget.endsWith('/' + fileName);
+            }
+            return false;
         }
 
         // Array of links
         if (Array.isArray(propertyValue)) {
-            return propertyValue.some(link => 
-                typeof link === 'string' && this.normalizeLink(link) === this.normalizeLink(documentLink)
-            );
+            return propertyValue.some(link => {
+                if (typeof link === 'string') {
+                    const linkMatch = link.match(/\[\[([^\]|]+)/);
+                    if (linkMatch) {
+                        const linkTarget = linkMatch[1];
+                        return linkTarget === fileName || linkTarget === filePath || linkTarget.endsWith('/' + fileName);
+                    }
+                }
+                return false;
+            });
         }
 
         return false;
-    }
-
-    /**
-     * Normalize a link by removing brackets and trimming
-     */
-    private normalizeLink(link: string): string {
-        return link.replace(/\[\[|\]\]/g, '').trim();
     }
 
     /**
