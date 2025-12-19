@@ -44,8 +44,23 @@ export class Classe {
         this.properties.push(property);
     }
     
+    /**
+     * Get a property by name, checking aliases if not found
+     * @param name Property name or alias
+     * @returns Property if found, undefined otherwise
+     */
     getProperty(name: string): Property | undefined {
-        return this.properties.find(p => p.name === name);
+        // First, try direct name match
+        let property = this.properties.find(p => p.name === name);
+        
+        // If not found, check aliases
+        if (!property) {
+            property = this.properties.find(p => 
+                p.aliases && p.aliases.includes(name)
+            );
+        }
+        
+        return property;
     }
     
     getProperties(): Property[] {
