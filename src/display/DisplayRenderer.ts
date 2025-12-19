@@ -1,6 +1,7 @@
 import { DisplayItem } from '../Config/interfaces';
 import { Property } from '../properties/Property';
 import { Vault } from '../vault/Vault';
+import { Classe } from '../vault/Classe';
 import { addFold } from '../utils/Utils';
 import { DynamicTable } from './DynamicTable';
 
@@ -54,7 +55,7 @@ export class DisplayRenderer {
                 return await this.renderFold(item);
             
             case 'table':
-                return await this.renderTable(item);
+                return await this.renderTable(item, this.context);
             
             default:
                 console.warn(`Unknown display item type: ${(item as any).type}`);
@@ -252,7 +253,7 @@ export class DisplayRenderer {
         return container;
     }
 
-    private async renderTable(item: any): Promise<HTMLElement> {
+    private async renderTable(item: any, currentInstance?: Classe): Promise<HTMLElement> {
         const container = document.createElement("div");
         container.classList.add("metadata-table-container");
         
@@ -272,9 +273,8 @@ export class DisplayRenderer {
             return container;
         }
         
-        // Get files based on source - for now, return empty container
-        // This would need proper implementation based on context
-        let files: any[] = [];
+        // Get files based on source filter type
+        let files = await this.getFilesForTable(item.source, currentInstance);
         
         const tableConfig = {
             source: item.source,
@@ -287,5 +287,120 @@ export class DisplayRenderer {
         container.appendChild(tableElement);
         
         return container;
+    }
+
+    /**
+     * Get files for a table based on source configuration
+     */
+    private async getFilesForTable(source: any, currentInstance?: Classe): Promise<Classe[]> {
+        let instances: Classe[] = [];
+        
+        // Get instances based on filter type
+        const factory = this.vault.getDynamicClassFactory();
+        if (!factory) {
+            console.warn("DynamicClassFactory not available");
+            return [];
+        }
+
+        switch (source.filter) {
+            case 'all':
+                instances = await factory.getAllInstancesForClass(source.class, this.vault);
+                break;
+            
+            case 'children':
+                if (currentInstance) {
+                    instances = await (currentInstance as any).findChildren?.() || [];
+                }
+                break;
+            
+            case 'parent':
+                if (currentInstance) {
+                    const parentFile = await (currentInstance as any).getParentFile?.();
+                    if (parentFile) {
+                        const parent = await this.vault.getFromFile(parentFile);
+                        if (parent) {
+                            instances = [parent];
+                        }
+                    }
+                }
+                break;
+            
+            case 'siblings':
+                if (currentInstance) {
+                    const parentFile = await (currentInstance as any).getParentFile?.();
+                    if (parentFile) {
+                        const parent = await this.vault.getFromFile(parentFile);
+                        if (parent) {
+                            const siblings = await (parent as any).findChildren?.() || [];
+                            // Exclude current instance
+                            const currentPath = currentInstance.getPath();
+                            instances = siblings.filter((s: Classe) => s.getPath() !== currentPath);
+                        }
+                    }
+                }
+                break;
+            
+            case 'roots':
+                // Get all instances and filter those without parent
+                const allInstances = await factory.getAllInstancesForClass(source.class, this.vault);
+                instances = [];
+                for (const instance of allInstances) {
+                    const parentFile = await (instance as any).getParentFile?.();
+                    if (!parentFile) {
+                        instances.push(instance);
+                    }
+                }
+                break;
+            
+            default:
+                console.warn(`Unknown filter type: ${source.filter}`);
+        }
+
+        // Apply filterBy conditions if specified
+        if (source.filterBy && Object.keys(source.filterBy).length > 0) {
+            instances = await this.applyFilterBy(instances, source.filterBy, currentInstance);
+        }
+
+        return instances;
+    }
+
+    /**
+     * Apply filterBy conditions to instances
+     * Uses ConditionManager to evaluate conditions with AND logic
+     */
+    private async applyFilterBy(instances: Classe[], filterBy: { [key: string]: any }, currentInstance?: Classe): Promise<Classe[]> {
+        // Convert filterBy to Condition array
+        const conditions: any[] = [];
+        
+        for (const [propertyName, value] of Object.entries(filterBy)) {
+            if (Array.isArray(value)) {
+                // Array of values = OR logic (equalsAny)
+                conditions.push({
+                    type: 'equalsAny',
+                    property: propertyName,
+                    values: value
+                });
+            } else {
+                // Single value = equals
+                conditions.push({
+                    type: 'equals',
+                    property: propertyName,
+                    value: value
+                });
+            }
+        }
+
+        // Use ConditionManager to create validation function
+        const validationFn = this.vault.conditionManager.createValidationFunction(conditions, currentInstance);
+        
+        // Filter instances using validation function
+        const filtered: Classe[] = [];
+        for (const instance of instances) {
+            if (await validationFn(instance)) {
+                filtered.push(instance);
+            }
+        }
+        
+        return filtered;
     }
 }

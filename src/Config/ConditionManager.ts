@@ -213,7 +213,7 @@ export class ConditionManager {
             return false;
         }
         
-        const currentLink = `[[${currentDocument.getName()}]]`;
+        const currentLink = `[[${currentDocument.getFile()?.getPath()}|${currentDocument.getFile()?.getName()}]]`;
 
         // If a specific property is specified, only check that property
         if (condition.linkProperty) {
