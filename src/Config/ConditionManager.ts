@@ -127,7 +127,7 @@ export type Condition =
 export class ConditionManager {
     /**
      * Evaluate a single condition against an instance
-     * @param currentDocument The current document context (used for DirectLinkCondition)
+     * @param currentDocument The current document context (used for DirectLinkCondition and 'current' value)
      */
     async evaluateCondition(condition: Condition, instance: Classe, currentDocument?: Classe): Promise<boolean> {
         // Check if this is a DirectLinkCondition
@@ -139,34 +139,58 @@ export class ConditionManager {
         const propertyCondition = condition as PropertyCondition;
         const propertyValue = await this.getPropertyValue(instance, propertyCondition.property);
 
+        // Replace 'current' with current document link if applicable
+        const resolveValue = (value: any): any => {
+            if (value === 'current') {
+                if (!currentDocument) {
+                    console.warn('Condition uses "current" but no currentDocument was provided');
+                    return 'current'; // Return as-is, will fail the condition
+                }
+                return `[[${currentDocument.getName()}]]`;
+            }
+            return value;
+        };
+
         switch (propertyCondition.type) {
             case 'equals':
-                return this.compareValues(propertyValue, propertyCondition.value);
+                return this.compareValues(propertyValue, resolveValue(propertyCondition.value));
 
             case 'notEquals':
-                return !this.compareValues(propertyValue, propertyCondition.value);
+                return !this.compareValues(propertyValue, resolveValue(propertyCondition.value));
 
             case 'equalsAny':
-                return propertyCondition.values.some(value => this.compareValues(propertyValue, value));
+                return propertyCondition.values.some(value => this.compareValues(propertyValue, resolveValue(value)));
 
             case 'notEqualsAny':
-                return !propertyCondition.values.some(value => this.compareValues(propertyValue, value));
+                return !propertyCondition.values.some(value => this.compareValues(propertyValue, resolveValue(value)));
 
             case 'contains':
+                const containsValue = resolveValue(propertyCondition.value);
                 if (typeof propertyValue === 'string') {
-                    return propertyValue.includes(propertyCondition.value);
+                    return propertyValue.includes(containsValue);
                 }
                 if (Array.isArray(propertyValue)) {
-                    return propertyValue.includes(propertyCondition.value);
+                    // For arrays and objects, use JSON.stringify to search within structure
+                    const jsonStr = JSON.stringify(propertyValue);
+                    if (propertyCondition.value === 'current' && currentDocument) {
+                        // For 'current', check using hasLinkToDocument logic
+                        return this.hasLinkToDocument(jsonStr, currentDocument.getName(), currentDocument.getPath() || '');
+                    }
+                    return jsonStr.includes(containsValue);
                 }
                 return false;
 
             case 'notContains':
+                const notContainsValue = resolveValue(propertyCondition.value);
                 if (typeof propertyValue === 'string') {
-                    return !propertyValue.includes(propertyCondition.value);
+                    return !propertyValue.includes(notContainsValue);
                 }
                 if (Array.isArray(propertyValue)) {
-                    return !propertyValue.includes(propertyCondition.value);
+                    const jsonStr = JSON.stringify(propertyValue);
+                    if (propertyCondition.value === 'current' && currentDocument) {
+                        return !this.hasLinkToDocument(jsonStr, currentDocument.getName(), currentDocument.getPath() || '');
+                    }
+                    return !jsonStr.includes(notContainsValue);
                 }
                 return true;
 
@@ -203,13 +227,11 @@ export class ConditionManager {
     /**
      * Evaluate a DirectLinkCondition
      * Checks if the instance has a direct link to the current document
-     * @param currentDocument The current document to check links against (overrides condition.currentDocument if provided)
+     * @param currentDocument The current document to check links against
      */
     private async evaluateDirectLinkCondition(condition: DirectLinkCondition, instance: Classe, currentDocument?: Classe): Promise<boolean> {
-        
-        // If no currentDocument is provided, this condition cannot be evaluated
         if (!currentDocument) {
-            console.warn('DirectLinkCondition requires currentDocument to be set at runtime');
+            console.warn('DirectLinkCondition requires currentDocument to be provided');
             return false;
         }
         
@@ -365,7 +387,7 @@ export class ConditionManager {
      * This function evaluates conditions against a Classe instance
      * 
      * @param conditions Array of conditions to evaluate
-     * @param currentDocument Optional current document for DirectLinkCondition evaluation
+     * @param currentDocument Optional current document for DirectLinkCondition evaluation and 'current' value resolution
      * @returns An async function that takes a Classe and returns true if it passes all conditions
      */
     createValidationFunction(conditions: Condition[], currentDocument?: Classe): (instance: Classe) => Promise<boolean> {

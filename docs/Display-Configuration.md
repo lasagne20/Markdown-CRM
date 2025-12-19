@@ -411,6 +411,58 @@ source:
 - `isEmpty`: Property is empty/null/undefined
 - `isNotEmpty`: Property has a value
 
+#### Special Value: `current`
+
+In conditions, you can use the special value `current` to reference **the current document** (the file being viewed). This is particularly useful for filtering relationships.
+
+When you use `value: current` in a condition, it automatically resolves to a link to the current document: `[[CurrentDocumentName]]`
+
+**Use Cases:**
+
+```yaml
+# Show all projects where the current institution is involved
+# (works with MultiFileProperty containing institution links)
+source:
+  class: Project
+  conditions:
+    - property: institutions
+      operator: contains
+      value: current  # Resolves to [[Current Institution Name]]
+
+# Show employees working at the current institution
+# (works with ObjectProperty containing institution references)
+source:
+  class: Employee
+  conditions:
+    - property: positions  # Array of {institution, role} objects
+      operator: contains
+      value: current  # Searches for current doc in any position's institution
+
+# Show documents NOT linked to current document
+source:
+  class: Document
+  conditions:
+    - property: relatedDocs
+      operator: notContains
+      value: current
+
+# Check if a property equals the current document
+source:
+  class: Task
+  conditions:
+    - property: assignedTo
+      operator: equals
+      value: current
+```
+
+**How it works:**
+
+- `current` is resolved at runtime to `[[CurrentDocumentName]]`
+- Works with `contains`, `notContains`, `equals`, `notEquals`, `equalsAny`, `notEqualsAny`
+- For `contains` on **arrays** (MultiFileProperty): checks if any element links to current doc
+- For `contains` on **objects** (ObjectProperty): searches all object properties for links to current doc
+- Handles different link formats: `[[Name]]`, `[[path/Name]]`, `[[Name|Display]]`
+
 **Examples:**
 
 ```yaml

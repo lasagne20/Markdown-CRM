@@ -193,6 +193,11 @@ display:
       source:
         class: Projet
         smartFilter: children
+        conditions:
+        - conditionType: PropertyCondition
+          property: postes
+          operator: contains
+          value: current
       columns:
         - name: "Fichier"
           propertyName: _fileName
