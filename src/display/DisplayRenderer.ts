@@ -80,6 +80,11 @@ export class DisplayRenderer {
                 (property as any).display = item.display;
             }
             
+            // Apply displayContainer permanently (don't restore it because of async rendering)
+            if (item.displayContainer && property instanceof Object && 'displayContainer' in property) {
+                (property as any).displayContainer = item.displayContainer;
+            }
+            
             if (item.title) {
                 (property as any).title = item.title;
             }
@@ -118,6 +123,8 @@ export class DisplayRenderer {
             return result;
         } finally {
             // Restore original values to prevent mutation of shared instances
+            // Note: We don't restore displayContainer because it's applied permanently
+            // to avoid issues with async rendering in createTabs/createObjects
             if (item.display && property instanceof Object && 'display' in property) {
                 (property as any).display = originalDisplay;
             }

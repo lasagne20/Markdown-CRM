@@ -240,7 +240,8 @@ display:
             - type: property
               name: evenements
               title: "Événements"
-              display:
+              display: tabs
+              displayContainer:
                 items:
                   - type: line
                     items:
