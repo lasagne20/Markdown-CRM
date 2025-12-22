@@ -22,7 +22,7 @@ export class ObjectProperty extends Property{
         super(name, vault, args);
         this.appendFirst = args?.appendFirst || false;
         this.properties = properties;
-        this.allowMove = args?.allowMove || true;
+        this.allowMove = args?.allowMove ?? true;
         
         // Handle display configuration
         if (args?.display) {
@@ -275,6 +275,9 @@ export class ObjectProperty extends Property{
         if (this.display == "table") {
             this.createTable(values, update, container);
         }
+        else if (this.display == "tabs") {
+            this.createTabs(values, update, container);
+        }
         else {
             // Affichage par défaut (objet)
             this.createObjects(values, update, container);
@@ -432,6 +435,160 @@ export class ObjectProperty extends Property{
                 table.appendChild(row);
             });
         }
+    }
+
+    createTabs(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
+        // Parser les valeurs
+        let parsedValues = values;
+        if (typeof values === 'string') {
+            try {
+                parsedValues = JSON.parse(values);
+            } catch (e) {
+                parsedValues = [];
+            }
+        }
+        
+        if (!Array.isArray(parsedValues)) {
+            parsedValues = [];
+        }
+
+        // Créer le conteneur des onglets
+        const tabsContainer = document.createElement("div");
+        tabsContainer.classList.add("metadata-object-tabs-container");
+        
+        // Créer la barre d'onglets
+        const tabBar = document.createElement("div");
+        tabBar.classList.add("metadata-object-tab-bar");
+        
+        // Créer le conteneur du contenu des onglets
+        const tabContent = document.createElement("div");
+        tabContent.classList.add("metadata-object-tab-content");
+        
+        // Fonction pour afficher un onglet spécifique
+        const showTab = (index: number) => {
+            // Masquer tous les contenus
+            const allContents = tabContent.querySelectorAll('.metadata-object-tab-pane');
+            allContents.forEach(content => {
+                (content as HTMLElement).style.display = 'none';
+            });
+            
+            // Désactiver tous les onglets
+            const allTabs = tabBar.querySelectorAll('.metadata-object-tab');
+            allTabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Activer l'onglet et le contenu sélectionnés
+            const selectedTab = tabBar.querySelector(`[data-tab-index="${index}"]`);
+            const selectedContent = tabContent.querySelector(`[data-content-index="${index}"]`);
+            
+            if (selectedTab) selectedTab.classList.add('active');
+            if (selectedContent) (selectedContent as HTMLElement).style.display = 'block';
+        };
+        
+        // Créer les onglets pour chaque objet
+        parsedValues.forEach((objects: any, index: number) => {
+            // Créer l'onglet
+            const tab = document.createElement("div");
+            tab.classList.add("metadata-object-tab");
+            tab.dataset.tabIndex = index.toString();
+            if (index === 0) tab.classList.add('active');
+            
+            // Bouton de suppression dans l'onglet (en haut à gauche)
+            const deleteButton = document.createElement("button");
+            this.vault.app.setIcon(deleteButton, "x");
+            deleteButton.classList.add("metadata-tab-delete-button");
+            deleteButton.onclick = async (e) => {
+                e.stopPropagation();
+                await this.removeProperty(values, update, index, container);
+            };
+            tab.appendChild(deleteButton);
+            
+            // Texte de l'onglet (numéro ou titre)
+            const tabLabel = document.createElement("span");
+            tabLabel.classList.add("metadata-tab-label");
+            
+            // Essayer de trouver un label significatif
+            let labelText = `Item ${index + 1}`;
+            const firstProp = Object.values(this.properties)[0];
+            if (firstProp && objects[firstProp.name]) {
+                const value = objects[firstProp.name];
+                if (typeof value === 'string' && value.length > 0) {
+                    labelText = value.length > 20 ? value.substring(0, 20) + '...' : value;
+                }
+            }
+            tabLabel.textContent = labelText;
+            tab.appendChild(tabLabel);
+            
+            // Événement de clic pour changer d'onglet
+            tab.onclick = () => showTab(index);
+            
+            tabBar.appendChild(tab);
+            
+            // Créer le contenu de l'onglet
+            const pane = document.createElement("div");
+            pane.classList.add("metadata-object-tab-pane");
+            pane.dataset.contentIndex = index.toString();
+            pane.style.display = index === 0 ? 'block' : 'none';
+            
+            // Vérifier que l'objet est valide
+            if (typeof objects !== 'object' || objects === null) {
+                console.warn(`Invalid object at index ${index}:`, objects);
+                parsedValues[index] = {};
+                objects = parsedValues[index];
+            }
+            
+            // Créer la grille de propriétés
+            const propertiesGrid = document.createElement("div");
+            propertiesGrid.classList.add("metadata-object-properties-grid");
+            
+            Object.values(this.properties).forEach(property => {
+                let value = objects[property.name];
+                let propertyContainer = document.createElement("div");
+                propertyContainer.classList.add("metadata-object-property");
+
+                if (property.flexSpan) {
+                    propertyContainer.style.gridColumn = "span " + property.flexSpan;
+                }
+
+                // For ObjectProperty, we need special handling to pass its own container
+                if (property instanceof ObjectProperty) {
+                    let elementRef: HTMLDivElement | null = null;
+                    
+                    const propertyElement = property.fillDisplay(value,
+                        async (value: any) => {
+                            const targetContainer = elementRef || container;
+                            await this.updateObject(values, update, index, property, value, targetContainer);
+                        });
+                    
+                    elementRef = propertyElement;
+                    propertyContainer.appendChild(propertyElement);
+                } else {
+                    const propertyElement = property.fillDisplay(value,
+                        async (value: any) => await this.updateObject(values, update, index, property, value, container));
+                    propertyContainer.appendChild(propertyElement);
+                }
+                
+                propertiesGrid.appendChild(propertyContainer);
+            });
+            
+            pane.appendChild(propertiesGrid);
+            tabContent.appendChild(pane);
+        });
+        
+        // Ajouter l'onglet "+" pour créer un nouvel objet
+        const addTab = document.createElement("div");
+        addTab.classList.add("metadata-object-tab");
+        addTab.classList.add("metadata-object-tab-add");
+        this.vault.app.setIcon(addTab, "plus");
+        addTab.onclick = async () => {
+            await this.addProperty(values, update, container);
+        };
+        tabBar.appendChild(addTab);
+        
+        tabsContainer.appendChild(tabBar);
+        tabsContainer.appendChild(tabContent);
+        container.appendChild(tabsContainer);
     }
   
       // Crée l'en-tête avec les propriétés
@@ -723,6 +880,10 @@ export class ObjectProperty extends Property{
         else if (this.display == "table") {
             this.createHeader(values, update, container);
             this.createTable(values, update, container);
+        }
+        else if (this.display == "tabs") {
+            this.createHeader(values, update, container);
+            this.createTabs(values, update, container);
         }
         else {
             // Affichage par défaut (objet)

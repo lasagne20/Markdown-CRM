@@ -485,7 +485,9 @@ Nested object with multiple fields.
 socialMedia:
   type: ObjectProperty
   title: Social Media
-  display: inline # or "block"
+  display: tabs # Options: "object" (default), "table", "tabs", or DisplayContainer
+  allowMove: true # Enable/disable drag-and-drop reordering (default: true)
+  appendFirst: false # Add new items at beginning instead of end (default: false)
   properties:
     linkedin:
       type: LinkProperty
@@ -498,14 +500,32 @@ socialMedia:
       title: GitHub
 ```
 
+**Display Modes:**
+- `"object"` (default): Displays each item as a row with all properties in a grid
+- `"table"`: Displays items in a table format with columns
+- `"tabs"`: Displays each item in a separate tab with properties in a grid
+  - Tab labels show the first property value
+  - Delete button in top-left of each tab
+  - "+" button in a dedicated tab to add new items
+  - Click tabs to navigate between items
+- Custom `DisplayContainer`: Advanced custom layout (see Display Configuration docs)
+
+**Options:**
+- `display`: Display mode - `"object"` (default), `"table"`, `"tabs"`, or custom `DisplayContainer`
+- `allowMove`: Enable drag-and-drop reordering of items (default: `true`) - works in object mode
+- `appendFirst`: Add new items at the beginning of the list (default: `false`)
+- `tooltip`: Help text shown on hover
+
 **Features:**
 - Nested structure
-- Inline or block display
+- Multiple display modes (object, table, tabs, or custom)
+- Drag-and-drop reordering (when `allowMove: true` in object mode)
+- Tab navigation (in tabs mode)
 - Reusable property definitions
 - Validation of nested fields
 - Can be used as parent property for automatic folder organization
 
-**Use Cases:** Addresses, social profiles, structured metadata
+**Use Cases:** Addresses, social profiles, structured metadata, work history
 
 **Note:** When used in `parent.property` or `parent.properties` configuration, files are automatically organized into folders based on the nested property value.
 

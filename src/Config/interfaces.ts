@@ -16,6 +16,8 @@ export interface PropertyConfig {
     aliases?: string[]; // Old property names for automatic migration
     tooltip?: string; // Tooltip text to display on icon hover
     conditions?: Condition[]; // Conditions for filtering FileProperty and MultiFileProperty selections
+    allowMove?: boolean; // Pour ObjectProperty - activer/désactiver le drag-and-drop (default: true)
+    appendFirst?: boolean; // Pour ObjectProperty - ajouter les nouveaux items en premier (default: false)
 }
 
 export interface PropertyTableRow {

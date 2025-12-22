@@ -303,10 +303,16 @@ export class ConfigLoader {
                         objProperties[key] = this.createProperty(propConfigCopy);
                     }
                 }
-                // Ajouter le mode d'affichage si spécifié
+                // Ajouter le mode d'affichage et les options si spécifiées
                 const objOptions: any = { ...options };
                 if (config.display) {
                     objOptions.display = config.display;
+                }
+                if (config.allowMove !== undefined) {
+                    objOptions.allowMove = config.allowMove;
+                }
+                if (config.appendFirst !== undefined) {
+                    objOptions.appendFirst = config.appendFirst;
                 }
                 return new ObjectProperty(propertyName, this.vault, objProperties, objOptions);
             
