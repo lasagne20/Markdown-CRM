@@ -353,10 +353,11 @@ export class ObjectProperty extends Property{
             };
 
             // Utiliser DisplayRenderer pour rendre les items
+            // IMPORTANT: Passer un tableau contenant UNIQUEMENT l'objet actuel, pas tout le tableau
             const renderer = new DisplayRenderer(
                 this.vault,
                 this.properties,
-                parsedValues, // Passer le contexte des données
+                [objectData], // Contexte limité à l'objet courant seulement
                 updateObjectCallback
             );
 
