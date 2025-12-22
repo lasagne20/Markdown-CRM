@@ -196,52 +196,8 @@ export class DynamicTable {
         
         const tbody = document.createElement('tbody');
         
-        // Filter files - collect values asynchronously for filtering
-        const filteredFiles: Classe[] = [];
-        
-        for (const file of this.tableData.files) {
-            let shouldInclude = true;
-            
-            for (const [colIndex, filterValue] of this.tableData.filters.entries()) {
-                if (!filterValue) continue;
-                
-                const col = this.config.columns![colIndex];
-                const propName = col.propertyName || col.name;
-                
-                // Get cell value
-                let cellValue: string;
-                if (propName === '_fileName') {
-                    // Get filename from File object
-                    const fileObj = file.getFile ? file.getFile() : null;
-                    if (fileObj && fileObj.getName && typeof fileObj.getName === 'function') {
-                        cellValue = String(fileObj.getName(false)).toLowerCase(); // false = without .md
-                    } else if (fileObj && (fileObj as any).name) {
-                        cellValue = String((fileObj as any).name).toLowerCase();
-                    } else if (fileObj && (fileObj as any).basename) {
-                        cellValue = String((fileObj as any).basename).toLowerCase();
-                    } else {
-                        cellValue = '';
-                    }
-                    // Remove .md extension if still present
-                    cellValue = cellValue.replace(/\.md$/i, '');
-                } else {
-                    // Use getPropertyValue for actual properties
-                    const value = await file.getPropertyValue(propName);
-                    cellValue = String(value || '').toLowerCase();
-                }
-                
-                const filter = filterValue.toLowerCase();
-                
-                if (!cellValue.includes(filter)) {
-                    shouldInclude = false;
-                    break;
-                }
-            }
-            
-            if (shouldInclude) {
-                filteredFiles.push(file);
-            }
-        }
+        // Get filtered files using shared logic
+        const filteredFiles = await this.getFilteredFiles();
         
         // Render rows
         for (const file of filteredFiles) {
@@ -382,22 +338,23 @@ export class DynamicTable {
      * Calculate total value based on formula
      */
     private async calculateTotal(total: any): Promise<string> {
+        // Get filtered files first - same logic as renderTableBody
+        const filteredFiles = await this.getFilteredFiles();
+        
         if (total.formula === 'count') {
-            // Count filtered rows
-            const tbody = this.table.querySelector('tbody');
-            const rowCount = tbody?.querySelectorAll('tr').length || 0;
-            return `${rowCount}`;
+            // Count filtered files
+            return `${filteredFiles.length}`;
         }
         
         if (!total.propertyName) {
             return '-';
         }
         
-        // Collect all values for the property
+        // Collect all values for the property from filtered files only
         const values: number[] = [];
-        for (const file of this.tableData.files) {
+        for (const file of filteredFiles) {
             const value = await file.getPropertyValue(total.propertyName);
-            const numValue = typeof value === 'number' ? value : parseFloat(String(value)) || 0;
+            const numValue = parseFloat(String(value));
             if (!isNaN(numValue)) {
                 values.push(numValue);
             }
@@ -434,6 +391,59 @@ export class DynamicTable {
         } else {
             return result.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
         }
+    }
+
+    /**
+     * Get filtered files using the same logic as renderTableBody
+     */
+    private async getFilteredFiles(): Promise<Classe[]> {
+        const filteredFiles: Classe[] = [];
+        
+        for (const file of this.tableData.files) {
+            let shouldInclude = true;
+            
+            for (const [colIndex, filterValue] of this.tableData.filters.entries()) {
+                if (!filterValue) continue;
+                
+                const col = this.config.columns![colIndex];
+                const propName = col.propertyName || col.name;
+                
+                // Get cell value
+                let cellValue: string;
+                if (propName === '_fileName') {
+                    // Get filename from File object
+                    const fileObj = file.getFile ? file.getFile() : null;
+                    if (fileObj && fileObj.getName && typeof fileObj.getName === 'function') {
+                        cellValue = String(fileObj.getName(false)).toLowerCase(); // false = without .md
+                    } else if (fileObj && (fileObj as any).name) {
+                        cellValue = String((fileObj as any).name).toLowerCase();
+                    } else if (fileObj && (fileObj as any).basename) {
+                        cellValue = String((fileObj as any).basename).toLowerCase();
+                    } else {
+                        cellValue = '';
+                    }
+                    // Remove .md extension if still present
+                    cellValue = cellValue.replace(/\.md$/i, '');
+                } else {
+                    // Use getPropertyValue for actual properties
+                    const value = await file.getPropertyValue(propName);
+                    cellValue = String(value || '').toLowerCase();
+                }
+                
+                const filter = filterValue.toLowerCase();
+                
+                if (!cellValue.includes(filter)) {
+                    shouldInclude = false;
+                    break;
+                }
+            }
+            
+            if (shouldInclude) {
+                filteredFiles.push(file);
+            }
+        }
+        
+        return filteredFiles;
     }
     
     /**

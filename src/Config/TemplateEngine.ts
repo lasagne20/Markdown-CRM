@@ -158,17 +158,27 @@ export class TemplateEngine {
                     }
                 }
             } else {
-                // Simple property - try to get from instance's Property first (for getPretty)
+                // Simple property - check if it's a date-related property
                 const property = instance.getProperty(placeholder);
                 if (property && typeof property.getPretty === 'function') {
-                    // Use getPretty to format the value
-                    const rawValue = metadata[placeholder];
-                    if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
-                        value = property.getPretty(rawValue);
-                        console.log(`  ✨ {${placeholder}} = "${value}" (via getPretty)`);
+                    // Skip getPretty for date properties to preserve raw format (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)
+                    const isDateProperty = property.constructor.name === 'DateProperty' || 
+                                          property.constructor.name === 'RangeDateProperty';
+                    
+                    if (!isDateProperty) {
+                        // Use getPretty for non-date properties
+                        const rawValue = metadata[placeholder];
+                        if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+                            value = property.getPretty(rawValue);
+                            console.log(`  ✨ {${placeholder}} = "${value}" (via getPretty)`);
+                        } else {
+                            value = rawValue;
+                            console.log(`  📝 {${placeholder}} = "${value}" (raw value)`);
+                        }
                     } else {
-                        value = rawValue;
-                        console.log(`  📝 {${placeholder}} = "${value}" (raw value)`);
+                        // For date properties, use raw value to preserve YYYY-MM-DD format
+                        value = metadata[placeholder];
+                        console.log(`  📅 {${placeholder}} = "${value}" (date property - raw format)`);
                     }
                 } else {
                     // Fallback to metadata value
