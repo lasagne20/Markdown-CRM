@@ -17,7 +17,6 @@ export class ObjectProperty extends Property{
     public appendFirst : boolean = false;
     public allowMove : boolean = true;
     public display : string | DisplayContainer = "object"; // Can be "object", "table", "list" or DisplayContainer
-    private currentContainerId : string | null = null; // Store current container unique ID
 
     constructor(name: string, vault: Vault, properties: { [key: string]: Property }, args: { allowMove?: boolean, appendFirst?: boolean, tooltip?: string, display?: string | DisplayContainer, [key: string]: any} = {}) {
         super(name, vault, args);
@@ -248,8 +247,8 @@ export class ObjectProperty extends Property{
         const uuid = generateUUID();
         const containerClass = "metadata-object-container-" + this.name.toLowerCase().replace(/\s+/g, '-') + "-" + uuid;
         
-        // Store the container class for later reload
-        this.currentContainerId = containerClass;
+        // Store the container class in a data attribute so reloadObjects can find it
+        container.setAttribute('data-object-property-id', containerClass);
         
         container.classList.add("metadata-object-container");
         container.classList.add(containerClass);
@@ -508,7 +507,7 @@ export class ObjectProperty extends Property{
             }
 
             propertyContainer.appendChild(property.fillDisplay(value,
-                async (value: any) => await this.updateObject(values, update, index, property, value)));
+                async (value: any) => await this.updateObject(values, update, index, property, value, container)));
             row.appendChild(propertyContainer);
 
         });
@@ -601,7 +600,7 @@ export class ObjectProperty extends Property{
           });
           // Mettre à jour les métadonnées
           await update(newOrder);
-          await this.reloadObjects(newOrder, update)
+          await this.reloadObjects(newOrder, update, container)
       }
   
       // Fonction pour supprimer un objet
@@ -609,7 +608,7 @@ export class ObjectProperty extends Property{
           console.log("Remove index : ", index)
           values.splice(index, 1);
           await update(values);
-          await this.reloadObjects(values, update)
+          await this.reloadObjects(values, update, container)
       }
   
       // Fonction pour ajouter un objet
@@ -650,11 +649,11 @@ export class ObjectProperty extends Property{
         }
         console.log("New Values : ", values)
           await update(values);
-          await this.reloadObjects(values, update)
+          await this.reloadObjects(values, update, container)
       }
   
       // Mise à jour des métadonnées
-      async updateObject(values : any, update : (value: any) => Promise<void>, index: number, property: Property, value: string) {
+      async updateObject(values : any, update : (value: any) => Promise<void>, index: number, property: Property, value: string, parentContainer?: HTMLDivElement) {
         console.log("Update index : ", index)
           if (values){
             // S'assurer que values[index] est un objet
@@ -669,40 +668,46 @@ export class ObjectProperty extends Property{
           }
           console.log("Updated Values : ", values)
           await update(values);
-          await this.reloadObjects(values, update)
+          
+          // Only reload if the updated property is not an ObjectProperty
+          // If it's an ObjectProperty, it will handle its own reload
+          if (!(property instanceof ObjectProperty)) {
+              await this.reloadObjects(values, update, parentContainer);
+          }
       }
 
     // Recharge dynamiquement les objets
-    async reloadObjects(values : any, update : (value: any) => Promise<void>,) {
-        // Use the stored container ID to find the specific container instance
-        const containerSelector = this.currentContainerId ? "." + this.currentContainerId : ".metadata-object-container-" + this.name.toLowerCase();
-        const container = document.querySelector(containerSelector) as HTMLDivElement;
-        if (container) {
-            container.innerHTML = "";
-            // Recréer l'en-tête et les objets
-            console.log("Values : ", values)
-            
-            // Si display est un DisplayContainer, utiliser le mode personnalisé
-            if (typeof this.display === 'object' && this.display.items) {
-                this.createHeaderForCustomDisplay(values, update, container);
-                const placeholder = document.createElement("div");
-                placeholder.classList.add("loading-custom-display");
-                container.appendChild(placeholder);
-                
-                await this.createCustomDisplay(values, update, container);
-                placeholder.remove();
-            }
-            else if (this.display == "table") {
-                this.createHeader(values, update, container);
-                this.createTable(values, update, container);
-            }
-            else {
-                // Affichage par défaut (objet)
-                this.createHeader(values, update, container);
-                this.createObjects(values, update, container);
-            }
+    async reloadObjects(values : any, update : (value: any) => Promise<void>, specificContainer?: HTMLDivElement) {
+        if (!specificContainer) {
+            console.warn(`reloadObjects called without container for ${this.name}`);
+            return;
         }
         
+        const container = specificContainer;
+        
+        container.innerHTML = "";
+        // Recréer l'en-tête et les objets
+        console.log("Values : ", values)
+        
+        // Si display est un DisplayContainer, utiliser le mode personnalisé
+        if (typeof this.display === 'object' && this.display.items) {
+            this.createHeaderForCustomDisplay(values, update, container);
+            const placeholder = document.createElement("div");
+            placeholder.classList.add("loading-custom-display");
+            container.appendChild(placeholder);
+            
+            await this.createCustomDisplay(values, update, container);
+            placeholder.remove();
+        }
+        else if (this.display == "table") {
+            this.createHeader(values, update, container);
+            this.createTable(values, update, container);
+        }
+        else {
+            // Affichage par défaut (objet)
+            this.createHeader(values, update, container);
+            this.createObjects(values, update, container);
+        }
     }
   }
   

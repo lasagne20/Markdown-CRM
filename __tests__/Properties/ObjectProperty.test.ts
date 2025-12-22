@@ -913,7 +913,7 @@ describe('ObjectProperty', () => {
             await objectProperty.removeProperty(values, mockUpdate, index, mockContainer);
             
             expect(mockUpdate).toHaveBeenCalledWith([]);
-            expect(objectProperty.reloadObjects).toHaveBeenCalledWith([], mockUpdate);
+            expect(objectProperty.reloadObjects).toHaveBeenCalledWith([], mockUpdate, mockContainer);
         });
     });
 
@@ -998,7 +998,7 @@ describe('ObjectProperty', () => {
             await objectProperty.updateObject(values, mockUpdate, index, property, newValue);
             
             expect(mockUpdate).toHaveBeenCalledWith(values);
-            expect(objectProperty.reloadObjects).toHaveBeenCalledWith(values, mockUpdate);
+            expect(objectProperty.reloadObjects).toHaveBeenCalledWith(values, mockUpdate, undefined);
         });
     });
 
@@ -1021,22 +1021,10 @@ describe('ObjectProperty', () => {
             container.innerHTML = '<div>Old Content</div>';
             document.body.appendChild(container);
             
-            // Mock querySelector to return our container
-            const originalQuerySelector = document.querySelector;
-            document.querySelector = jest.fn().mockImplementation((selector) => {
-                if (selector === '.metadata-object-container-testobject') {
-                    return container;
-                }
-                return originalQuerySelector.call(document, selector);
-            });
-            
-            await objectProperty.reloadObjects(values, mockUpdate);
+            await objectProperty.reloadObjects(values, mockUpdate, container);
             
             expect(container.innerHTML).toBe('');
             expect(objectProperty.createHeader).toHaveBeenCalledWith(values, mockUpdate, container);
-            
-            // Restore original querySelector
-            document.querySelector = originalQuerySelector;
         });
 
         test('should recreate objects when display is not table', async () => {
@@ -1047,22 +1035,10 @@ describe('ObjectProperty', () => {
             container.classList.add('metadata-object-container-testobject');
             document.body.appendChild(container);
             
-            // Mock querySelector
-            const originalQuerySelector = document.querySelector;
-            document.querySelector = jest.fn().mockImplementation((selector) => {
-                if (selector === '.metadata-object-container-testobject') {
-                    return container;
-                }
-                return originalQuerySelector.call(document, selector);
-            });
-            
-            await objectProperty.reloadObjects(values, mockUpdate);
+            await objectProperty.reloadObjects(values, mockUpdate, container);
             
             expect(objectProperty.createObjects).toHaveBeenCalledWith(values, mockUpdate, container);
             expect(objectProperty.createTable).not.toHaveBeenCalled();
-            
-            // Restore original querySelector
-            document.querySelector = originalQuerySelector;
         });
 
         test('should recreate table when display is table', async () => {
@@ -1073,22 +1049,10 @@ describe('ObjectProperty', () => {
             container.classList.add('metadata-object-container-testobject');
             document.body.appendChild(container);
             
-            // Mock querySelector
-            const originalQuerySelector = document.querySelector;
-            document.querySelector = jest.fn().mockImplementation((selector) => {
-                if (selector === '.metadata-object-container-testobject') {
-                    return container;
-                }
-                return originalQuerySelector.call(document, selector);
-            });
-            
-            await objectProperty.reloadObjects(values, mockUpdate);
+            await objectProperty.reloadObjects(values, mockUpdate, container);
             
             expect(objectProperty.createTable).toHaveBeenCalledWith(values, mockUpdate, container);
             expect(objectProperty.createObjects).not.toHaveBeenCalled();
-            
-            // Restore original querySelector
-            document.querySelector = originalQuerySelector;
         });
 
         test('should handle missing container gracefully', async () => {
