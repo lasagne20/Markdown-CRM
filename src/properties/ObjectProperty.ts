@@ -6,9 +6,7 @@ import { MultiFileProperty } from "./MultiFileProperty";
 import { Vault } from "../vault/Vault";
 import { DisplayContainer } from "../Config/interfaces";
 import { DisplayRenderer } from "../display/DisplayRenderer";
-
-// Static counter for unique container IDs
-let containerIdCounter = 0;
+import { generateUUID } from "../utils/Utils";
 
 export class ObjectProperty extends Property{
     // Used for property object
@@ -19,6 +17,7 @@ export class ObjectProperty extends Property{
     public appendFirst : boolean = false;
     public allowMove : boolean = true;
     public display : string | DisplayContainer = "object"; // Can be "object", "table", "list" or DisplayContainer
+    private currentContainerId : string | null = null; // Store current container unique ID
 
     constructor(name: string, vault: Vault, properties: { [key: string]: Property }, args: { allowMove?: boolean, appendFirst?: boolean, tooltip?: string, display?: string | DisplayContainer, [key: string]: any} = {}) {
         super(name, vault, args);
@@ -246,10 +245,14 @@ export class ObjectProperty extends Property{
         const container = document.createElement("div");
         
         // Generate unique ID for this container instance
-        const containerId = ++containerIdCounter;
+        const uuid = generateUUID();
+        const containerClass = "metadata-object-container-" + this.name.toLowerCase().replace(/\s+/g, '-') + "-" + uuid;
+        
+        // Store the container class for later reload
+        this.currentContainerId = containerClass;
         
         container.classList.add("metadata-object-container");
-        container.classList.add("metadata-object-container-" + this.name.toLowerCase().replace(/\s+/g, '-') + "-" + containerId);
+        container.classList.add(containerClass);
 
         // Si display est un DisplayContainer, la création est asynchrone donc on doit utiliser une approche différente
         if (typeof this.display === 'object' && this.display.items) {
@@ -671,7 +674,9 @@ export class ObjectProperty extends Property{
 
     // Recharge dynamiquement les objets
     async reloadObjects(values : any, update : (value: any) => Promise<void>,) {
-        const container = document.querySelector(".metadata-object-container-"+this.name.toLowerCase()) as HTMLDivElement;
+        // Use the stored container ID to find the specific container instance
+        const containerSelector = this.currentContainerId ? "." + this.currentContainerId : ".metadata-object-container-" + this.name.toLowerCase();
+        const container = document.querySelector(containerSelector) as HTMLDivElement;
         if (container) {
             container.innerHTML = "";
             // Recréer l'en-tête et les objets
