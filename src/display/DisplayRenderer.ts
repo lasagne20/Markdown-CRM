@@ -70,69 +70,57 @@ export class DisplayRenderer {
             return null;
         }
         
-        // Store original values to restore them after rendering
-        const originalDisplay = (property as any).display;
-        const originalTitle = (property as any).title;
-        
-        try {
-            // Temporarily apply custom configurations (will be restored in finally block)
-            if (item.display && property instanceof Object && 'display' in property) {
-                (property as any).display = item.display;
-            }
-            
-            // Apply displayContainer permanently (don't restore it because of async rendering)
-            if (item.displayContainer && property instanceof Object && 'displayContainer' in property) {
-                (property as any).displayContainer = item.displayContainer;
-            }
-            
-            if (item.title) {
-                (property as any).title = item.title;
-            }
-            
-            // For ObjectProperty context (array of objects), get value from context
-            let value: any;
-            if (Array.isArray(this.context)) {
-                // Context is object data from ObjectProperty
-                value = this.context[0]?.[item.name];
-            } else {
-                // Context is a Classe instance
-                value = this.context.getValue ? await this.context.getValue(property.name) : undefined;
-            }
+        // For ObjectProperty context (array of objects), get value from context
+        let value: any;
+        if (Array.isArray(this.context)) {
+            // Context is object data from ObjectProperty
+            value = this.context[0]?.[item.name];
+        } else {
+            // Context is a Classe instance
+            value = this.context.getValue ? await this.context.getValue(property.name) : undefined;
+        }
 
-            // Create update callback for this specific property
-            const updateFn = this.updateCallback 
-                ? async (newValue: any) => await this.updateCallback!(property.name, newValue)
-                : async (newValue: any) => {
-                    if (this.context.updateValue) {
-                        await this.context.updateValue(property.name, newValue);
-                    }
-                };
+        // Create update callback for this specific property
+        const updateFn = this.updateCallback 
+            ? async (newValue: any) => await this.updateCallback!(property.name, newValue)
+            : async (newValue: any) => {
+                if (this.context.updateValue) {
+                    await this.context.updateValue(property.name, newValue);
+                }
+            };
 
-            // For Classe context, use getDisplay
-            let result: HTMLElement | null;
-            if (this.context.getProperties) {
-                result = await property.getDisplay(this.context, {
-                    title: item.title, 
-                    staticMode: item.static
-                });
-            } else {
-                // For ObjectProperty context, use fillDisplay directly
+        // For Classe context, use getDisplay with configuration from item
+        let result: HTMLElement | null;
+        if (this.context.getProperties) {
+            result = await property.getDisplay(this.context, {
+                title: item.title, 
+                staticMode: item.static,
+                display: item.display,
+                displayContainer: item.displayContainer
+            });
+        } else {
+            // For ObjectProperty context, use fillDisplay directly
+            // Apply display and displayContainer temporarily for fillDisplay
+            const originalDisplay = (property as any).display;
+            const originalDisplayContainer = (property as any).displayContainer;
+            
+            try {
+                if (item.display !== undefined) {
+                    (property as any).display = item.display;
+                }
+                if (item.displayContainer !== undefined) {
+                    (property as any).displayContainer = item.displayContainer;
+                }
+                
                 result = property.fillDisplay(value, updateFn);
-            }
-            
-            return result;
-        } finally {
-            // Restore original values to prevent mutation of shared instances
-            // Note: We don't restore displayContainer because it's applied permanently
-            // to avoid issues with async rendering in createTabs/createObjects
-            if (item.display && property instanceof Object && 'display' in property) {
-                (property as any).display = originalDisplay;
-            }
-            
-            if (item.title) {
-                (property as any).title = originalTitle;
+            } finally {
+                // Don't restore - keep modifications for async rendering
+                // (property as any).display = originalDisplay;
+                // (property as any).displayContainer = originalDisplayContainer;
             }
         }
+        
+        return result;
     }
 
     private renderButton(item: any): HTMLElement {
