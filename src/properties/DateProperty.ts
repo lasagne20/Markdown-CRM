@@ -22,6 +22,8 @@ export class DateProperty extends Property {
     }
 
 
+
+
     // Crée l'affichage du champ date
     override fillDisplay(value : any, update: (value: string) => Promise<void>, args? : {}) {
         const fieldContainer = document.createElement("div");
@@ -97,6 +99,10 @@ export class DateProperty extends Property {
             month: "long", 
             year: "numeric" 
         });
+    }
+
+    override getPretty(value: string): string {
+        return this.formatDateForDisplay(value);
     }
 
     // Formate la date pour le stockage : "YYYY-MM-DD"

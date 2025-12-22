@@ -287,6 +287,7 @@ export class ObjectProperty extends Property{
             this.createObjects(values, update, container);
         }
 
+        
         return container;
       }
 

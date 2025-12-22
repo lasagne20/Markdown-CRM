@@ -92,12 +92,14 @@ export class DisplayRenderer {
         // For Classe context, use getDisplay with configuration from item
         let result: HTMLElement | null;
         if (this.context.getProperties) {
-            result = await property.getDisplay(this.context, {
+            // Cast args to any to support ObjectProperty's extended parameters (display, displayContainer)
+            const args: any = {
                 title: item.title, 
                 staticMode: item.static,
                 display: item.display,
                 displayContainer: item.displayContainer
-            });
+            };
+            result = await property.getDisplay(this.context, args);
         } else {
             // For ObjectProperty context, use fillDisplay directly
             // Apply display and displayContainer temporarily for fillDisplay
