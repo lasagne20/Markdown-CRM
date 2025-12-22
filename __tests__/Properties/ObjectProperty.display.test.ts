@@ -54,12 +54,12 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
-            expect(objectProp.display).toEqual(displayConfig);
-            expect(typeof objectProp.display).toBe('object');
-            expect((objectProp.display as DisplayContainer).items).toBeDefined();
+            expect(objectProp.displayContainer).toEqual(displayConfig);
+            expect(typeof objectProp.displayContainer).toBe('object');
+            expect((objectProp.displayContainer as DisplayContainer).items).toBeDefined();
         });
 
         it('should update display via getDisplay args', async () => {
@@ -78,9 +78,9 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             const mockClasse = {
                 getPropertyValue: jest.fn().mockResolvedValue(null)
             };
-            await objectProp.getDisplay(mockClasse, { display: displayConfig });
+            await objectProp.getDisplay(mockClasse, { displayContainer: displayConfig });
 
-            expect(objectProp.display).toEqual(displayConfig);
+            expect(objectProp.displayContainer).toEqual(displayConfig);
         });
     });
 
@@ -105,7 +105,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('postes', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [
@@ -140,7 +140,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [{ field1: 'value1', field2: 'value2' }];
@@ -179,7 +179,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('person', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [{ name: 'John', email: 'john@test.com', phone: '123' }];
@@ -208,7 +208,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('data', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [{ detail1: 'value1', detail2: 'value2' }];
@@ -271,7 +271,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('items', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [
@@ -301,7 +301,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [{ field: 'a' }, { field: 'b' }];
@@ -327,7 +327,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [{ name: 'Initial' }];
@@ -353,7 +353,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values: any[] = [];
@@ -377,7 +377,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig,
+                displayContainer: displayConfig,
                 allowMove: true
             });
 
@@ -402,7 +402,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig,
+                displayContainer: displayConfig,
                 allowMove: false
             });
 
@@ -427,7 +427,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const container = objectProp.fillDisplay([], async () => {});
@@ -451,7 +451,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const jsonString = JSON.stringify([{ field: 'test' }]);
@@ -492,7 +492,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('test', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [{ a: '1', b: '2', c: '3' }];
@@ -528,7 +528,7 @@ describe('ObjectProperty with Custom Display Configuration', () => {
             };
 
             const objectProp = new ObjectProperty('contact', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const values = [{ name: 'John', email: 'john@test.com', notes: 'Test notes' }];
@@ -538,3 +538,4 @@ describe('ObjectProperty with Custom Display Configuration', () => {
         });
     });
 });
+

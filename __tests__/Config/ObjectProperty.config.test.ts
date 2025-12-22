@@ -156,7 +156,7 @@ describe('ObjectProperty - YAML Configuration', () => {
                 type: 'ObjectProperty',
                 allowMove: false,
                 appendFirst: true,
-                display: 'table',
+                display: 'table' as 'object' | 'table' | 'tabs',
                 properties: {
                     name: {
                         type: 'Property'
@@ -185,7 +185,7 @@ describe('ObjectProperty - YAML Configuration', () => {
                 tooltip: 'Enter contact details',
                 allowMove: false,
                 appendFirst: true,
-                display: 'table',
+                display: 'table' as 'object' | 'table' | 'tabs',
                 properties: {
                     email: {
                         type: 'EmailProperty',
@@ -209,6 +209,122 @@ describe('ObjectProperty - YAML Configuration', () => {
             expect(property.appendFirst).toBe(true);
             expect(property.display).toBe('table');
             expect(Object.keys(property.properties)).toHaveLength(2);
+        });
+    });
+
+    describe('display and displayContainer configuration', () => {
+        it('should support display: "tabs" configuration', () => {
+            const config = {
+                type: 'ObjectProperty',
+                display: 'tabs' as 'object' | 'table' | 'tabs',
+                properties: {
+                    name: {
+                        type: 'Property'
+                    }
+                }
+            };
+
+            (config as any).propertyKey = 'testProperty';
+            const property = configLoader.createProperty(config) as ObjectProperty;
+
+            expect(property).toBeInstanceOf(ObjectProperty);
+            expect(property.display).toBe('tabs');
+        });
+
+        it('should support display: "object" configuration', () => {
+            const config = {
+                type: 'ObjectProperty',
+                display: 'object' as 'object' | 'table' | 'tabs',
+                properties: {
+                    name: {
+                        type: 'Property'
+                    }
+                }
+            };
+
+            (config as any).propertyKey = 'testProperty';
+            const property = configLoader.createProperty(config) as ObjectProperty;
+
+            expect(property).toBeInstanceOf(ObjectProperty);
+            expect(property.display).toBe('object');
+        });
+
+        it('should support display: "table" configuration', () => {
+            const config = {
+                type: 'ObjectProperty',
+                display: 'table' as 'object' | 'table' | 'tabs',
+                properties: {
+                    name: {
+                        type: 'Property'
+                    }
+                }
+            };
+
+            (config as any).propertyKey = 'testProperty';
+            const property = configLoader.createProperty(config) as ObjectProperty;
+
+            expect(property).toBeInstanceOf(ObjectProperty);
+            expect(property.display).toBe('table');
+        });
+
+        it('should support displayContainer with custom DisplayConfig', () => {
+            const config: any = {
+                type: 'ObjectProperty',
+                displayContainer: {
+                    items: [
+                        {
+                            type: 'line',
+                            items: [
+                                { type: 'property', name: 'name' },
+                                { type: 'property', name: 'value' }
+                            ]
+                        }
+                    ]
+                },
+                properties: {
+                    name: {
+                        type: 'Property'
+                    },
+                    value: {
+                        type: 'Property'
+                    }
+                }
+            };
+
+            (config as any).propertyKey = 'testProperty';
+            const property = configLoader.createProperty(config) as ObjectProperty;
+
+            expect(property).toBeInstanceOf(ObjectProperty);
+            expect(property.displayContainer).toBeDefined();
+            expect(property.displayContainer!.items).toBeDefined();
+            expect(property.displayContainer!.items).toHaveLength(1);
+            expect(property.displayContainer!.items![0].type).toBe('line');
+        });
+
+        it('should support both display and displayContainer together', () => {
+            const config: any = {
+                type: 'ObjectProperty',
+                display: 'tabs' as 'object' | 'table' | 'tabs',
+                displayContainer: {
+                    items: [
+                        { type: 'property', name: 'name' }
+                    ]
+                },
+                properties: {
+                    name: {
+                        type: 'Property'
+                    }
+                }
+            };
+
+            (config as any).propertyKey = 'testProperty';
+            const property = configLoader.createProperty(config) as ObjectProperty;
+
+            expect(property).toBeInstanceOf(ObjectProperty);
+            // Both should be set independently
+            expect(property.display).toBe('tabs');
+            expect(property.displayContainer).toBeDefined();
+            expect(property.displayContainer!.items).toBeDefined();
         });
     });
 });

@@ -309,7 +309,7 @@ export class ConfigLoader {
                     objOptions.display = config.display;
                 }
                 if (config.displayContainer) {
-                    objOptions.display = config.displayContainer;
+                    objOptions.displayContainer = config.displayContainer;
                 }
                 if (config.allowMove !== undefined) {
                     objOptions.allowMove = config.allowMove;

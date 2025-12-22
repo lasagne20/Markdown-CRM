@@ -73,7 +73,7 @@ describe('ObjectProperty - Complex Display Layout', () => {
             };
 
             const objectProp = new ObjectProperty('evenements', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const testData = [
@@ -132,7 +132,7 @@ describe('ObjectProperty - Complex Display Layout', () => {
             };
 
             const objectProp = new ObjectProperty('evenements', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const container = objectProp.fillDisplay([
@@ -189,7 +189,7 @@ describe('ObjectProperty - Complex Display Layout', () => {
             };
 
             const objectProp = new ObjectProperty('evenements', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const testData = [
@@ -246,7 +246,7 @@ describe('ObjectProperty - Complex Display Layout', () => {
             };
 
             const objectProp = new ObjectProperty('evenements', vault, properties, {
-                display: displayConfig,
+                displayContainer: displayConfig,
                 title: 'Événements'
             });
 
@@ -321,7 +321,7 @@ describe('ObjectProperty - Complex Display Layout', () => {
             };
 
             const objectProp = new ObjectProperty('taches', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const container = objectProp.fillDisplay([
@@ -365,7 +365,7 @@ describe('ObjectProperty - Complex Display Layout', () => {
             };
 
             const objectProp = new ObjectProperty('items', vault, properties, {
-                display: displayConfig
+                displayContainer: displayConfig
             });
 
             const items = [
