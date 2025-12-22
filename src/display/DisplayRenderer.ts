@@ -70,48 +70,62 @@ export class DisplayRenderer {
             return null;
         }
         
-        // If item has custom display config for ObjectProperty, apply it
-        if (item.display && property instanceof Object && 'display' in property) {
-            (property as any).display = item.display;
-        }
+        // Store original values to restore them after rendering
+        const originalDisplay = (property as any).display;
+        const originalTitle = (property as any).title;
         
-        // If item has custom title, apply it (overrides property's own title, kept permanently)
-        if (item.title) {
-            (property as any).title = item.title;
-        }
-        
-        // For ObjectProperty context (array of objects), get value from context
-        let value: any;
-        if (Array.isArray(this.context)) {
-            // Context is object data from ObjectProperty
-            value = this.context[0]?.[item.name];
-        } else {
-            // Context is a Classe instance
-            value = this.context.getValue ? await this.context.getValue(property.name) : undefined;
-        }
+        try {
+            // Temporarily apply custom configurations (will be restored in finally block)
+            if (item.display && property instanceof Object && 'display' in property) {
+                (property as any).display = item.display;
+            }
+            
+            if (item.title) {
+                (property as any).title = item.title;
+            }
+            
+            // For ObjectProperty context (array of objects), get value from context
+            let value: any;
+            if (Array.isArray(this.context)) {
+                // Context is object data from ObjectProperty
+                value = this.context[0]?.[item.name];
+            } else {
+                // Context is a Classe instance
+                value = this.context.getValue ? await this.context.getValue(property.name) : undefined;
+            }
 
-        // Create update callback for this specific property
-        const updateFn = this.updateCallback 
-            ? async (newValue: any) => await this.updateCallback!(property.name, newValue)
-            : async (newValue: any) => {
-                if (this.context.updateValue) {
-                    await this.context.updateValue(property.name, newValue);
-                }
-            };
+            // Create update callback for this specific property
+            const updateFn = this.updateCallback 
+                ? async (newValue: any) => await this.updateCallback!(property.name, newValue)
+                : async (newValue: any) => {
+                    if (this.context.updateValue) {
+                        await this.context.updateValue(property.name, newValue);
+                    }
+                };
 
-        // For Classe context, use getDisplay
-        let result: HTMLElement | null;
-        if (this.context.getProperties) {
-            result = await property.getDisplay(this.context, {
-                title: item.title, 
-                staticMode: item.static
-            });
-        } else {
-            // For ObjectProperty context, use fillDisplay directly
-            result = property.fillDisplay(value, updateFn);
+            // For Classe context, use getDisplay
+            let result: HTMLElement | null;
+            if (this.context.getProperties) {
+                result = await property.getDisplay(this.context, {
+                    title: item.title, 
+                    staticMode: item.static
+                });
+            } else {
+                // For ObjectProperty context, use fillDisplay directly
+                result = property.fillDisplay(value, updateFn);
+            }
+            
+            return result;
+        } finally {
+            // Restore original values to prevent mutation of shared instances
+            if (item.display && property instanceof Object && 'display' in property) {
+                (property as any).display = originalDisplay;
+            }
+            
+            if (item.title) {
+                (property as any).title = originalTitle;
+            }
         }
-        
-        return result;
     }
 
     private renderButton(item: any): HTMLElement {

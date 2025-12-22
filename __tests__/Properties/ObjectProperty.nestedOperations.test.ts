@@ -101,6 +101,13 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
         expect(currentData[0].animateurs.length).toBe(2); // Premier doit avoir 2 animateurs
         expect(currentData[1].animateurs.length).toBe(1); // Deuxième doit avoir 1 animateur
 
+        // VÉRIFICATION DES MÉTADONNÉES SAUVEGARDÉES
+        expect(updateFn).toHaveBeenCalled();
+        const savedData = updateFn.mock.calls[updateFn.mock.calls.length - 1][0];
+        expect(savedData[0].animateurs.length).toBe(2);
+        expect(savedData[1].animateurs.length).toBe(1);
+        expect(savedData[0].animateurs[1].animateur).toBe("animateur-new.md");
+
         // Récupérer à nouveau les containers après l'ajout
         const containersAfter = display.querySelectorAll('[class*="metadata-object-container-animateurs-"]');
         
@@ -150,6 +157,13 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
         await addButton2.click();
         await new Promise(resolve => setTimeout(resolve, 100));
 
+        // VÉRIFICATION DES MÉTADONNÉES SAUVEGARDÉES
+        expect(updateFn).toHaveBeenCalled();
+        const savedData = updateFn.mock.calls[updateFn.mock.calls.length - 1][0];
+        expect(savedData[0].animateurs.length).toBe(1);
+        expect(savedData[1].animateurs.length).toBe(2);
+        expect(savedData[1].animateurs[1].animateur).toBe("animateur-new.md");
+
         // Récupérer à nouveau les containers après l'ajout
         const containersAfter = display.querySelectorAll('[class*="metadata-object-container-animateurs-"]');
         
@@ -195,6 +209,12 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
         await new Promise(resolve => setTimeout(resolve, 50));
         await addButton1.click();
         await new Promise(resolve => setTimeout(resolve, 50));
+
+        // VÉRIFICATION DES MÉTADONNÉES SAUVEGARDÉES
+        expect(updateFn).toHaveBeenCalled();
+        const savedData = updateFn.mock.calls[updateFn.mock.calls.length - 1][0];
+        expect(savedData[0].animateurs.length).toBe(3);
+        expect(savedData[1].animateurs.length).toBe(1);
 
         // Récupérer à nouveau les containers
         const containersAfter = display.querySelectorAll('[class*="metadata-object-container-animateurs-"]');
@@ -246,6 +266,13 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
         await deleteButton.click();
         await new Promise(resolve => setTimeout(resolve, 100));
 
+        // VÉRIFICATION DES MÉTADONNÉES SAUVEGARDÉES
+        expect(updateFn).toHaveBeenCalled();
+        const savedData = updateFn.mock.calls[updateFn.mock.calls.length - 1][0];
+        expect(savedData[0].animateurs.length).toBe(1);
+        expect(savedData[1].animateurs.length).toBe(1);
+        expect(savedData[0].animateurs[0].animateur).toBe("animateur3.md");
+
         // Récupérer à nouveau les containers
         const containersAfter = display.querySelectorAll('[class*="metadata-object-container-animateurs-"]');
         
@@ -295,6 +322,13 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
         
         await deleteButton.click();
         await new Promise(resolve => setTimeout(resolve, 100));
+
+        // VÉRIFICATION DES MÉTADONNÉES SAUVEGARDÉES
+        expect(updateFn).toHaveBeenCalled();
+        const savedData = updateFn.mock.calls[updateFn.mock.calls.length - 1][0];
+        expect(savedData[0].animateurs.length).toBe(1);
+        expect(savedData[1].animateurs.length).toBe(1);
+        expect(savedData[1].animateurs[0].animateur).toBe("animateur3.md");
 
         // Récupérer à nouveau les containers
         const containersAfter = display.querySelectorAll('[class*="metadata-object-container-animateurs-"]');
@@ -354,6 +388,15 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
         const deleteButton1 = containers[0].querySelector(".metadata-delete-button") as HTMLButtonElement;
         await deleteButton1.click();
         await new Promise(resolve => setTimeout(resolve, 50));
+
+        // VÉRIFICATION DES MÉTADONNÉES SAUVEGARDÉES
+        expect(updateFn).toHaveBeenCalled();
+        const savedData = updateFn.mock.calls[updateFn.mock.calls.length - 1][0];
+        expect(savedData[0].animateurs.length).toBe(1);
+        expect(savedData[1].animateurs.length).toBe(2);
+        expect(savedData[0].animateurs[0].animateur).toBe("animateur-new.md");
+        expect(savedData[1].animateurs[0].animateur).toBe("animateur2.md");
+        expect(savedData[1].animateurs[1].animateur).toBe("animateur-new.md");
 
         // Vérifier l'état final
         containers = display.querySelectorAll('[class*="metadata-object-container-animateurs-"]');
@@ -445,6 +488,64 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
 
         console.log("Container 1 UUID after reload:", uuid1AfterMatch![1]);
         console.log("Container 2 UUID after reload:", uuid2AfterMatch![1]);
+
+        document.body.removeChild(display);
+    });
+
+    it("should save correct metadata when adding to nested ObjectProperty", async () => {
+        // Test critique : vérifier que les métadonnées sauvegardées sont exactement correctes
+        let currentData = [
+            {
+                date: "2025-01-15",
+                animateurs: [
+                    { animateur: "animateur1.md", tarif: 100 }
+                ]
+            },
+            {
+                date: "2025-01-20",
+                animateurs: [
+                    { animateur: "animateur2.md", tarif: 150 }
+                ]
+            }
+        ];
+
+        const updateFn = jest.fn(async (value: any) => {
+            currentData = value;
+        });
+
+        const display = animationsProperty.fillDisplay(currentData, updateFn);
+        document.body.appendChild(display);
+
+        const animateursContainers = display.querySelectorAll('[class*="metadata-object-container-animateurs-"]');
+
+        // SCÉNARIO : Ajouter 2 animateurs à la première animation
+        const addButton1 = animateursContainers[0].querySelector(".metadata-add-button") as HTMLButtonElement;
+        
+        // Premier ajout
+        await addButton1.click();
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Vérifier l'appel après le premier ajout
+        let lastCall = updateFn.mock.calls[updateFn.mock.calls.length - 1][0];
+        expect(lastCall[0].animateurs.length).toBe(2);
+        expect(lastCall[1].animateurs.length).toBe(1);
+
+        // Deuxième ajout
+        await addButton1.click();
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Vérifier l'appel après le deuxième ajout
+        lastCall = updateFn.mock.calls[updateFn.mock.calls.length - 1][0];
+        expect(lastCall[0].animateurs.length).toBe(3);
+        expect(lastCall[1].animateurs.length).toBe(1); // NE DOIT PAS être 3 !
+
+        // VÉRIFICATION FINALE DES MÉTADONNÉES
+        expect(lastCall[0].date).toBe("2025-01-15");
+        expect(lastCall[1].date).toBe("2025-01-20");
+        expect(lastCall[0].animateurs[0].animateur).toBe("animateur1.md");
+        expect(lastCall[0].animateurs[1].animateur).toBe("animateur-new.md");
+        expect(lastCall[0].animateurs[2].animateur).toBe("animateur-new.md");
+        expect(lastCall[1].animateurs[0].animateur).toBe("animateur2.md");
 
         document.body.removeChild(display);
     });

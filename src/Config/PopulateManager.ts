@@ -273,7 +273,7 @@ export class PopulateManager {
 
     /**
      * Populate an ObjectProperty by using the first FileProperty or SelectProperty found
-     * in its properties structure.
+     * in its properties structure, recursively searching through nested ObjectProperties.
      */
     private async populateObjectProperty(
         propertyConfig: PropertyConfig,
@@ -284,43 +284,105 @@ export class PopulateManager {
             return null;
         }
 
-        // Find the first FileProperty or SelectProperty
-        for (const [propName, subPropConfig] of Object.entries(propertyConfig.properties)) {
-            if (subPropConfig.type === 'FileProperty') {
-                const fileValue = await this.populateFileProperty(subPropConfig, title);
-                if (fileValue === null) {
-                    return null; // User cancelled
-                }
-                
-                // Return an array with one object containing the property
-                const obj: any = {};
-                // Initialize all properties with empty values
-                for (const [key, config] of Object.entries(propertyConfig.properties)) {
-                    obj[key] = config.defaultValue || '';
-                }
-                // Set the populated value
-                obj[propName] = fileValue;
-                return [obj];
-            } else if (subPropConfig.type === 'SelectProperty') {
-                const selectValue = await this.populateSelectProperty(subPropConfig, title);
-                if (selectValue === null) {
-                    return null; // User cancelled
-                }
-                
-                // Return an array with one object containing the property
-                const obj: any = {};
-                // Initialize all properties with empty values
-                for (const [key, config] of Object.entries(propertyConfig.properties)) {
-                    obj[key] = config.defaultValue || '';
-                }
-                // Set the populated value
-                obj[propName] = selectValue;
-                return [obj];
-            }
+        // Recursively search for FileProperty or SelectProperty in the property tree
+        const result = await this.findAndPopulateInObjectProperty(propertyConfig, title);
+        if (result.found) {
+            return result.value;
         }
 
         console.warn('ObjectProperty must contain at least one FileProperty or SelectProperty for populate');
         return null;
+    }
+
+    /**
+     * Recursively search through an ObjectProperty structure to find and populate
+     * the first FileProperty or SelectProperty
+     */
+    private async findAndPopulateInObjectProperty(
+        propertyConfig: PropertyConfig,
+        title: string,
+        path: string[] = []
+    ): Promise<{ found: boolean; value: any[] | null }> {
+        if (!propertyConfig.properties) {
+            return { found: false, value: null };
+        }
+
+        // First pass: look for direct FileProperty or SelectProperty
+        for (const [propName, subPropConfig] of Object.entries(propertyConfig.properties)) {
+            if (subPropConfig.type === 'FileProperty') {
+                const fileValue = await this.populateFileProperty(subPropConfig, title);
+                if (fileValue === null) {
+                    return { found: true, value: null }; // User cancelled
+                }
+                
+                // Build the nested object structure
+                const obj = this.buildNestedObject(propertyConfig.properties, [...path, propName], fileValue);
+                return { found: true, value: [obj] };
+            } else if (subPropConfig.type === 'SelectProperty') {
+                const selectValue = await this.populateSelectProperty(subPropConfig, title);
+                if (selectValue === null) {
+                    return { found: true, value: null }; // User cancelled
+                }
+                
+                // Build the nested object structure
+                const obj = this.buildNestedObject(propertyConfig.properties, [...path, propName], selectValue);
+                return { found: true, value: [obj] };
+            }
+        }
+
+        // Second pass: recursively search in nested ObjectProperties
+        for (const [propName, subPropConfig] of Object.entries(propertyConfig.properties)) {
+            if (subPropConfig.type === 'ObjectProperty') {
+                const result = await this.findAndPopulateInObjectProperty(
+                    subPropConfig,
+                    title,
+                    [...path, propName]
+                );
+                if (result.found) {
+                    // Wrap the result in the current level's structure
+                    if (result.value === null) {
+                        return { found: true, value: null };
+                    }
+                    const obj = this.buildNestedObject(propertyConfig.properties, [...path, propName], result.value);
+                    return { found: true, value: [obj] };
+                }
+            }
+        }
+
+        return { found: false, value: null };
+    }
+
+    /**
+     * Build a nested object structure based on a path and final value
+     */
+    private buildNestedObject(
+        propertiesConfig: { [key: string]: PropertyConfig },
+        path: string[],
+        finalValue: any
+    ): any {
+        const obj: any = {};
+        
+        // Initialize all properties with default values
+        for (const [key, config] of Object.entries(propertiesConfig)) {
+            obj[key] = config.defaultValue || '';
+        }
+        
+        // Set the value at the path
+        if (path.length === 1) {
+            obj[path[0]] = finalValue;
+        } else if (path.length > 1) {
+            // For nested paths, create the nested structure
+            let current = obj;
+            for (let i = 0; i < path.length - 1; i++) {
+                if (!current[path[i]] || typeof current[path[i]] !== 'object') {
+                    current[path[i]] = {};
+                }
+                current = current[path[i]];
+            }
+            current[path[path.length - 1]] = finalValue;
+        }
+        
+        return obj;
     }
 
     /**

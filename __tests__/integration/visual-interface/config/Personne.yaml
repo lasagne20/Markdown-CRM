@@ -66,15 +66,30 @@ properties:
     aliases: ["Postes"]
     properties:
       institution:
-        type: FileProperty
+        type: ObjectProperty
         title: Institution
         aliases: ["Institution"]
         icon: 🏢
-        classes:
-          - Institution
-          - Lieu
-
-
+        properties:
+          file:
+            type: FileProperty
+            title: Institution liée
+            icon: 🏛️
+            tooltip: "Sélectionnez une institution"
+            defaultValue: ""
+            classes:
+              - Institution
+              - Lieu
+          niveau:
+            type: SelectProperty
+            title: Niveau hiérarchique
+            icon: 📊
+            options:
+              - Junior
+              - Intermédiaire
+              - Senior
+              - Direction
+            defaultValue: Intermédiaire
 
       poste:
         type: TextProperty
