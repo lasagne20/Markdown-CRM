@@ -506,8 +506,28 @@ export class ObjectProperty extends Property{
                 propertyContainer.style.gridColumn = "span "+property.flexSpan;
             }
 
-            propertyContainer.appendChild(property.fillDisplay(value,
-                async (value: any) => await this.updateObject(values, update, index, property, value, container)));
+            // For ObjectProperty, we need special handling to pass its own container
+            if (property instanceof ObjectProperty) {
+                // Create a wrapper that will hold the element reference
+                let elementRef: HTMLDivElement | null = null;
+                
+                const propertyElement = property.fillDisplay(value,
+                    async (value: any) => {
+                        // Use the element's own container for updates
+                        const targetContainer = elementRef || container;
+                        await this.updateObject(values, update, index, property, value, targetContainer);
+                    });
+                
+                // Store the reference after creation
+                elementRef = propertyElement;
+                propertyContainer.appendChild(propertyElement);
+            } else {
+                // For non-ObjectProperty, use the parent container
+                const propertyElement = property.fillDisplay(value,
+                    async (value: any) => await this.updateObject(values, update, index, property, value, container));
+                propertyContainer.appendChild(propertyElement);
+            }
+            
             row.appendChild(propertyContainer);
 
         });
