@@ -267,14 +267,48 @@ export class ConditionManager {
             return false;
         }
 
+        // Extract the base filename from the path (without extension)
+        const getFileBaseName = (path: string): string => {
+            const parts = path.split('/');
+            const fileWithExt = parts[parts.length - 1];
+            return fileWithExt.replace(/\.md$/, '');
+        };
+
+        // Normalize by removing spaces for comparison
+        const normalize = (str: string): string => str.replace(/\s+/g, '');
+
+        const fileBaseName = filePath ? getFileBaseName(filePath) : fileName;
+        const normalizedFileName = normalize(fileName);
+        const normalizedFileBaseName = normalize(fileBaseName);
+
+        const matchesLink = (linkTarget: string): boolean => {
+            const normalizedLinkTarget = normalize(linkTarget);
+            
+            // Direct match
+            if (linkTarget === fileName || linkTarget === filePath || linkTarget.endsWith('/' + fileName)) {
+                return true;
+            }
+            
+            // Normalized match (handles spaces: "Partenariat 1" vs "Partenariat1")
+            if (normalizedLinkTarget === normalizedFileName || normalizedLinkTarget === normalizedFileBaseName) {
+                return true;
+            }
+            
+            // Check if link ends with the filename (with path)
+            if (linkTarget.endsWith('/' + fileName)) {
+                return true;
+            }
+            
+            return false;
+        };
+
         // Single link (string)
         if (typeof propertyValue === 'string') {
             // Extract the link name from [[LinkName]] or [[path/to/LinkName|DisplayName]]
             const linkMatch = propertyValue.match(/\[\[([^\]|]+)/);
             if (linkMatch) {
                 const linkTarget = linkMatch[1];
-                // Check if it matches the filename or path
-                return linkTarget === fileName || linkTarget === filePath || linkTarget.endsWith('/' + fileName);
+                return matchesLink(linkTarget);
             }
             return false;
         }
@@ -286,7 +320,7 @@ export class ConditionManager {
                     const linkMatch = link.match(/\[\[([^\]|]+)/);
                     if (linkMatch) {
                         const linkTarget = linkMatch[1];
-                        return linkTarget === fileName || linkTarget === filePath || linkTarget.endsWith('/' + fileName);
+                        return matchesLink(linkTarget);
                     }
                 }
                 return false;
@@ -348,9 +382,11 @@ export class ConditionManager {
             return value1.toLowerCase() === value2.toLowerCase();
         }
 
-        // Number comparison
-        if (typeof value1 === 'number' && typeof value2 === 'number') {
-            return value1 === value2;
+        // Number comparison (with type coercion for string numbers)
+        const num1 = this.toNumber(value1);
+        const num2 = this.toNumber(value2);
+        if (num1 !== null && num2 !== null) {
+            return num1 === num2;
         }
 
         // Boolean comparison

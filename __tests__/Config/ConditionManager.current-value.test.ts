@@ -261,5 +261,37 @@ describe('ConditionManager - Current Value Resolution', () => {
             const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
             expect(result).toBe(false);
         });
+
+        test('should match link in ObjectProperty array with space in link name', async () => {
+            // Create current document with file name "Partenariat" and path ending with "Partenariat1.md"
+            const currentDoc = new Classe(vault);
+            (currentDoc as any).name = 'Partenariat';
+            jest.spyOn(currentDoc, 'getName').mockReturnValue('Partenariat');
+            jest.spyOn(currentDoc, 'getPath').mockReturnValue('path/../Partenariats/Partenariat1.md');
+
+            // Create instance with ObjectProperty containing array of objects with links
+            const instance = new Classe(vault);
+            const objectProperty = new ObjectProperty('partenariats', vault, {
+                partenariat: new MultiFileProperty('partenariat', vault, ['Partenariat']),
+                montant: new TextProperty('montant', vault)
+            });
+            (instance as any).properties = [objectProperty];
+
+            // Mock the property to return array of objects
+            // Note: The link is "[[Partenariat 1]]" but the file is "Partenariat1.md"
+            jest.spyOn(objectProperty, 'read').mockResolvedValue([
+                { partenariat: '[[Partenariat 1]]', montant: '480' }
+            ]);
+
+            const condition: PropertyCondition = {
+                property: 'partenariats',
+                type: 'contains',
+                value: 'current'
+            };
+
+            const result = await conditionManager.evaluateCondition(condition, instance, currentDoc);
+            // This should match because "Partenariat 1" normalizes to "Partenariat1" which matches the file basename
+            expect(result).toBe(true);
+        });
     });
 });
