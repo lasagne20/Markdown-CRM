@@ -300,8 +300,7 @@ export class PopulateManager {
      */
     private async findAndPopulateInObjectProperty(
         propertyConfig: PropertyConfig,
-        title: string,
-        path: string[] = []
+        title: string
     ): Promise<{ found: boolean; value: any[] | null }> {
         if (!propertyConfig.properties) {
             return { found: false, value: null };
@@ -315,8 +314,15 @@ export class PopulateManager {
                     return { found: true, value: null }; // User cancelled
                 }
                 
-                // Build the nested object structure
-                const obj = this.buildNestedObject(propertyConfig.properties, [...path, propName], fileValue);
+                // Build object with just this level's properties
+                const obj: any = {};
+                for (const [key, config] of Object.entries(propertyConfig.properties)) {
+                    if (key === propName) {
+                        obj[key] = fileValue;
+                    } else {
+                        obj[key] = config.defaultValue || '';
+                    }
+                }
                 return { found: true, value: [obj] };
             } else if (subPropConfig.type === 'SelectProperty') {
                 const selectValue = await this.populateSelectProperty(subPropConfig, title);
@@ -324,8 +330,15 @@ export class PopulateManager {
                     return { found: true, value: null }; // User cancelled
                 }
                 
-                // Build the nested object structure
-                const obj = this.buildNestedObject(propertyConfig.properties, [...path, propName], selectValue);
+                // Build object with just this level's properties
+                const obj: any = {};
+                for (const [key, config] of Object.entries(propertyConfig.properties)) {
+                    if (key === propName) {
+                        obj[key] = selectValue;
+                    } else {
+                        obj[key] = config.defaultValue || '';
+                    }
+                }
                 return { found: true, value: [obj] };
             }
         }
@@ -335,54 +348,32 @@ export class PopulateManager {
             if (subPropConfig.type === 'ObjectProperty') {
                 const result = await this.findAndPopulateInObjectProperty(
                     subPropConfig,
-                    title,
-                    [...path, propName]
+                    title
                 );
                 if (result.found) {
                     // Wrap the result in the current level's structure
                     if (result.value === null) {
                         return { found: true, value: null };
                     }
-                    const obj = this.buildNestedObject(propertyConfig.properties, [...path, propName], result.value);
+                    
+                    // Extract the nested object from array (it's always wrapped in array)
+                    const nestedValue = result.value[0];
+                    
+                    // Build object with the nested value
+                    const obj: any = {};
+                    for (const [key, config] of Object.entries(propertyConfig.properties)) {
+                        if (key === propName) {
+                            obj[key] = nestedValue;
+                        } else {
+                            obj[key] = config.defaultValue || '';
+                        }
+                    }
                     return { found: true, value: [obj] };
                 }
             }
         }
 
         return { found: false, value: null };
-    }
-
-    /**
-     * Build a nested object structure based on a path and final value
-     */
-    private buildNestedObject(
-        propertiesConfig: { [key: string]: PropertyConfig },
-        path: string[],
-        finalValue: any
-    ): any {
-        const obj: any = {};
-        
-        // Initialize all properties with default values
-        for (const [key, config] of Object.entries(propertiesConfig)) {
-            obj[key] = config.defaultValue || '';
-        }
-        
-        // Set the value at the path
-        if (path.length === 1) {
-            obj[path[0]] = finalValue;
-        } else if (path.length > 1) {
-            // For nested paths, create the nested structure
-            let current = obj;
-            for (let i = 0; i < path.length - 1; i++) {
-                if (!current[path[i]] || typeof current[path[i]] !== 'object') {
-                    current[path[i]] = {};
-                }
-                current = current[path[i]];
-            }
-            current[path[path.length - 1]] = finalValue;
-        }
-        
-        return obj;
     }
 
     /**

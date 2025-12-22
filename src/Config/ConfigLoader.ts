@@ -295,9 +295,12 @@ export class ConfigLoader {
                 if (config.properties) {
                     // Les propriétés sont toujours définies sous forme d'objet
                     for (const [key, propConfig] of Object.entries(config.properties)) {
-                        // IMPORTANT: Passer le key comme propertyKey pour que la propriété ait un nom
-                        (propConfig as any).propertyKey = key;
-                        objProperties[key] = this.createProperty(propConfig);
+                        // IMPORTANT: Créer une copie de propConfig pour éviter de partager la même référence
+                        // entre plusieurs instances d'ObjectProperty
+                        const propConfigCopy = JSON.parse(JSON.stringify(propConfig));
+                        // Passer le key comme propertyKey pour que la propriété ait un nom
+                        propConfigCopy.propertyKey = key;
+                        objProperties[key] = this.createProperty(propConfigCopy);
                     }
                 }
                 // Ajouter le mode d'affichage si spécifié
