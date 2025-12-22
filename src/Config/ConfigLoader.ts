@@ -308,6 +308,9 @@ export class ConfigLoader {
                 if (config.display) {
                     objOptions.display = config.display;
                 }
+                if (config.displayContainer) {
+                    objOptions.display = config.displayContainer;
+                }
                 if (config.allowMove !== undefined) {
                     objOptions.allowMove = config.allowMove;
                 }
@@ -464,7 +467,10 @@ export class ConfigLoader {
         }
         
         if (row.display) {
-            config.display = row.display;
+            // Validate display mode
+            if (row.display === 'object' || row.display === 'table' || row.display === 'tabs') {
+                config.display = row.display;
+            }
         }
 
         return config;

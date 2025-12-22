@@ -10,7 +10,8 @@ export interface PropertyConfig {
     hint?: string;
     defaultValue?: any;
     formula?: string; // Pour FormulaProperty
-    display?: string | DisplayConfig; // Pour mode d'affichage - string pour rétrocompat (table, list) ou DisplayConfig pour config avancée
+    display?: 'object' | 'table' | 'tabs'; // Pour ObjectProperty - mode d'affichage simple
+    displayContainer?: DisplayContainer; // Pour ObjectProperty - configuration avancée personnalisée
     static?: boolean; // Pour rendre une propriété non-modifiable
     unit?: string; // Pour NumberProperty - unité de mesure (€, kg, %, etc.)
     aliases?: string[]; // Old property names for automatic migration

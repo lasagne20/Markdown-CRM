@@ -486,23 +486,16 @@ export class ObjectProperty extends Property{
             if (selectedContent) (selectedContent as HTMLElement).style.display = 'block';
         };
         
+        // Sélectionner le dernier onglet par défaut (le plus récent ajouté à droite)
+        const defaultTabIndex = parsedValues.length > 0 ? parsedValues.length - 1 : 0;
+        
         // Créer les onglets pour chaque objet
         parsedValues.forEach((objects: any, index: number) => {
             // Créer l'onglet
             const tab = document.createElement("div");
             tab.classList.add("metadata-object-tab");
             tab.dataset.tabIndex = index.toString();
-            if (index === 0) tab.classList.add('active');
-            
-            // Bouton de suppression dans l'onglet (en haut à gauche)
-            const deleteButton = document.createElement("button");
-            this.vault.app.setIcon(deleteButton, "x");
-            deleteButton.classList.add("metadata-tab-delete-button");
-            deleteButton.onclick = async (e) => {
-                e.stopPropagation();
-                await this.removeProperty(values, update, index, container);
-            };
-            tab.appendChild(deleteButton);
+            if (index === defaultTabIndex) tab.classList.add('active');
             
             // Texte de l'onglet (numéro ou titre)
             const tabLabel = document.createElement("span");
@@ -513,8 +506,9 @@ export class ObjectProperty extends Property{
             const firstProp = Object.values(this.properties)[0];
             if (firstProp && objects[firstProp.name]) {
                 const value = objects[firstProp.name];
-                if (typeof value === 'string' && value.length > 0) {
-                    labelText = value.length > 20 ? value.substring(0, 20) + '...' : value;
+                const prettyValue = firstProp.getPretty(value);
+                if (prettyValue && prettyValue.length > 0) {
+                    labelText = prettyValue.length > 20 ? prettyValue.substring(0, 20) + '...' : prettyValue;
                 }
             }
             tabLabel.textContent = labelText;
@@ -529,7 +523,8 @@ export class ObjectProperty extends Property{
             const pane = document.createElement("div");
             pane.classList.add("metadata-object-tab-pane");
             pane.dataset.contentIndex = index.toString();
-            pane.style.display = index === 0 ? 'block' : 'none';
+            pane.style.display = index === defaultTabIndex ? 'block' : 'none';
+            pane.style.position = 'relative';
             
             // Vérifier que l'objet est valide
             if (typeof objects !== 'object' || objects === null) {
@@ -537,6 +532,19 @@ export class ObjectProperty extends Property{
                 parsedValues[index] = {};
                 objects = parsedValues[index];
             }
+            
+            // Bouton de suppression dans le contenu (en haut à droite)
+            const deleteButton = document.createElement("button");
+            this.vault.app.setIcon(deleteButton, "x");
+            deleteButton.classList.add("metadata-tab-delete-button");
+            deleteButton.style.position = 'absolute';
+            deleteButton.style.top = '0';
+            deleteButton.style.right = '0';
+            deleteButton.onclick = async (e) => {
+                e.stopPropagation();
+                await this.removeProperty(values, update, index, container);
+            };
+            pane.appendChild(deleteButton);
             
             // Créer la grille de propriétés
             const propertiesGrid = document.createElement("div");

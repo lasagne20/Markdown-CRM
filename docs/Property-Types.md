@@ -485,7 +485,7 @@ Nested object with multiple fields.
 socialMedia:
   type: ObjectProperty
   title: Social Media
-  display: tabs # Options: "object" (default), "table", "tabs", or DisplayContainer
+  display: tabs # Simple modes: "object" (default), "table", or "tabs"
   allowMove: true # Enable/disable drag-and-drop reordering (default: true)
   appendFirst: false # Add new items at beginning instead of end (default: false)
   properties:
@@ -500,7 +500,32 @@ socialMedia:
       title: GitHub
 ```
 
-**Display Modes:**
+**For advanced custom layouts, use `displayContainer` instead:**
+
+```yaml
+workHistory:
+  type: ObjectProperty
+  title: Work History
+  displayContainer:  # Advanced custom layout
+    items:
+      - type: line
+        items:
+          - type: property
+            name: company
+          - type: property
+            name: position
+      - type: property
+        name: description
+  properties:
+    company:
+      type: TextProperty
+    position:
+      type: TextProperty
+    description:
+      type: TextProperty
+```
+
+**Display Modes (`display` property):**
 - `"object"` (default): Displays each item as a row with all properties in a grid
 - `"table"`: Displays items in a table format with columns
 - `"tabs"`: Displays each item in a separate tab with properties in a grid
@@ -508,10 +533,15 @@ socialMedia:
   - Delete button in top-left of each tab
   - "+" button in a dedicated tab to add new items
   - Click tabs to navigate between items
-- Custom `DisplayContainer`: Advanced custom layout (see Display Configuration docs)
+
+**Custom Layout (`displayContainer` property):**
+- Full control over layout with DisplayContainer configuration
+- See [Display Configuration](Display-Configuration.md) for details
+- **Note:** When `displayContainer` is specified, it overrides the `display` setting
 
 **Options:**
-- `display`: Display mode - `"object"` (default), `"table"`, `"tabs"`, or custom `DisplayContainer`
+- `display`: Simple display mode - `"object"` (default), `"table"`, or `"tabs"`
+- `displayContainer`: Advanced custom layout configuration (DisplayContainer object)
 - `allowMove`: Enable drag-and-drop reordering of items (default: `true`) - works in object mode
 - `appendFirst`: Add new items at the beginning of the list (default: `false`)
 - `tooltip`: Help text shown on hover
@@ -521,6 +551,7 @@ socialMedia:
 - Multiple display modes (object, table, tabs, or custom)
 - Drag-and-drop reordering (when `allowMove: true` in object mode)
 - Tab navigation (in tabs mode)
+- Custom layouts (with displayContainer)
 - Reusable property definitions
 - Validation of nested fields
 - Can be used as parent property for automatic folder organization
