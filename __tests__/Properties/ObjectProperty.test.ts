@@ -400,7 +400,11 @@ describe('ObjectProperty', () => {
             
             const container = objectProperty.fillDisplay(values, mockUpdate);
 
-            expect(container.classList.contains('metadata-object-container-testobject')).toBe(true);
+            // Check that class name starts with the expected pattern (it now includes a unique ID)
+            const hasCorrectClass = Array.from(container.classList).some((className: string) => 
+                className.startsWith('metadata-object-container-testobject-')
+            );
+            expect(hasCorrectClass).toBe(true);
         });
 
         test('should set vault property', () => {
@@ -542,8 +546,11 @@ describe('ObjectProperty', () => {
             
             const container = objectProperty.fillDisplay([], mockUpdate);
             
-            // Test that the container has the right class
-            expect(container.classList.contains('metadata-object-container-testobject')).toBe(true);
+            // Test that the container has the right class (it now includes a unique ID)
+            const hasCorrectClass = Array.from(container.classList).some((className: string) => 
+                className.startsWith('metadata-object-container-testobject-')
+            );
+            expect(hasCorrectClass).toBe(true);
             
             // Test that appendChild was called successfully
             expect(() => document.body.appendChild(container)).not.toThrow();

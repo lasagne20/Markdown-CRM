@@ -1,4 +1,3 @@
-
 import { Property } from "./Property";
 import { File } from "../vault/File";
 import { FileProperty } from "./FileProperty";
@@ -7,6 +6,9 @@ import { MultiFileProperty } from "./MultiFileProperty";
 import { Vault } from "../vault/Vault";
 import { DisplayContainer } from "../Config/interfaces";
 import { DisplayRenderer } from "../display/DisplayRenderer";
+
+// Static counter for unique container IDs
+let containerIdCounter = 0;
 
 export class ObjectProperty extends Property{
     // Used for property object
@@ -242,8 +244,12 @@ export class ObjectProperty extends Property{
      override fillDisplay(values: any, update: (value: any) => Promise<void>) {
         console.log("Fill display ObjectProperty ", this.name)
         const container = document.createElement("div");
+        
+        // Generate unique ID for this container instance
+        const containerId = ++containerIdCounter;
+        
         container.classList.add("metadata-object-container");
-        container.classList.add("metadata-object-container-" + this.name.toLowerCase().replace(/\s+/g, '-'));
+        container.classList.add("metadata-object-container-" + this.name.toLowerCase().replace(/\s+/g, '-') + "-" + containerId);
 
         // Si display est un DisplayContainer, la création est asynchrone donc on doit utiliser une approche différente
         if (typeof this.display === 'object' && this.display.items) {
