@@ -145,8 +145,8 @@ export class DynamicTable {
                                     // Remove .md extension if still present
                                     value = value.replace(/\.md$/i, '');
                                 } else {
-                                    // Use getPropertyValue for actual properties
-                                    value = await file.getPropertyValue(propName) || '';
+                                    // Use getNestedPropertyValue for actual properties (supports dot notation)
+                                    value = await this.getNestedPropertyValue(file, propName) || '';
                                 }
                                 
                                 if (value) uniqueValues.add(String(value));
@@ -254,7 +254,7 @@ export class DynamicTable {
                             td.appendChild(propertyDisplay);
                         } else {
                             // Fallback to text value if property not found
-                            const value = await file.getPropertyValue(propName);
+                            const value = await this.getNestedPropertyValue(file, propName);
                             td.textContent = value || '-';
                         }
                     }
@@ -478,7 +478,7 @@ export class DynamicTable {
 
         // Extract values for calculation
         for (const file of filteredFiles) {
-            const value = await file.getPropertyValue(total.propertyName);
+            const value = await this.getNestedPropertyValue(file, total.propertyName);
             const numValue = Number(value);
             if (!isNaN(numValue)) {
                 values.push(numValue);
@@ -513,6 +513,103 @@ export class DynamicTable {
     }
 
     /**
+     * Get nested property value using dot notation (e.g., "partenariats.montant")
+     * Supports array filtering with syntax: "partenariats.filter(property=value).targetProperty"
+     * Falls back to regular getPropertyValue for simple properties
+     */
+    private async getNestedPropertyValue(file: Classe, propertyPath: string): Promise<any> {
+        // If no dots, use regular getPropertyValue
+        if (!propertyPath.includes('.')) {
+            return await file.getPropertyValue(propertyPath);
+        }
+
+        // Check for filter syntax: array.filter(property=value).targetProperty
+        const filterMatch = propertyPath.match(/^([^.]+)\.filter\(([^=]+)=([^)]+)\)\.(.+)$/);
+        if (filterMatch) {
+            const [, arrayProperty, filterProperty, filterValue, targetProperty] = filterMatch;
+            
+            // Get the array
+            const arrayValue = await file.getPropertyValue(arrayProperty);
+            if (!Array.isArray(arrayValue)) {
+                return undefined;
+            }
+
+            // Filter the array
+            const filteredItems = arrayValue.filter(item => {
+                if (typeof item !== 'object' || item === null) {
+                    return false;
+                }
+                // Convert both values to strings for comparison
+                const itemValue = String(item[filterProperty] || '').toLowerCase();
+                const targetValue = String(filterValue).toLowerCase();
+                return itemValue === targetValue;
+            });
+
+            // If no items match the filter, return undefined
+            if (filteredItems.length === 0) {
+                return undefined;
+            }
+
+            // Extract target property from filtered items
+            const targetValues = filteredItems.map(item => {
+                // Support nested target properties (e.g., "contact.nom")
+                if (targetProperty.includes('.')) {
+                    return this.navigateNestedProperty(item, targetProperty.split('.'));
+                } else {
+                    return item[targetProperty];
+                }
+            }).filter(value => value !== undefined && value !== null);
+
+            // If no valid values, return undefined
+            if (targetValues.length === 0) {
+                return undefined;
+            }
+
+            // For numeric values, return the sum
+            // For other values, return the first one or concatenate strings
+            const firstValue = targetValues[0];
+            if (typeof firstValue === 'number') {
+                return targetValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
+            } else if (targetValues.length === 1) {
+                return firstValue;
+            } else {
+                // Multiple non-numeric values - return array or concatenated string
+                if (typeof firstValue === 'string') {
+                    return targetValues.join(', ');
+                }
+                return targetValues;
+            }
+        }
+
+        // Regular dot notation without filter
+        const parts = propertyPath.split('.');
+        let currentValue: any = await file.getPropertyValue(parts[0]);
+
+        return this.navigateNestedProperty(currentValue, parts.slice(1));
+    }
+
+    /**
+     * Helper method to navigate through nested object properties
+     */
+    private navigateNestedProperty(currentValue: any, parts: string[]): any {
+        for (const part of parts) {
+            if (currentValue === null || currentValue === undefined) {
+                return undefined;
+            }
+
+            // Handle different types of nested access
+            if (typeof currentValue === 'object' && !Array.isArray(currentValue)) {
+                currentValue = currentValue[part];
+            } else {
+                // If we can't navigate further, return undefined
+                return undefined;
+            }
+        }
+
+        return currentValue;
+    }
+
+    /**
      * Get filtered files using the same logic as renderTableBody
      */
     private async getFilteredFiles(): Promise<Classe[]> {
@@ -544,8 +641,8 @@ export class DynamicTable {
                     // Remove .md extension if still present
                     cellValue = cellValue.replace(/\.md$/i, '');
                 } else {
-                    // Use getPropertyValue for actual properties
-                    const value = await file.getPropertyValue(propName);
+                    // Use getNestedPropertyValue for actual properties (supports dot notation)
+                    const value = await this.getNestedPropertyValue(file, propName);
                     cellValue = String(value || '').toLowerCase();
                 }
                 
@@ -602,8 +699,8 @@ export class DynamicTable {
                 // Remove .md extension if still present
                 value = value.replace(/\.md$/i, '');
             } else {
-                // Use getPropertyValue for actual properties
-                const propValue = await file.getPropertyValue(propName);
+                // Use getNestedPropertyValue for actual properties (supports dot notation)
+                const propValue = await this.getNestedPropertyValue(file, propName);
                 value = String(propValue || '');
             }
             
