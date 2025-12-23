@@ -293,7 +293,7 @@ export class DisplayRenderer {
             totals: item.totals || []
         };
         
-        const dynamicTable = new DynamicTable(files, tableConfig, this.vault);
+        const dynamicTable = new DynamicTable(files, tableConfig, this.vault, currentInstance);
         const tableElement = await dynamicTable.getTable();
         container.appendChild(tableElement);
         
