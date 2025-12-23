@@ -246,16 +246,23 @@ export class DynamicTable {
                         
                         td.appendChild(link);
                     } else {
-                        // Get the property object to display its component
-                        const property = file.getProperty(propName);
-                        if (property) {
-                            // Display the property's interactive component
-                            const propertyDisplay = await property.getDisplay(file);
-                            td.appendChild(propertyDisplay);
+                        // Handle nested properties or regular properties
+                        if (propName.includes('.')) {
+                            // Use nested property display for properties with dot notation
+                            const displayElement = await this.getNestedPropertyDisplay(file, propName);
+                            td.appendChild(displayElement);
                         } else {
-                            // Fallback to text value if property not found
-                            const value = await this.getNestedPropertyValue(file, propName);
-                            td.textContent = value || '-';
+                            // Get the property object to display its component
+                            const property = file.getProperty(propName);
+                            if (property) {
+                                // Display the property's interactive component
+                                const propertyDisplay = await property.getDisplay(file);
+                                td.appendChild(propertyDisplay);
+                            } else {
+                                // Fallback to text value if property not found
+                                const value = await this.getNestedPropertyValue(file, propName);
+                                td.textContent = value || '-';
+                            }
                         }
                     }
                     
@@ -613,6 +620,133 @@ export class DynamicTable {
         }
 
         return currentValue;
+    }
+
+    /**
+     * Get nested property display with proper formatting for filtered properties
+     * Handles both simple nested properties (obj.prop) and filtered arrays (array.filter(prop=val).target)
+     */
+    private async getNestedPropertyDisplay(file: Classe, propertyPath: string): Promise<HTMLElement> {
+        const container = document.createElement('span');
+        
+        // Check for filter syntax: array.filter(property=value).targetProperty
+        const filterMatch = propertyPath.match(/^([^.]+)\.filter\(([^=]+)=([^)]+)\)\.(.+)$/);
+        if (filterMatch) {
+            const [, arrayProperty, filterProperty, filterValue, targetProperty] = filterMatch;
+            
+            // Get the array property object
+            const arrayPropertyObj = file.getProperty(arrayProperty);
+            if (arrayPropertyObj && Array.isArray(await file.getPropertyValue(arrayProperty))) {
+                // Get the array value
+                const arrayValue = await file.getPropertyValue(arrayProperty);
+                
+                // Filter the array
+                const filteredItems = arrayValue.filter(item => {
+                    if (typeof item !== 'object' || item === null) {
+                        return false;
+                    }
+                    const itemValue = String(item[filterProperty] || '').toLowerCase();
+                    const targetValue = String(filterValue).toLowerCase();
+                    return itemValue === targetValue;
+                });
+
+                if (filteredItems.length === 0) {
+                    container.textContent = '-';
+                    return container;
+                }
+
+                // Extract target values and try to find if the target property has display config
+                const targetValues = filteredItems.map(item => {
+                    if (targetProperty.includes('.')) {
+                        return this.navigateNestedProperty(item, targetProperty.split('.'));
+                    } else {
+                        return item[targetProperty];
+                    }
+                }).filter(value => value !== undefined && value !== null);
+
+                if (targetValues.length === 0) {
+                    container.textContent = '-';
+                    return container;
+                }
+
+                // Try to get display configuration for the target property
+                // Look for nested property configuration in the array property
+                let displayValue: any;
+                const firstValue = targetValues[0];
+                
+                if (typeof firstValue === 'number') {
+                    displayValue = targetValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
+                } else if (targetValues.length === 1) {
+                    displayValue = firstValue;
+                } else if (typeof firstValue === 'string') {
+                    displayValue = targetValues.join(', ');
+                } else {
+                    displayValue = targetValues;
+                }
+
+                // Try to format the value using property display configuration
+                // For now, use simple formatting rules but this could be enhanced
+                if (typeof displayValue === 'number') {
+                    // Check if this looks like a currency amount
+                    if (targetProperty.toLowerCase().includes('montant') || 
+                        targetProperty.toLowerCase().includes('prix') ||
+                        targetProperty.toLowerCase().includes('cost') ||
+                        targetProperty.toLowerCase().includes('amount')) {
+                        container.textContent = new Intl.NumberFormat('fr-FR', {
+                            style: 'currency',
+                            currency: 'EUR'
+                        }).format(displayValue);
+                    } else {
+                        container.textContent = displayValue.toLocaleString('fr-FR');
+                    }
+                } else {
+                    container.textContent = String(displayValue);
+                }
+
+                return container;
+            }
+        }
+
+        // Handle simple nested properties (obj.prop)
+        const parts = propertyPath.split('.');
+        if (parts.length > 1) {
+            // Try to get the root property for display configuration
+            const rootProperty = file.getProperty(parts[0]);
+            if (rootProperty) {
+                const value = await this.getNestedPropertyValue(file, propertyPath);
+                if (value !== undefined && value !== null) {
+                    // Basic formatting for nested properties
+                    if (typeof value === 'number') {
+                        // Apply currency formatting for amount-like properties
+                        if (parts[parts.length - 1].toLowerCase().includes('montant') ||
+                            parts[parts.length - 1].toLowerCase().includes('prix') ||
+                            parts[parts.length - 1].toLowerCase().includes('cost') ||
+                            parts[parts.length - 1].toLowerCase().includes('amount')) {
+                            container.textContent = new Intl.NumberFormat('fr-FR', {
+                                style: 'currency',
+                                currency: 'EUR'
+                            }).format(value);
+                        } else {
+                            container.textContent = value.toLocaleString('fr-FR');
+                        }
+                    } else {
+                        container.textContent = String(value);
+                    }
+                } else {
+                    container.textContent = '-';
+                }
+            } else {
+                // Fallback to raw value
+                const value = await this.getNestedPropertyValue(file, propertyPath);
+                container.textContent = value || '-';
+            }
+        } else {
+            // Single property - shouldn't reach here but fallback
+            const value = await this.getNestedPropertyValue(file, propertyPath);
+            container.textContent = value || '-';
+        }
+
+        return container;
     }
 
     /**
