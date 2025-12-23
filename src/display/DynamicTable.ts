@@ -552,7 +552,7 @@ export class DynamicTable {
                 // Handle special values
                 if (targetValue.toLowerCase() === '$current') {
                     // '$current' refers to the current file name without extension
-                    const fileObj = file.getFile?.() || file.file;
+                    const fileObj = file.getFile?.();
                     if (fileObj) {
                         if (typeof fileObj.getName === 'function') {
                             targetValue = fileObj.getName(false); // false = without .md extension
@@ -560,16 +560,22 @@ export class DynamicTable {
                             targetValue = (fileObj as any).name.replace(/\.md$/i, '');
                         } else if ((fileObj as any).basename) {
                             targetValue = (fileObj as any).basename.replace(/\.md$/i, '');
-                        } else if ((file as any).basename) {
-                            targetValue = (file as any).basename.replace(/\.md$/i, '');
                         }
+                    } else if ((file as any).basename) {
+                        targetValue = (file as any).basename.replace(/\.md$/i, '');
                     }
                 }
                 
                 // Convert both values to strings for comparison
                 const itemValue = String(item[filterProperty] || '').toLowerCase();
                 const compareValue = String(targetValue).toLowerCase();
-                return itemValue === compareValue;
+                
+                // For $current, use contains instead of strict equality
+                if (filterValue.toLowerCase() === '$current') {
+                    return itemValue.includes(compareValue);
+                } else {
+                    return itemValue === compareValue;
+                }
             });
 
             // If no items match the filter, return undefined
@@ -671,7 +677,7 @@ export class DynamicTable {
                     // Handle special values
                     if (targetValue.toLowerCase() === '$current') {
                         // '$current' refers to the current file name without extension
-                        const fileObj = file.getFile?.() || file.file;
+                        const fileObj = file.getFile?.();
                         if (fileObj) {
                             if (typeof fileObj.getName === 'function') {
                                 targetValue = fileObj.getName(false); // false = without .md extension
@@ -679,15 +685,21 @@ export class DynamicTable {
                                 targetValue = (fileObj as any).name.replace(/\.md$/i, '');
                             } else if ((fileObj as any).basename) {
                                 targetValue = (fileObj as any).basename.replace(/\.md$/i, '');
-                            } else if ((file as any).basename) {
-                                targetValue = (file as any).basename.replace(/\.md$/i, '');
                             }
+                        } else if ((file as any).basename) {
+                            targetValue = (file as any).basename.replace(/\.md$/i, '');
                         }
                     }
                     
                     const itemValue = String(item[filterProperty] || '').toLowerCase();
                     const compareValue = String(targetValue).toLowerCase();
-                    return itemValue === compareValue;
+                    
+                    // For $current, use contains instead of strict equality
+                    if (filterValue.toLowerCase() === '$current') {
+                        return itemValue.includes(compareValue);
+                    } else {
+                        return itemValue === compareValue;
+                    }
                 });
 
                 if (filteredItems.length === 0) {
