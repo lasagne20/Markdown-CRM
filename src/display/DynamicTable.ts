@@ -590,11 +590,17 @@ export class DynamicTable {
 
     /**
      * Helper method to navigate through nested object properties
+     * Handles ObjectProperty arrays automatically (single element arrays are unwrapped)
      */
     private navigateNestedProperty(currentValue: any, parts: string[]): any {
         for (const part of parts) {
             if (currentValue === null || currentValue === undefined) {
                 return undefined;
+            }
+
+            // Special handling for ObjectProperty: if it's an array with one element, unwrap it
+            if (Array.isArray(currentValue) && currentValue.length === 1) {
+                currentValue = currentValue[0];
             }
 
             // Handle different types of nested access
