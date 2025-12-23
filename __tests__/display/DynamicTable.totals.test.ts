@@ -332,6 +332,7 @@ describe('DynamicTable - Filtering and Totals', () => {
     describe('Integration: Filtering + Totals', () => {
         test('should update totals when filters change', async () => {
             const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            await table.buildTableStructure();
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             
@@ -348,6 +349,7 @@ describe('DynamicTable - Filtering and Totals', () => {
             
             // Apply filter for "En cours" projects (count = 2, sum = 2500)
             (table as any).tableData.filters.set(3, 'en cours');
+            await table.filterAndRender();
             
             countResult = await calculateTotal({ formula: 'count', column: 'Total' });
             sumResult = await calculateTotal({ 
@@ -361,6 +363,7 @@ describe('DynamicTable - Filtering and Totals', () => {
             
             // Change filter to "Terminé" projects (count = 1, sum = 2500)
             (table as any).tableData.filters.set(3, 'terminé');
+            await table.filterAndRender();
             
             countResult = await calculateTotal({ formula: 'count', column: 'Total' });
             sumResult = await calculateTotal({ 
@@ -402,6 +405,7 @@ describe('DynamicTable - Filtering and Totals', () => {
 
         test('should maintain totals accuracy across filter changes', async () => {
             const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            await table.buildTableStructure();
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             
@@ -431,6 +435,7 @@ describe('DynamicTable - Filtering and Totals', () => {
                 
                 // Apply new filter
                 (table as any).tableData.filters.set(testCase.filter.column, testCase.filter.value);
+                await table.filterAndRender();
                 
                 const countResult = await calculateTotal({ formula: 'count', column: 'Total' });
                 const sumResult = await calculateTotal({ 

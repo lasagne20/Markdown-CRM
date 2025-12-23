@@ -335,61 +335,58 @@ export class DynamicTable {
     }
     
     /**
-     * Calculate total value based on formula
+     * Calculate total value based on formula using values displayed in table
      */
     private async calculateTotal(total: any): Promise<string> {
-        // Get filtered files first - same logic as renderTableBody
+        // Use filtered files directly instead of DOM to avoid timing issues in tests
         const filteredFiles = await this.getFilteredFiles();
         
+        // For count, just count filtered files
         if (total.formula === 'count') {
-            // Count filtered files
             return `${filteredFiles.length}`;
         }
         
         if (!total.propertyName) {
             return '-';
         }
-        
-        // Collect all values for the property from filtered files only
+
+        // Collect values from filtered files
         const values: number[] = [];
+        
         for (const file of filteredFiles) {
             const value = await file.getPropertyValue(total.propertyName);
-            const numValue = parseFloat(String(value));
+            const numValue = Number(value);
+            
             if (!isNaN(numValue)) {
                 values.push(numValue);
             }
         }
-        
+
         if (values.length === 0) {
-            return '0';
+            // For count and sum, return '0'; for others return '-'
+            if (total.formula === 'count' || total.formula === 'sum') {
+                return '0';
+            }
+            return '-';
         }
-        
-        let result: number = 0;
-        
+
+        // Calculate based on formula
         switch (total.formula) {
             case 'sum':
-                result = values.reduce((sum, val) => sum + val, 0);
-                break;
+                return this.formatCurrency(values.reduce((sum, val) => sum + val, 0));
+                
             case 'average':
-            case 'avg':
-                result = values.reduce((sum, val) => sum + val, 0) / values.length;
-                break;
+                const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+                return this.formatNumber(avg);
+                
             case 'min':
-                result = Math.min(...values);
-                break;
+                return this.formatCurrency(Math.min(...values));
+                
             case 'max':
-                result = Math.max(...values);
-                break;
+                return this.formatCurrency(Math.max(...values));
+                
             default:
                 return '-';
-        }
-        
-        // Format the result
-        const propName = total.propertyName.toLowerCase();
-        if (propName.includes('budget') || propName.includes('prix') || propName.includes('cost') || propName.includes('montant')) {
-            return result.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-        } else {
-            return result.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
         }
     }
 
@@ -514,5 +511,19 @@ export class DynamicTable {
         if (this.config.totals && this.config.totals.length > 0) {
             await this.renderTableFooter();
         }
+    }
+    
+    /**
+     * Format number as currency in French locale
+     */
+    private formatCurrency(value: number): string {
+        return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+    }
+    
+    /**
+     * Format number with French locale
+     */
+    private formatNumber(value: number): string {
+        return value.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
     }
 }
