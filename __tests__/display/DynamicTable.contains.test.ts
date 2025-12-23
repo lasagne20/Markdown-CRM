@@ -58,9 +58,12 @@ describe('DynamicTable - Current File Contains Logic', () => {
                 { partenariat: '[[entreprise-alpha]]', montant: 15000, statut: 'active' },
                 { partenariat: '[[autre-entreprise]]', montant: 8000, statut: 'pending' }
             ]
-        }, 'entreprise-alpha');
+        }, 'company-data');
+        
+        // Current file context - entreprise-alpha
+        const currentFile = new ContainsTestClass({}, 'entreprise-alpha');
 
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
         
         console.log('✅ Wikilink result:', value);
@@ -76,9 +79,12 @@ describe('DynamicTable - Current File Contains Logic', () => {
                 { partenariat: '[Entreprise Alpha](entreprise-alpha)', montant: 25000, statut: 'active' },
                 { partenariat: '[Autre Entreprise](autre-entreprise)', montant: 12000, statut: 'pending' }
             ]
-        }, 'entreprise-alpha');
+        }, 'company-data');
+        
+        // Current file context - entreprise-alpha
+        const currentFile = new ContainsTestClass({}, 'entreprise-alpha');
 
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
         
         console.log('✅ Markdown link result:', value);
@@ -94,9 +100,12 @@ describe('DynamicTable - Current File Contains Logic', () => {
                 { partenariat: 'Partenaire: entreprise-alpha (principal)', montant: 18000, statut: 'active' },
                 { partenariat: 'Partenaire: autre-entreprise', montant: 7000, statut: 'pending' }
             ]
-        }, 'entreprise-alpha');
+        }, 'company-data');
+        
+        // Current file context - entreprise-alpha
+        const currentFile = new ContainsTestClass({}, 'entreprise-alpha');
 
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
         
         console.log('✅ Partial match result:', value);
@@ -113,9 +122,12 @@ describe('DynamicTable - Current File Contains Logic', () => {
                 { partenariat: 'Ref: test-company (secondaire)', montant: 5000, statut: 'active' },
                 { partenariat: '[[autre-company]]', montant: 3000, statut: 'active' }
             ]
-        }, 'test-company');
+        }, 'company-data');
+        
+        // Current file context - test-company
+        const currentFile = new ContainsTestClass({}, 'test-company');
 
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
         
         console.log('✅ Multiple matches sum:', value);
@@ -131,9 +143,12 @@ describe('DynamicTable - Current File Contains Logic', () => {
                 { partenariat: '[[autre-entreprise]]', montant: 15000, statut: 'active' },
                 { partenariat: '[Different Company](different-company)', montant: 8000, statut: 'pending' }
             ]
-        }, 'entreprise-alpha');
+        }, 'company-data');
+        
+        // Current file context - entreprise-alpha (should not match)
+        const currentFile = new ContainsTestClass({}, 'entreprise-alpha');
 
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
         
         console.log('✅ No match result:', value);
@@ -149,9 +164,12 @@ describe('DynamicTable - Current File Contains Logic', () => {
                 { partenariat: '[[entreprise-alpha]]', montant: 15000, statut: 'current' },
                 { partenariat: '[[autre-entreprise]]', montant: 8000, statut: 'pending' }
             ]
-        }, 'entreprise-alpha');
+        }, 'company-data');
+        
+        // Current file context (not needed for this test)
+        const currentFile = new ContainsTestClass({}, 'entreprise-alpha');
 
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(statut=current).montant');
         
         console.log('✅ Regular filter result:', value);
@@ -167,9 +185,12 @@ describe('DynamicTable - Current File Contains Logic', () => {
                 { partenariat: '[[test-entity]] - Partnership', montant: 22000, statut: 'active' },
                 { partenariat: '[[other-entity]]', montant: 9000, statut: 'pending' }
             ]
-        }, 'test-entity');
+        }, 'entity-data');
+        
+        // Current file context - test-entity
+        const currentFile = new ContainsTestClass({}, 'test-entity');
 
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         const displayElement = await (table as any).getNestedPropertyDisplay(testFile, 'partenariats.filter(partenariat=$current).montant');
         
         console.log('✅ Display with contains result:', displayElement.textContent);

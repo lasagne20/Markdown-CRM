@@ -71,8 +71,11 @@ describe('DynamicTable - Current File Reference', () => {
                     { name: 'Montant Current', propertyName: 'partenariats.filter(partenariat=$current).montant' }
                 ]
             };
+            
+            // Current file context
+            const currentFile = new CurrentFileTestClass({ nom: 'Current File' }, 'entreprise-alpha');
 
-            const table = new DynamicTable([testFile as any], config, mockVault);
+            const table = new DynamicTable([testFile as any], config, mockVault, currentFile as any);
             
             // Test the nested property value directly
             const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
@@ -101,8 +104,11 @@ describe('DynamicTable - Current File Reference', () => {
                     { name: 'Total Current', propertyName: 'partenariats.filter(partenariat=$current).montant' }
                 ]
             };
+            
+            // Current file context
+            const currentFile = new CurrentFileTestClass({ nom: 'Current File' }, 'main-company');
 
-            const table = new DynamicTable([testFile as any], config, mockVault);
+            const table = new DynamicTable([testFile as any], config, mockVault, currentFile as any);
             
             const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
             
@@ -129,8 +135,11 @@ describe('DynamicTable - Current File Reference', () => {
                     { name: 'Current Montant', propertyName: 'partenariats.filter(partenariat=$current).montant' }
                 ]
             };
+            
+            // Current file context
+            const currentFile = new CurrentFileTestClass({ nom: 'Current File' }, 'test-entity');
 
-            const table = new DynamicTable([testFile as any], config, mockVault);
+            const table = new DynamicTable([testFile as any], config, mockVault, currentFile as any);
             
             // Test the display formatting
             const displayElement = await (table as any).getNestedPropertyDisplay(testFile, 'partenariats.filter(partenariat=$current).montant');
@@ -186,8 +195,11 @@ describe('DynamicTable - Current File Reference', () => {
                     { name: 'Current Montant', propertyName: 'partenariats.filter(partenariat=$current).montant' }
                 ]
             };
+            
+            // Current file context
+            const currentFile = new CurrentFileTestClass({ nom: 'Current File' }, 'case-test');
 
-            const table = new DynamicTable([testFile as any], config, mockVault);
+            const table = new DynamicTable([testFile as any], config, mockVault, currentFile as any);
             
             const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
             
@@ -226,8 +238,11 @@ describe('DynamicTable - Current File Reference', () => {
                     { formula: 'sum', propertyName: 'partenariats.filter(partenariat=$current).montant', column: 'Total Current' }
                 ]
             };
+            
+            // Current file context
+            const currentFile = new CurrentFileTestClass({ nom: 'Current File' }, 'file-one');
 
-            const table = new DynamicTable(files as any, config, mockVault);
+            const table = new DynamicTable(files as any, config, mockVault, currentFile as any);
             
             const total = await (table as any).calculateTotal({
                 formula: 'sum',
@@ -237,8 +252,8 @@ describe('DynamicTable - Current File Reference', () => {
             
             console.log('✅ Total with current file references:', total);
             
-            // Should sum only the current file matches: 10000 + 15000 = 25000
-            expect(total).toMatch(/25\s?000[,.]00\s?€/);
+            // Should sum only the current file matches from all files: 10000 from file-one, 0 from file-two = 10000
+            expect(total).toMatch(/10\s?000[,.]00\s?€/);
         });
     });
 });

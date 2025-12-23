@@ -63,9 +63,12 @@ describe('DynamicTable - Debug Current File', () => {
                 { partenariat: 'other-company', montant: 8000, statut: 'pending' }
             ]
         }, 'test-company');
+        
+        // Current file context
+        const currentFile = new DebugTestClass({}, 'test-company');
 
         console.log('🔧 Creating DynamicTable...');
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         
         console.log('🔧 Testing direct getNestedPropertyValue...');
         const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');
@@ -106,8 +109,11 @@ describe('DynamicTable - Debug Current File', () => {
                 { partenariat: 'autre-entreprise', montant: 5000, statut: 'active' }
             ]
         }, 'entreprise-alpha');
+        
+        // Current file context
+        const currentFile = new DebugTestClass({}, 'entreprise-alpha');
 
-        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault);
+        const table = new DynamicTable([testFile as any], { columns: [] }, mockVault, currentFile as any);
         
         console.log('🔧 Testing with pattern: partenariats.filter(partenariat=$current).montant');
         const value = await (table as any).getNestedPropertyValue(testFile, 'partenariats.filter(partenariat=$current).montant');

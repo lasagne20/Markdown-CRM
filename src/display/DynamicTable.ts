@@ -25,10 +25,12 @@ export class DynamicTable {
     };
     private config: TableConfig;
     private vault: Vault;
+    private currentFile?: Classe; // Le fichier où le tableau est affiché
 
-    constructor(files: Classe[], config: TableConfig, vault: Vault) {
+    constructor(files: Classe[], config: TableConfig, vault: Vault, currentFile?: Classe) {
         this.config = config;
         this.vault = vault;
+        this.currentFile = currentFile;
         
         // Ensure _fileName column exists as first column
         const columns = config.columns || [];
@@ -551,8 +553,12 @@ export class DynamicTable {
                 
                 // Handle special values
                 if (targetValue.toLowerCase() === '$current') {
-                    // '$current' refers to the current file name without extension
-                    const fileObj = file.getFile?.();
+                    // '$current' refers to the current file where the table is displayed
+                    const currentFileObj = this.currentFile;
+                    if (!currentFileObj) {
+                        throw new Error('$current filter requires currentFile to be passed to DynamicTable constructor');
+                    }
+                    const fileObj = currentFileObj.getFile?.();
                     if (fileObj) {
                         if (typeof fileObj.getName === 'function') {
                             targetValue = fileObj.getName(false); // false = without .md extension
@@ -561,8 +567,8 @@ export class DynamicTable {
                         } else if ((fileObj as any).basename) {
                             targetValue = (fileObj as any).basename.replace(/\.md$/i, '');
                         }
-                    } else if ((file as any).basename) {
-                        targetValue = (file as any).basename.replace(/\.md$/i, '');
+                    } else if ((currentFileObj as any).basename) {
+                        targetValue = (currentFileObj as any).basename.replace(/\.md$/i, '');
                     }
                 }
                 
@@ -676,8 +682,12 @@ export class DynamicTable {
                     
                     // Handle special values
                     if (targetValue.toLowerCase() === '$current') {
-                        // '$current' refers to the current file name without extension
-                        const fileObj = file.getFile?.();
+                        // '$current' refers to the current file where the table is displayed
+                        const currentFileObj = this.currentFile;
+                        if (!currentFileObj) {
+                            throw new Error('$current filter requires currentFile to be passed to DynamicTable constructor');
+                        }
+                        const fileObj = currentFileObj.getFile?.();
                         if (fileObj) {
                             if (typeof fileObj.getName === 'function') {
                                 targetValue = fileObj.getName(false); // false = without .md extension
@@ -686,8 +696,8 @@ export class DynamicTable {
                             } else if ((fileObj as any).basename) {
                                 targetValue = (fileObj as any).basename.replace(/\.md$/i, '');
                             }
-                        } else if ((file as any).basename) {
-                            targetValue = (file as any).basename.replace(/\.md$/i, '');
+                        } else if ((currentFileObj as any).basename) {
+                            targetValue = (currentFileObj as any).basename.replace(/\.md$/i, '');
                         }
                     }
                     
