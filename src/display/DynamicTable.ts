@@ -541,15 +541,35 @@ export class DynamicTable {
                 return undefined;
             }
 
-            // Filter the array
-            const filteredItems = arrayValue.filter(item => {
+            // Filter the array with support for special values
+            const filteredItems = arrayValue.filter((item: any) => {
                 if (typeof item !== 'object' || item === null) {
                     return false;
                 }
+                
+                let targetValue = filterValue;
+                
+                // Handle special values
+                if (targetValue.toLowerCase() === '$current') {
+                    // '$current' refers to the current file name without extension
+                    const fileObj = file.getFile?.() || file.file;
+                    if (fileObj) {
+                        if (typeof fileObj.getName === 'function') {
+                            targetValue = fileObj.getName(false); // false = without .md extension
+                        } else if ((fileObj as any).name) {
+                            targetValue = (fileObj as any).name.replace(/\.md$/i, '');
+                        } else if ((fileObj as any).basename) {
+                            targetValue = (fileObj as any).basename.replace(/\.md$/i, '');
+                        } else if ((file as any).basename) {
+                            targetValue = (file as any).basename.replace(/\.md$/i, '');
+                        }
+                    }
+                }
+                
                 // Convert both values to strings for comparison
                 const itemValue = String(item[filterProperty] || '').toLowerCase();
-                const targetValue = String(filterValue).toLowerCase();
-                return itemValue === targetValue;
+                const compareValue = String(targetValue).toLowerCase();
+                return itemValue === compareValue;
             });
 
             // If no items match the filter, return undefined
@@ -640,14 +660,34 @@ export class DynamicTable {
                 // Get the array value
                 const arrayValue = await file.getPropertyValue(arrayProperty);
                 
-                // Filter the array
-                const filteredItems = arrayValue.filter(item => {
+                // Filter the array with support for special values
+                const filteredItems = arrayValue.filter((item: any) => {
                     if (typeof item !== 'object' || item === null) {
                         return false;
                     }
+                    
+                    let targetValue = filterValue;
+                    
+                    // Handle special values
+                    if (targetValue.toLowerCase() === '$current') {
+                        // '$current' refers to the current file name without extension
+                        const fileObj = file.getFile?.() || file.file;
+                        if (fileObj) {
+                            if (typeof fileObj.getName === 'function') {
+                                targetValue = fileObj.getName(false); // false = without .md extension
+                            } else if ((fileObj as any).name) {
+                                targetValue = (fileObj as any).name.replace(/\.md$/i, '');
+                            } else if ((fileObj as any).basename) {
+                                targetValue = (fileObj as any).basename.replace(/\.md$/i, '');
+                            } else if ((file as any).basename) {
+                                targetValue = (file as any).basename.replace(/\.md$/i, '');
+                            }
+                        }
+                    }
+                    
                     const itemValue = String(item[filterProperty] || '').toLowerCase();
-                    const targetValue = String(filterValue).toLowerCase();
-                    return itemValue === targetValue;
+                    const compareValue = String(targetValue).toLowerCase();
+                    return itemValue === compareValue;
                 });
 
                 if (filteredItems.length === 0) {
@@ -656,13 +696,13 @@ export class DynamicTable {
                 }
 
                 // Extract target values and try to find if the target property has display config
-                const targetValues = filteredItems.map(item => {
+                const targetValues = filteredItems.map((item: any) => {
                     if (targetProperty.includes('.')) {
                         return this.navigateNestedProperty(item, targetProperty.split('.'));
                     } else {
                         return item[targetProperty];
                     }
-                }).filter(value => value !== undefined && value !== null);
+                }).filter((value: any) => value !== undefined && value !== null);
 
                 if (targetValues.length === 0) {
                     container.textContent = '-';
@@ -675,7 +715,7 @@ export class DynamicTable {
                 const firstValue = targetValues[0];
                 
                 if (typeof firstValue === 'number') {
-                    displayValue = targetValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
+                    displayValue = targetValues.reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
                 } else if (targetValues.length === 1) {
                     displayValue = firstValue;
                 } else if (typeof firstValue === 'string') {
