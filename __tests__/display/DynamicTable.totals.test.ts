@@ -10,7 +10,7 @@ class MockClasse extends Classe {
     private mockFile: any;
 
     constructor(data: Record<string, any>, fileName: string = 'test.md') {
-        super(null as any, null as any, null as any, null as any);
+        super(null as any, null as any, null as any);
         this.mockData = data;
         this.mockFile = {
             name: fileName,
@@ -113,7 +113,7 @@ describe('DynamicTable - Filtering and Totals', () => {
 
     describe('getFilteredFiles method', () => {
         test('should return all files when no filters are applied', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Access private method using type assertion
             const getFilteredFiles = (table as any).getFilteredFiles.bind(table);
@@ -124,7 +124,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should filter by filename correctly', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Set filename filter
             (table as any).tableData.filters.set(0, 'projet'); // Column 0 is filename
@@ -133,11 +133,11 @@ describe('DynamicTable - Filtering and Totals', () => {
             const result = await getFilteredFiles();
             
             expect(result).toHaveLength(3);
-            expect(result.every(file => file.getFile().getName(false).toLowerCase().includes('projet'))).toBe(true);
+            expect(result.every((file: any) => file.getFile().getName(false).toLowerCase().includes('projet'))).toBe(true);
         });
 
         test('should filter by property value correctly', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Set status filter - column 3 is statut
             (table as any).tableData.filters.set(3, 'en cours');
@@ -153,7 +153,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should apply multiple filters correctly', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Set multiple filters
             (table as any).tableData.filters.set(0, 'projet'); // filename contains "projet"
@@ -168,7 +168,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should return empty array when no files match filters', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Set filter that matches no files
             (table as any).tableData.filters.set(1, 'non-existent-project');
@@ -182,7 +182,7 @@ describe('DynamicTable - Filtering and Totals', () => {
 
     describe('calculateTotal method', () => {
         test('should calculate count on all files when no filters applied', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             const result = await calculateTotal({ formula: 'count', column: 'Total' });
@@ -191,7 +191,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should calculate count on filtered files only', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Set filter to show only 2 files
             (table as any).tableData.filters.set(3, 'en cours');
@@ -203,7 +203,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should calculate sum on all files when no filters applied', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             const result = await calculateTotal({ 
@@ -217,7 +217,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should calculate sum on filtered files only', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Filter to show only "En cours" projects (budget: 1000 + 1500 = 2500)
             (table as any).tableData.filters.set(3, 'en cours');
@@ -233,7 +233,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should calculate average on filtered files', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Filter to show only "En cours" projects (equipe: 5 + 4 = 9, average = 4.5)
             (table as any).tableData.filters.set(3, 'en cours');
@@ -249,7 +249,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should calculate min on filtered files', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Filter to show only "En cours" projects (budget min: 1000)
             (table as any).tableData.filters.set(3, 'en cours');
@@ -265,7 +265,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should calculate max on filtered files', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Filter to show only "En cours" projects (budget max: 1500)
             (table as any).tableData.filters.set(3, 'en cours');
@@ -281,7 +281,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should handle empty filtered results', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             // Set filter that matches no files
             (table as any).tableData.filters.set(1, 'non-existent');
@@ -300,7 +300,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should format currency values correctly', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             const result = await calculateTotal({ 
@@ -315,7 +315,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should format non-currency numeric values correctly', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             const result = await calculateTotal({ 
@@ -331,8 +331,8 @@ describe('DynamicTable - Filtering and Totals', () => {
 
     describe('Integration: Filtering + Totals', () => {
         test('should update totals when filters change', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
-            await table.buildTableStructure();
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
+            await (table as any).buildTableStructure();
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             
@@ -349,7 +349,7 @@ describe('DynamicTable - Filtering and Totals', () => {
             
             // Apply filter for "En cours" projects (count = 2, sum = 2500)
             (table as any).tableData.filters.set(3, 'en cours');
-            await table.filterAndRender();
+            await (table as any).filterAndRender();
             
             countResult = await calculateTotal({ formula: 'count', column: 'Total' });
             sumResult = await calculateTotal({ 
@@ -363,7 +363,7 @@ describe('DynamicTable - Filtering and Totals', () => {
             
             // Change filter to "Terminé" projects (count = 1, sum = 2500)
             (table as any).tableData.filters.set(3, 'terminé');
-            await table.filterAndRender();
+            await (table as any).filterAndRender();
             
             countResult = await calculateTotal({ formula: 'count', column: 'Total' });
             sumResult = await calculateTotal({ 
@@ -377,7 +377,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should handle complex multi-column filtering', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             
@@ -404,8 +404,8 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should maintain totals accuracy across filter changes', async () => {
-            const table = new DynamicTable(mockFiles, tableConfig, mockVault);
-            await table.buildTableStructure();
+            const table = new DynamicTable(mockFiles, tableConfig, mockVault as any);
+            await (table as any).buildTableStructure();
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             
@@ -435,7 +435,7 @@ describe('DynamicTable - Filtering and Totals', () => {
                 
                 // Apply new filter
                 (table as any).tableData.filters.set(testCase.filter.column, testCase.filter.value);
-                await table.filterAndRender();
+                await (table as any).filterAndRender();
                 
                 const countResult = await calculateTotal({ formula: 'count', column: 'Total' });
                 const sumResult = await calculateTotal({ 
@@ -462,7 +462,7 @@ describe('DynamicTable - Filtering and Totals', () => {
                 }, 'incomplete.md')
             ];
             
-            const table = new DynamicTable(filesWithMissing, tableConfig, mockVault);
+            const table = new DynamicTable(filesWithMissing, tableConfig, mockVault as any);
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             const result = await calculateTotal({ 
@@ -486,7 +486,7 @@ describe('DynamicTable - Filtering and Totals', () => {
                 ...mockFiles.slice(0, 2) // Only first 2 valid files
             ];
             
-            const table = new DynamicTable(filesWithInvalidData, tableConfig, mockVault);
+            const table = new DynamicTable(filesWithInvalidData, tableConfig, mockVault as any);
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             
@@ -508,7 +508,7 @@ describe('DynamicTable - Filtering and Totals', () => {
         });
 
         test('should handle empty dataset', async () => {
-            const table = new DynamicTable([], tableConfig, mockVault);
+            const table = new DynamicTable([], tableConfig, mockVault as any);
             
             const calculateTotal = (table as any).calculateTotal.bind(table);
             
