@@ -747,13 +747,80 @@ export class DynamicTable {
                 }
 
                 // Try to format the value using property display configuration
-                // For now, use simple formatting rules but this could be enhanced
-                if (typeof displayValue === 'number') {
-                    // Check if this looks like a currency amount
-                    if (targetProperty.toLowerCase().includes('montant') || 
-                        targetProperty.toLowerCase().includes('prix') ||
-                        targetProperty.toLowerCase().includes('cost') ||
-                        targetProperty.toLowerCase().includes('amount')) {
+                // First, try to find actual property configuration for the target property
+                let propertyConfig = null;
+                
+                try {
+                    // Check if the array property has ObjectProperty configuration
+                    const arrayPropertyObj = file.getProperty(arrayProperty);
+                    if (arrayPropertyObj && (arrayPropertyObj as any).type === 'ObjectProperty') {
+                        // For ObjectProperty, check if there are nested property configurations
+                        const objectPropertyConfig = (arrayPropertyObj as any).config;
+                        if (objectPropertyConfig && objectPropertyConfig.properties && objectPropertyConfig.properties[targetProperty]) {
+                            propertyConfig = objectPropertyConfig.properties[targetProperty];
+                        }
+                    }
+                } catch (error) {
+                    // Continue with fallback formatting
+                }
+                
+                // If we found a property configuration, try to use its display
+                if (propertyConfig && propertyConfig.getDisplay && typeof propertyConfig.getDisplay === 'function') {
+                    try {
+                        // Create a temporary object for display
+                        const tempObj = {};
+                        (tempObj as any)[targetProperty] = displayValue;
+                        const displayElement = await propertyConfig.getDisplay(tempObj);
+                        if (displayElement && displayElement.textContent) {
+                            container.textContent = displayElement.textContent;
+                            // Copy any CSS classes or styles if needed
+                            if (displayElement.className) {
+                                container.className = displayElement.className;
+                            }
+                            return container;
+                        }
+                    } catch (error) {
+                        // Fall back to intelligent formatting
+                    }
+                }
+                
+                // Enhanced intelligent formatting as fallback
+                if (filteredItems.length > 0 && typeof filteredItems[0] === 'object') {
+                    try {
+                        const mockItem = filteredItems[0];
+                        if (mockItem && typeof mockItem === 'object' && targetProperty in mockItem) {
+                            if (typeof displayValue === 'number') {
+                                // Enhanced currency detection
+                                const currencyProps = ['montant', 'prix', 'cost', 'amount', 'budget', 'salaire', 'revenu', 'chiffre', 'cout'];
+                                const isCurrency = currencyProps.some(prop => 
+                                    targetProperty.toLowerCase().includes(prop)
+                                );
+                                
+                                if (isCurrency) {
+                                    container.textContent = new Intl.NumberFormat('fr-FR', {
+                                        style: 'currency',
+                                        currency: 'EUR'
+                                    }).format(displayValue);
+                                } else {
+                                    container.textContent = displayValue.toLocaleString('fr-FR');
+                                }
+                            } else {
+                                container.textContent = String(displayValue);
+                            }
+                        } else {
+                            container.textContent = String(displayValue);
+                        }
+                    } catch (error) {
+                        container.textContent = String(displayValue);
+                    }
+                } else if (typeof displayValue === 'number') {
+                    // Enhanced currency detection for numbers
+                    const currencyProps = ['montant', 'prix', 'cost', 'amount', 'budget', 'salaire', 'revenu', 'chiffre', 'cout'];
+                    const isCurrency = currencyProps.some(prop => 
+                        targetProperty.toLowerCase().includes(prop)
+                    );
+                    
+                    if (isCurrency) {
                         container.textContent = new Intl.NumberFormat('fr-FR', {
                             style: 'currency',
                             currency: 'EUR'
