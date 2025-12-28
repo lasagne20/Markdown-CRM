@@ -1,12 +1,14 @@
 import { DynamicTable, TableConfig } from '../../src/display/DynamicTable';
 import { Classe } from '../../src/vault/Classe';
 import { Vault } from '../../src/vault/Vault';
+import { File } from '../../src/vault/File';
+import { Property } from '../../src/properties/Property';
 
 /**
  * Mock implementation of Classe for testing array filtering
  */
 class MockClasseWithArray extends Classe {
-    private data: any;
+    public data: any;  // Changed from private to public to match base class
     private fileName: string;
 
     constructor(data: any, fileName: string) {
@@ -19,17 +21,14 @@ class MockClasseWithArray extends Classe {
         return this.data[propertyName];
     }
 
-    getFile() {
-        return {
-            getName: (withExtension: boolean = true) => 
-                withExtension ? `${this.fileName}.md` : this.fileName,
-            name: `${this.fileName}.md`,
-            basename: this.fileName
-        };
+    getFile(): File | undefined {
+        // Return undefined to match base class signature
+        // For testing purposes, this can be undefined
+        return undefined;
     }
 
-    getProperty(propertyName: string) {
-        return null;
+    getProperty(propertyName: string): Property | undefined {
+        return undefined;
     }
 }
 

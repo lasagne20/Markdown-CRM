@@ -139,12 +139,12 @@ export class ConditionManager {
         const propertyCondition = condition as PropertyCondition;
         const propertyValue = await this.getPropertyValue(instance, propertyCondition.property);
 
-        // Replace 'current' with current document link if applicable
+        // Replace 'current' or '$current' with current document link if applicable
         const resolveValue = (value: any): any => {
-            if (value === 'current') {
+            if (value === 'current' || value === '$current') {
                 if (!currentDocument) {
-                    console.warn('Condition uses "current" but no currentDocument was provided');
-                    return 'current'; // Return as-is, will fail the condition
+                    console.warn(`Condition uses "${value}" but no currentDocument was provided`);
+                    return value; // Return as-is, will fail the condition
                 }
                 return `[[${currentDocument.getName()}]]`;
             }
