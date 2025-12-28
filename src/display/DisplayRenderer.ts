@@ -497,10 +497,49 @@ export class DisplayRenderer {
             getPath: () => `${parentInstance.getPath()}#${propertyName}[${index}]`,
             getClassName: () => `${parentClassName}.${propertyName}`,
             
+            // Add missing methods for full Classe compatibility
+            getPropertyValue: async (propName: string) => {
+                // Handle special properties
+                if (propName === '_fileName' || propName === '_filename') {
+                    return `${parentInstance.getName()}.${propertyName}[${index}]`;
+                }
+                if (propName === '_parentFile') {
+                    return parentInstance.getName();
+                }
+                
+                // Handle complex property expressions (like "animateurs.filter(...).tarif")
+                if (propName.includes('.') || propName.includes('filter') || propName.includes('$current')) {
+                    try {
+                        // For now, return the raw object data
+                        // This could be extended to handle complex expressions
+                        const keys = propName.split('.');
+                        let value = obj;
+                        for (const key of keys) {
+                            if (key.includes('filter') || key.includes('$current')) {
+                                // Complex expression - return the whole object for now
+                                return obj;
+                            }
+                            if (value && typeof value === 'object') {
+                                value = value[key];
+                            } else {
+                                return undefined;
+                            }
+                        }
+                        return value;
+                    } catch (error) {
+                        console.warn(`Error processing complex property ${propName}:`, error);
+                        return undefined;
+                    }
+                }
+                
+                // Simple property access
+                return obj[propName];
+            },
+            
             // Simulate property access for the object data
             getProperty: (propName: string) => {
                 // Handle special properties
-                if (propName === '_fileName') {
+                if (propName === '_fileName' || propName === '_filename') {
                     return {
                         read: async () => `${parentInstance.getName()}.${propertyName}[${index}]`,
                         type: 'text',
@@ -575,6 +614,59 @@ export class DisplayRenderer {
             // For special properties like _fileName
             getFileName: () => `${parentInstance.getName()}.${propertyName}[${index}]`,
             
+            // Add getDisplay method for rendering
+            getDisplay: async () => {
+                const container = document.createElement('div');
+                container.classList.add('object-property-item-display');
+                
+                // Add item header
+                const header = document.createElement('div');
+                header.classList.add('object-property-header');
+                header.textContent = `${parentInstance.getName()}.${propertyName}[${index}]`;
+                container.appendChild(header);
+                
+                // Add object properties
+                const content = document.createElement('div');
+                content.classList.add('object-property-content');
+                
+                Object.keys(obj).forEach(key => {
+                    const row = document.createElement('div');
+                    row.classList.add('property-row');
+                    
+                    const label = document.createElement('label');
+                    label.textContent = key;
+                    label.classList.add('property-label');
+                    
+                    const value = document.createElement('span');
+                    value.textContent = String(obj[key] || '');
+                    value.classList.add('property-value');
+                    
+                    row.appendChild(label);
+                    row.appendChild(value);
+                    content.appendChild(row);
+                });
+                
+                container.appendChild(content);
+                return container;
+            },
+            
+            // Add other common Classe methods
+            getFile: () => {
+                // Always return the pseudo-file for ObjectProperty items
+                return {
+                    getName: (withExtension?: boolean) => {
+                        const name = `${parentInstance.getName()}.${propertyName}[${index}]`;
+                        return withExtension ? `${name}.md` : name;
+                    },
+                    getPath: () => `${parentInstance.getPath()}#${propertyName}[${index}]`,
+                    name: `${parentInstance.getName()}.${propertyName}[${index}].md`,
+                    basename: `${parentInstance.getName()}.${propertyName}[${index}]`
+                };
+            },
+            getVault: () => parentInstance.getVault?.() || this.vault,
+            updatePropertyValue: async (propName: string, value: any) => {
+                obj[propName] = value;
+            },
             
             // Provide direct access to object properties
             ...obj
