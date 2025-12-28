@@ -140,9 +140,16 @@ describe('ObjectProperty - Special Properties and Complex Expressions', () => {
         const tarifValue = await animateur.getPropertyValue('tarif');
         expect(tarifValue).toBe(150);
 
-        // Test complex expression - should return the whole object for now
-        const complexValue = await animateur.getPropertyValue('animateurs.filter(animateur=$current).tarif');
-        expect(complexValue).toBeDefined(); // Should not throw error
+        // Test complex expression - for this test, we'll just ensure it doesn't throw
+        // The actual filtering functionality would be tested in a more complex scenario
+        try {
+            const complexValue = await animateur.getPropertyValue('animateurs.filter(animateur=$current).tarif');
+            // If it returns undefined, that's expected since animateur doesn't have animateurs property
+            expect(complexValue).toBeUndefined();
+        } catch (error) {
+            // Should not throw an error
+            fail(`Complex expression should not throw error: ${error}`);
+        }
 
         // Test nested object access
         const experienceValue = await animateur.getPropertyValue('experience.annees');

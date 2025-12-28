@@ -507,25 +507,10 @@ export class DisplayRenderer {
                     return parentInstance.getName();
                 }
                 
-                // Handle complex property expressions (like "animateurs.filter(...).tarif")
+                // Handle complex property expressions (like "animateurs.filter(animateur=$current).tarif")
                 if (propName.includes('.') || propName.includes('filter') || propName.includes('$current')) {
                     try {
-                        // For now, return the raw object data
-                        // This could be extended to handle complex expressions
-                        const keys = propName.split('.');
-                        let value = obj;
-                        for (const key of keys) {
-                            if (key.includes('filter') || key.includes('$current')) {
-                                // Complex expression - return the whole object for now
-                                return obj;
-                            }
-                            if (value && typeof value === 'object') {
-                                value = value[key];
-                            } else {
-                                return undefined;
-                            }
-                        }
-                        return value;
+                        return this.evaluateComplexProperty(propName, obj, parentInstance);
                     } catch (error) {
                         console.warn(`Error processing complex property ${propName}:`, error);
                         return undefined;
@@ -678,5 +663,73 @@ export class DisplayRenderer {
         };
         
         return pseudoInstance as Classe;
+    }
+
+    /**
+     * Evaluate complex property expressions like "animateurs.filter(animateur=$current).tarif"
+     * @param propName - The complex property expression
+     * @param obj - The current object being evaluated
+     * @param parentInstance - The parent Classe instance for context
+     * @returns The evaluated property value
+     */
+    private evaluateComplexProperty(propName: string, obj: any, parentInstance: Classe): any {
+        // Check if this is a filter expression
+        const filterMatch = propName.match(/^(.+?)\.filter\((.+?)\)(?:\.(.+))?$/);
+        
+        if (filterMatch) {
+            const [, baseProperty, filterCondition, targetProperty] = filterMatch;
+            
+            // Get the base property value from the current object
+            const baseValue = obj[baseProperty];
+            
+            if (!Array.isArray(baseValue)) {
+                console.warn(`Property ${baseProperty} is not an array, cannot apply filter`);
+                return undefined;
+            }
+            
+            // Parse the filter condition (e.g., "animateur=$current")
+            const conditionMatch = filterCondition.match(/^(\w+)=\$current$/);
+            if (conditionMatch) {
+                const [, conditionProperty] = conditionMatch;
+                const currentName = parentInstance.getName();
+                
+                // Filter the array based on the condition
+                const filteredItems = baseValue.filter(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        return item[conditionProperty] === currentName;
+                    }
+                    return false;
+                });
+                
+                // If there's a target property, extract it from filtered items
+                if (targetProperty && filteredItems.length > 0) {
+                    const result = filteredItems.map(item => item[targetProperty]);
+                    // Return first value if only one match, otherwise return array
+                    return result.length === 1 ? result[0] : result;
+                }
+                
+                // Return the filtered items
+                return filteredItems.length === 1 ? filteredItems[0] : filteredItems;
+            }
+            
+            // If condition doesn't match expected pattern, return undefined
+            console.warn(`Unsupported filter condition: ${filterCondition}`);
+            return undefined;
+        }
+        
+        // For other complex expressions, fall back to basic navigation
+        return this.getNestedProperty(obj, propName);
+    }
+
+    /**
+     * Get nested property using dot notation (simple navigation)
+     * @param obj - The object to navigate
+     * @param path - The property path (e.g., "user.profile.name")
+     * @returns The property value
+     */
+    private getNestedProperty(obj: any, path: string): any {
+        return path.split('.').reduce((current, key) => {
+            return (current && typeof current === 'object') ? current[key] : undefined;
+        }, obj);
     }
 }
