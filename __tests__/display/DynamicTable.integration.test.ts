@@ -53,8 +53,8 @@ class MockFile {
 }
 
 class RealClasseTest extends Classe {
-    private metadata: any;
-    private file: MockFile;
+    public metadata: any;
+    public file: any;
 
     constructor(metadata: any, fileName: string) {
         super(null as any, null as any);
@@ -73,13 +73,13 @@ class RealClasseTest extends Classe {
         return result;
     }
 
-    getFile(): MockFile {
+    getFile(): any {
         return this.file;
     }
 
-    getProperty(propertyName: string) {
-        // Pour ces tests, on retourne null pour forcer l'utilisation du fallback text
-        return null;
+    getProperty(propertyName: string): any {
+        // Pour ces tests, on retourne undefined pour forcer l'utilisation du fallback text
+        return undefined;
     }
 }
 

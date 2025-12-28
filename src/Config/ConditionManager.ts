@@ -138,61 +138,38 @@ export class ConditionManager {
         // Otherwise, it's a PropertyCondition
         const propertyCondition = condition as PropertyCondition;
         const propertyValue = await this.getPropertyValue(instance, propertyCondition.property);
-
-        // Replace 'current' or '$current' with current document link if applicable
-        const resolveValue = (value: any): any => {
-            if (value === 'current' || value === '$current') {
-                if (!currentDocument) {
-                    console.warn(`Condition uses "${value}" but no currentDocument was provided`);
-                    return value; // Return as-is, will fail the condition
-                }
-                return `[[${currentDocument.getName()}]]`;
-            }
-            return value;
-        };
+        const resolveValue = this.createResolveFunction(currentDocument);
 
         switch (propertyCondition.type) {
             case 'equals':
-                return this.compareValues(propertyValue, resolveValue(propertyCondition.value));
+                return this.isCurrentValue(propertyCondition.value) && currentDocument
+                    ? this.handleCurrentComparison(propertyValue, currentDocument)
+                    : this.compareValues(propertyValue, resolveValue(propertyCondition.value));
 
             case 'notEquals':
-                return !this.compareValues(propertyValue, resolveValue(propertyCondition.value));
+                return this.isCurrentValue(propertyCondition.value) && currentDocument
+                    ? !this.handleCurrentComparison(propertyValue, currentDocument)
+                    : !this.compareValues(propertyValue, resolveValue(propertyCondition.value));
 
             case 'equalsAny':
-                return propertyCondition.values.some(value => this.compareValues(propertyValue, resolveValue(value)));
+                return propertyCondition.values.some(value =>
+                    this.isCurrentValue(value) && currentDocument
+                        ? this.handleCurrentComparison(propertyValue, currentDocument)
+                        : this.compareValues(propertyValue, resolveValue(value))
+                );
 
             case 'notEqualsAny':
-                return !propertyCondition.values.some(value => this.compareValues(propertyValue, resolveValue(value)));
+                return !propertyCondition.values.some(value =>
+                    this.isCurrentValue(value) && currentDocument
+                        ? this.handleCurrentComparison(propertyValue, currentDocument)
+                        : this.compareValues(propertyValue, resolveValue(value))
+                );
 
             case 'contains':
-                const containsValue = resolveValue(propertyCondition.value);
-                if (typeof propertyValue === 'string') {
-                    return propertyValue.includes(containsValue);
-                }
-                if (Array.isArray(propertyValue)) {
-                    // For arrays and objects, use JSON.stringify to search within structure
-                    const jsonStr = JSON.stringify(propertyValue);
-                    if (propertyCondition.value === 'current' && currentDocument) {
-                        // For 'current', check using hasLinkToDocument logic
-                        return this.hasLinkToDocument(jsonStr, currentDocument.getName(), currentDocument.getPath() || '');
-                    }
-                    return jsonStr.includes(containsValue);
-                }
-                return false;
+                return this.handleContainsLogic(propertyValue, propertyCondition.value, currentDocument);
 
             case 'notContains':
-                const notContainsValue = resolveValue(propertyCondition.value);
-                if (typeof propertyValue === 'string') {
-                    return !propertyValue.includes(notContainsValue);
-                }
-                if (Array.isArray(propertyValue)) {
-                    const jsonStr = JSON.stringify(propertyValue);
-                    if (propertyCondition.value === 'current' && currentDocument) {
-                        return !this.hasLinkToDocument(jsonStr, currentDocument.getName(), currentDocument.getPath() || '');
-                    }
-                    return !jsonStr.includes(notContainsValue);
-                }
-                return true;
+                return this.handleContainsLogic(propertyValue, propertyCondition.value, currentDocument, true);
 
             case 'greaterThan':
                 const gtValue = this.toNumber(propertyValue);
@@ -222,6 +199,101 @@ export class ConditionManager {
                 console.warn(`Unknown condition type: ${(propertyCondition as any).type}`);
                 return false;
         }
+    }
+
+    /**
+     * Check if a value is 'current' or '$current'
+     */
+    private isCurrentValue(value: any): boolean {
+        return value === 'current' || value === '$current';
+    }
+
+    /**
+     * Handle comparison when value is 'current' or '$current'
+     */
+    private handleCurrentComparison(propertyValue: any, currentDocument: Classe): boolean {
+        const currentFileName = currentDocument.getName();
+        const currentFilePath = currentDocument.getPath() || '';
+        return this.hasLinkToDocument(propertyValue, currentFileName, currentFilePath);
+    }
+
+    /**
+     * Create a resolve function for transforming values
+     */
+    private createResolveFunction(currentDocument?: Classe): (value: any) => any {
+        return (value: any): any => {
+            if (this.isCurrentValue(value)) {
+                if (!currentDocument) {
+                    console.warn(`Condition uses "${value}" but no currentDocument was provided`);
+                    return value; // Return as-is, will fail the condition
+                }
+                // Use the file name, not the class name
+                const file = currentDocument.getFile();
+                if (file && file.getName) {
+                    const fileName = file.getName(false); // false = without .md extension
+                    return `[[${fileName}]]`;
+                } else if (currentDocument.getPath) {
+                    const path = currentDocument.getPath();
+                    if (path) {
+                        // Extract filename from path without extension
+                        const fileName = path.split('/').pop()?.replace(/\.md$/, '') || path;
+                        return `[[${fileName}]]`;
+                    }
+                }
+                // Fallback to class name if file info not available
+                return `[[${currentDocument.getName()}]]`;
+            }
+            return value;
+        };
+    }
+
+    /**
+     * Handle contains/notContains logic with proper current value support
+     */
+    private handleContainsLogic(propertyValue: any, conditionValue: any, currentDocument?: Classe, negate: boolean = false): boolean {
+        const resolveValue = this.createResolveFunction(currentDocument);
+        const resolvedValue = resolveValue(conditionValue);
+
+        if (typeof propertyValue === 'string') {
+            if (this.isCurrentValue(conditionValue) && currentDocument) {
+                const result = this.handleCurrentComparison(propertyValue, currentDocument);
+                return negate ? !result : result;
+            }
+            const result = propertyValue.includes(resolvedValue);
+            return negate ? !result : result;
+        }
+
+        if (Array.isArray(propertyValue)) {
+            if (this.isCurrentValue(conditionValue) && currentDocument) {
+                // For arrays, check each element individually if they're strings with links
+                if (propertyValue.every(item => typeof item === 'string')) {
+                    const result = this.handleCurrentComparison(propertyValue, currentDocument);
+                    return negate ? !result : result;
+                } else {
+                    // For complex objects, use JSON.stringify and hasLinkToDocument on the JSON string
+                    const jsonStr = JSON.stringify(propertyValue);
+                    const result = this.handleCurrentComparison(jsonStr, currentDocument);
+                    return negate ? !result : result;
+                }
+            }
+            const jsonStr = JSON.stringify(propertyValue);
+            const result = jsonStr.includes(resolvedValue);
+            return negate ? !result : result;
+        }
+
+        // For objects or other complex types
+        if (propertyValue && typeof propertyValue === 'object') {
+            if (this.isCurrentValue(conditionValue) && currentDocument) {
+                const jsonStr = JSON.stringify(propertyValue);
+                const result = this.handleCurrentComparison(jsonStr, currentDocument);
+                return negate ? !result : result;
+            }
+            const jsonStr = JSON.stringify(propertyValue);
+            const result = jsonStr.includes(resolvedValue);
+            return negate ? !result : result;
+        }
+
+        return negate ? true : false;
     }
 
     /**

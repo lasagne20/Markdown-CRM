@@ -99,7 +99,7 @@ describe('DynamicTable - Property Display Integration', () => {
         
         const config = {
             columns: [
-                { propertyName: 'partenariats.filter(partenariat=$current).montant' }
+                { name: 'Montant', propertyName: 'partenariats.filter(partenariat=$current).montant' }
             ]
         };
         
@@ -131,7 +131,7 @@ describe('DynamicTable - Property Display Integration', () => {
         
         const config = {
             columns: [
-                { propertyName: 'budgets.filter(projet=$current).montant' }
+                { name: 'Budget', propertyName: 'budgets.filter(projet=$current).montant' }
             ]
         };
         
@@ -160,7 +160,7 @@ describe('DynamicTable - Property Display Integration', () => {
         
         const config = {
             columns: [
-                { propertyName: 'partenariats.filter(partenariat=$current).statut' }
+                { name: 'Status', propertyName: 'partenariats.filter(partenariat=$current).statut' }
             ]
         };
         
@@ -192,7 +192,7 @@ describe('DynamicTable - Property Display Integration', () => {
         
         const config = {
             columns: [
-                { propertyName: 'partenariats.filter(partenariat=$current).montant' }
+                { name: 'Total Montant', propertyName: 'partenariats.filter(partenariat=$current).montant' }
             ]
         };
         

@@ -24,8 +24,8 @@ class MockFile {
 }
 
 class ObjectPropertyTestClass extends Classe {
-    private metadata: any;
-    private file: MockFile;
+    public metadata: any;
+    public file: any;
 
     constructor(metadata: any, fileName: string) {
         super(null as any, null as any);
@@ -38,8 +38,8 @@ class ObjectPropertyTestClass extends Classe {
         console.log(`🔍 Getting property: ${propertyName} =`, this.metadata[propertyName]);
         return this.metadata[propertyName];
     }
-    getFile(): MockFile { return this.file; }
-    getProperty(propertyName: string) { return null; }
+    getFile(): any { return this.file; }
+    getProperty(propertyName: string): any { return undefined; }
 }
 
 describe('DynamicTable - ObjectProperty Arrays', () => {

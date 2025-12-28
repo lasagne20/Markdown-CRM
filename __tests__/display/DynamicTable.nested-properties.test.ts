@@ -6,7 +6,7 @@ import { Vault } from '../../src/vault/Vault';
  * Mock implementation of Classe for testing nested properties
  */
 class MockClasseWithNested extends Classe {
-    private data: any;
+    public data: any;
     private fileName: string;
 
     constructor(data: any, fileName: string) {
@@ -19,7 +19,7 @@ class MockClasseWithNested extends Classe {
         return this.data[propertyName];
     }
 
-    getFile() {
+    getFile(): any {
         return {
             getName: (withExtension: boolean = true) => 
                 withExtension ? `${this.fileName}.md` : this.fileName,
@@ -28,9 +28,9 @@ class MockClasseWithNested extends Classe {
         };
     }
 
-    getProperty(propertyName: string) {
+    getProperty(propertyName: string): any {
         // Return null to fallback to text display
-        return null;
+        return undefined;
     }
 }
 

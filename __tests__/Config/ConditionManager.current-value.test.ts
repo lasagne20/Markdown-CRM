@@ -83,6 +83,9 @@ describe('ConditionManager - Current Value Resolution', () => {
             (currentDoc as any).name = 'Institution ABC';
             jest.spyOn(currentDoc, 'getName').mockReturnValue('Institution ABC');
             jest.spyOn(currentDoc, 'getPath').mockReturnValue('Institution ABC');
+            jest.spyOn(currentDoc, 'getFile').mockImplementation(() => ({
+                getName: (withExt: boolean = true) => withExt ? 'Institution ABC.md' : 'Institution ABC'
+            } as any));
 
             // Create instance with ObjectProperty
             const instance = new Classe(vault);
@@ -268,6 +271,9 @@ describe('ConditionManager - Current Value Resolution', () => {
             (currentDoc as any).name = 'Partenariat';
             jest.spyOn(currentDoc, 'getName').mockReturnValue('Partenariat');
             jest.spyOn(currentDoc, 'getPath').mockReturnValue('path/../Partenariats/Partenariat1.md');
+            jest.spyOn(currentDoc, 'getFile').mockImplementation(() => ({
+                getName: (withExt: boolean = true) => withExt ? 'Partenariat1.md' : 'Partenariat1'
+            } as any));
 
             // Create instance with ObjectProperty containing array of objects with links
             const instance = new Classe(vault);
