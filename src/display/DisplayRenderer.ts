@@ -306,7 +306,12 @@ export class DisplayRenderer {
     private async getFilesForTable(source: any, currentInstance?: Classe): Promise<Classe[]> {
         let instances: Classe[] = [];
         
-        // Get instances based on filter type
+        // Check if source.class contains a dot (ClassName.propertyName notation)
+        if (source.class.includes('.')) {
+            return await this.getObjectPropertyItems(source, currentInstance);
+        }
+        
+        // Get instances based on filter type (original logic for regular classes)
         const factory = this.vault.getDynamicClassFactory();
         if (!factory) {
             console.warn("DynamicClassFactory not available");
@@ -383,5 +388,148 @@ export class DisplayRenderer {
         }
 
         return instances;
+    }
+
+    /**
+     * Get ObjectProperty items from ClassName.propertyName notation
+     */
+    private async getObjectPropertyItems(source: any, currentInstance?: Classe): Promise<Classe[]> {
+        const [className, propertyName] = source.class.split('.');
+        
+        const factory = this.vault.getDynamicClassFactory();
+        if (!factory) {
+            console.warn("DynamicClassFactory not available");
+            return [];
+        }
+
+        // Get all instances of the specified class
+        let instances: Classe[] = [];
+        const smartFilter = source.smartFilter || 'all';
+        
+        switch (smartFilter) {
+            case 'all':
+                instances = await factory.getAllInstancesForClass(className, this.vault);
+                break;
+            
+            case 'children':
+                if (currentInstance) {
+                    instances = await (currentInstance as any).findChildren?.() || [];
+                    instances = instances.filter(i => i.name === className);
+                }
+                break;
+                
+            case 'parent':
+                if (currentInstance) {
+                    const parentFile = await (currentInstance as any).getParentFile?.();
+                    if (parentFile) {
+                        const parent = await this.vault.getFromFile(parentFile);
+                        if (parent && parent.name === className) {
+                            instances = [parent];
+                        }
+                    }
+                }
+                break;
+                
+            default:
+                instances = await factory.getAllInstancesForClass(className, this.vault);
+        }
+
+        // Extract ObjectProperty items from each instance
+        const objectPropertyItems: Classe[] = [];
+        
+        for (const instance of instances) {
+            try {
+                const property = instance.getProperty(propertyName);
+                if (property && property.type === 'object') {
+                    const propertyValue = await property.read(instance);
+                    
+                    if (Array.isArray(propertyValue)) {
+                        // Create pseudo-instances for each object in the array
+                        propertyValue.forEach((obj: any, index: number) => {
+                            if (obj && typeof obj === 'object') {
+                                const pseudoInstance = this.createPseudoInstance(
+                                    obj, 
+                                    instance, 
+                                    propertyName, 
+                                    index,
+                                    className
+                                );
+                                objectPropertyItems.push(pseudoInstance);
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.warn(`Error reading property ${propertyName} from ${instance.getName()}:`, error);
+            }
+        }
+
+        // Apply conditions if specified
+        if (source.conditions && source.conditions.length > 0) {
+            const validationFn = this.vault.conditionManager.createValidationFunction(source.conditions, currentInstance);
+            
+            const filtered: Classe[] = [];
+            for (const item of objectPropertyItems) {
+                if (await validationFn(item)) {
+                    filtered.push(item);
+                }
+            }
+            return filtered;
+        }
+
+        return objectPropertyItems;
+    }
+
+    /**
+     * Create a pseudo-instance that behaves like a Classe for ObjectProperty objects
+     */
+    private createPseudoInstance(obj: any, parentInstance: Classe, propertyName: string, index: number, parentClassName: string): Classe {
+        // Create a pseudo-instance that implements the necessary Classe interface
+        const pseudoInstance: any = {
+            _isObjectPropertyItem: true,
+            _parentInstance: parentInstance,
+            _propertyName: propertyName,
+            _index: index,
+            _objectData: obj,
+            _className: `${parentClassName}.${propertyName}`,
+            
+            getName: () => `${parentInstance.getName()}.${propertyName}[${index}]`,
+            getPath: () => `${parentInstance.getPath()}#${propertyName}[${index}]`,
+            getClassName: () => `${parentClassName}.${propertyName}`,
+            
+            // Simulate property access for the object data
+            getProperty: (propName: string) => {
+                // Handle special properties
+                if (propName === '_fileName') {
+                    return {
+                        read: async () => `${parentInstance.getName()}.${propertyName}[${index}]`,
+                        type: 'text',
+                        name: '_fileName'
+                    };
+                }
+                if (propName === '_parentFile') {
+                    return {
+                        read: async () => parentInstance.getName(),
+                        type: 'text',
+                        name: '_parentFile'
+                    };
+                }
+                
+                // Return a mock property that reads from the object data
+                return {
+                    read: async () => obj[propName],
+                    type: 'text', // Default type
+                    name: propName
+                };
+            },
+            
+            // For special properties like _fileName
+            getFileName: () => `${parentInstance.getName()}.${propertyName}[${index}]`,
+            
+            // Provide direct access to object properties
+            ...obj
+        };
+        
+        return pseudoInstance as Classe;
     }
 }

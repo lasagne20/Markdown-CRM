@@ -146,6 +146,19 @@ display:
               name: nombreEmployes
             - type: property
               name: description
+
+    - type: table
+      title: "Postes liés à l'institution"
+      source:
+        class: Personne.postes
+        smartFilter: all
+      columns:
+        - name: "Poste"
+          propertyName: poste
+          filter: text
+          sort: true
+        - name: "Personne"
+          propertyName: personne
     
     - type: table
       title: "Membres de l'institution"

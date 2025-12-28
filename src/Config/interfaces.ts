@@ -51,7 +51,7 @@ export interface TableColumnConfig {
 }
 
 export interface TableSourceConfig {
-    class: string;
+    class: string; // Peut être "ClassName" ou "ClassName.propertyName" pour les ObjectProperty
     smartFilter?: 'all' | 'children' | 'parent' | 'siblings' | 'roots';
     conditions?: Condition[];
 }
