@@ -526,6 +526,42 @@ export class DisplayRenderer {
             // For special properties like _fileName
             getFileName: () => `${parentInstance.getName()}.${propertyName}[${index}]`,
             
+            // Add getDisplay method for rendering
+            getDisplay: async () => {
+                const container = document.createElement('div');
+                container.classList.add('object-property-item-display');
+                
+                // Add item header
+                const header = document.createElement('div');
+                header.classList.add('object-property-header');
+                header.textContent = `${parentInstance.getName()}.${propertyName}[${index}]`;
+                container.appendChild(header);
+                
+                // Add object properties
+                const content = document.createElement('div');
+                content.classList.add('object-property-content');
+                
+                Object.keys(obj).forEach(key => {
+                    const row = document.createElement('div');
+                    row.classList.add('property-row');
+                    
+                    const label = document.createElement('label');
+                    label.textContent = key;
+                    label.classList.add('property-label');
+                    
+                    const value = document.createElement('span');
+                    value.textContent = String(obj[key] || '');
+                    value.classList.add('property-value');
+                    
+                    row.appendChild(label);
+                    row.appendChild(value);
+                    content.appendChild(row);
+                });
+                
+                container.appendChild(content);
+                return container;
+            },
+            
             // Provide direct access to object properties
             ...obj
         };
