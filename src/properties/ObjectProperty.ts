@@ -291,6 +291,20 @@ export class ObjectProperty extends Property{
         return container;
       }
 
+    /**
+     * Get the currently active tab index from the container
+     */
+    private getCurrentActiveTabIndex(container: HTMLDivElement): number {
+        if (!container) return -1;
+        
+        const activeTab = container.querySelector('.metadata-object-tab.active') as HTMLElement;
+        if (activeTab && activeTab.dataset && activeTab.dataset.tabIndex) {
+            return parseInt(activeTab.dataset.tabIndex, 10);
+        }
+        
+        return -1; // No active tab found
+    }
+
     createTable(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
         // Créer un tableau pour les objets
         const tableWrapper = document.createElement("div");
@@ -346,7 +360,7 @@ export class ObjectProperty extends Property{
         }
     }
 
-    createTabs(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
+    createTabs(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement, activeTabIndex?: number) {
         // Parser les valeurs
         let parsedValues = values;
         if (typeof values === 'string') {
@@ -395,8 +409,15 @@ export class ObjectProperty extends Property{
             if (selectedContent) (selectedContent as HTMLElement).style.display = 'block';
         };
         
-        // Sélectionner le dernier onglet par défaut (le plus récent ajouté à droite)
-        const defaultTabIndex = parsedValues.length > 0 ? parsedValues.length - 1 : 0;
+        // Sélectionner l'onglet spécifié ou le dernier onglet par défaut
+        let defaultTabIndex: number;
+        if (activeTabIndex !== undefined && activeTabIndex >= 0 && activeTabIndex < parsedValues.length) {
+            // Utiliser l'onglet spécifié s'il est valide
+            defaultTabIndex = activeTabIndex;
+        } else {
+            // Fallback: sélectionner le dernier onglet (comportement original)
+            defaultTabIndex = parsedValues.length > 0 ? parsedValues.length - 1 : 0;
+        }
         
         // Créer les onglets pour chaque objet
         parsedValues.forEach((objects: any, index: number) => {
@@ -840,6 +861,9 @@ export class ObjectProperty extends Property{
         
         const container = specificContainer;
         
+        // Store the currently active tab index before clearing the container
+        const activeTabIndex = this.display === "tabs" ? this.getCurrentActiveTabIndex(container) : -1;
+        
         container.innerHTML = "";
         // Recréer l'en-tête et les objets
         console.log("Values : ", values)
@@ -850,7 +874,7 @@ export class ObjectProperty extends Property{
             this.createTable(values, update, container);
         }
         else if (this.display == "tabs") {
-            this.createTabs(values, update, container);
+            this.createTabs(values, update, container, activeTabIndex);
         }
         else {
             // Affichage par défaut (objet)
