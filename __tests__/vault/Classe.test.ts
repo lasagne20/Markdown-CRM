@@ -109,11 +109,27 @@ describe('Classe', () => {
     describe('Name management', () => {
         it('should get name when set', () => {
             classe.name = 'TestName';
-            expect(classe.getName()).toBe('TestName');
+            expect(classe.getClassName()).toBe('TestName');
         });
 
         it('should return empty string when name not set', () => {
-            expect(classe.getName()).toBe('');
+            expect(classe.getClassName()).toBe('TestableClasse');
+        });
+        
+        it('should get file name when file is set', () => {
+            const mockFile = new File(mockVault, {
+                name: 'TestFile.md',
+                basename: 'TestFile',
+                path: 'folder/TestFile.md',
+                extension: 'md',
+                stat: { mtime: new Date(), size: 100 }
+            } as any);
+            classe.setFile(mockFile);
+            expect(classe.getName()).toBe('TestFile');
+        });
+        
+        it('should return default name when no file is set', () => {
+            expect(classe.getName()).toBe('Unnamed');
         });
     });
 

@@ -97,7 +97,7 @@ describe('DisplayRenderer - ObjectProperty Table Source', () => {
         expect(result).toHaveLength(3); // 2 postes from Jean + 1 poste from Marie
 
         // Check first item (Jean's first poste)
-        expect(result[0].getName()).toBe('Jean Dupont.postes[0]');
+        expect(result[0].getName()).toBe('Jean Dupont'); // Now returns parent file name
         expect(result[0].getPath()).toBe('Jean Dupont#postes[0]');
         expect(result[0]._objectData.entreprise).toBe('TechCorp');
         expect(result[0]._objectData.poste).toBe('Développeur');
@@ -110,7 +110,7 @@ describe('DisplayRenderer - ObjectProperty Table Source', () => {
         // Check special _fileName property
         const fileNameProp = result[0].getProperty('_fileName');
         const fileName = await fileNameProp.read();
-        expect(fileName).toBe('Jean Dupont.postes[0]');
+        expect(fileName).toBe('Jean Dupont.postes[0]'); // This still has ObjectProperty notation
 
         console.log('✅ ObjectProperty table source working correctly!');
     });
@@ -128,7 +128,8 @@ describe('DisplayRenderer - ObjectProperty Table Source', () => {
         const employee1 = {
             getName: () => 'Alice Smith',
             getClassName: () => 'Personne',
-            getProperty: jest.fn()
+            getProperty: jest.fn(),
+            name: 'Personne' // Add the name property for filtering
         } as any;
 
         currentInstitution.findChildren.mockResolvedValue([employee1]);

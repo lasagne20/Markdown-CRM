@@ -92,8 +92,12 @@ describe('ObjectProperty Display Integration Test', () => {
         expect(firstEmployee._parentInstance).toBeDefined();
         expect(firstEmployee._objectData).toBeDefined();
         
-        // Test getName format
-        expect(firstEmployee.getName()).toMatch(/^(TechInnovate SARL|DesignStudio Pro)\.employes\[\d+\]$/);
+        // Test getName format - now returns parent file name
+        expect(firstEmployee.getName()).toMatch(/^(TechInnovate SARL|DesignStudio Pro)$/);
+        
+        // Test ObjectProperty notation via getPropertyValue
+        const filename = await firstEmployee.getPropertyValue('_filename');
+        expect(filename).toMatch(/^(TechInnovate SARL|DesignStudio Pro)\.employes\[\d+\]$/);
         
         // Test property access
         const nomProp = firstEmployee.getProperty('nom');

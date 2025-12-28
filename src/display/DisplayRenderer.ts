@@ -493,9 +493,9 @@ export class DisplayRenderer {
             _objectData: obj,
             _className: `${parentClassName}.${propertyName}`,
             
-            getName: () => `${parentInstance.getName()}.${propertyName}[${index}]`,
+            getName: () => parentInstance.getName(), // Nom du fichier parent
             getPath: () => `${parentInstance.getPath()}#${propertyName}[${index}]`,
-            getClassName: () => `${parentClassName}.${propertyName}`,
+            getClassName: () => parentClassName, // Nom de la classe parent (Entreprise, Formation, etc.)
             
             // Add missing methods for full Classe compatibility
             getPropertyValue: async (propName: string) => {
@@ -612,7 +612,7 @@ export class DisplayRenderer {
             },
             
             // For special properties like _fileName
-            getFileName: () => `${parentInstance.getName()}.${propertyName}[${index}]`,
+            getFileName: () => parentInstance.getName(), // Nom du fichier parent
             
             // Add getDisplay method for rendering
             getDisplay: async () => {
@@ -652,15 +652,20 @@ export class DisplayRenderer {
             
             // Add other common Classe methods
             getFile: () => {
-                // Always return the pseudo-file for ObjectProperty items
+                // Return the parent file (since getName() returns parent name)
+                const parentFile = parentInstance.getFile?.();
+                if (parentFile) {
+                    return parentFile;
+                }
+                // Fallback to mock file with parent name
                 return {
                     getName: (withExtension?: boolean) => {
-                        const name = `${parentInstance.getName()}.${propertyName}[${index}]`;
+                        const name = parentInstance.getName();
                         return withExtension ? `${name}.md` : name;
                     },
-                    getPath: () => `${parentInstance.getPath()}#${propertyName}[${index}]`,
-                    name: `${parentInstance.getName()}.${propertyName}[${index}].md`,
-                    basename: `${parentInstance.getName()}.${propertyName}[${index}]`
+                    getPath: () => parentInstance.getPath(),
+                    name: `${parentInstance.getName()}.md`,
+                    basename: parentInstance.getName()
                 };
             },
             getVault: () => parentInstance.getVault?.() || this.vault,

@@ -27,7 +27,16 @@ export class Classe {
     }
 
     getName(): string{ 
-      return this.name
+        // Retourne le nom du fichier (sans extension) si disponible, sinon le nom de la classe
+        if (this.file) {
+            return this.file.getName(false); // false = sans extension .md
+        }
+        return this.name || 'Unnamed';
+    }
+    
+    getClassName(): string {
+        // Retourne le nom de la classe 
+        return this.name || this.constructor.name;
     }
     
     getVault(): Vault {
@@ -196,17 +205,17 @@ export class Classe {
     // Default Display methods
     async getDisplay(): Promise<HTMLElement> {
         const container = this.vault.app.createDiv('classe-display');
-        console.log('Displaying class: ' + this.getName());
+        console.log('Displaying class: ' + this.getClassName());
         
         // Add class header
         const header = this.vault.app.createDiv('classe-header');
-        header.textContent = this.getName();
+        header.textContent = this.getClassName();
         if (this.icon) {
             this.vault.app.setIcon(header, this.icon);
         }
         container.appendChild(header);
 
-        console.log('Adding properties to display for class: ' + this.getName());
+        console.log('Adding properties to display for class: ' + this.getClassName());
         console.log('Number of properties: ' + this.properties.length);
         
         // Add properties - pass 'this' (the classe) instead of the file

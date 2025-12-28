@@ -83,7 +83,11 @@ describe('DisplayRenderer - ObjectProperty Table Integration', () => {
         
         // Verify structure of extracted items
         const firstPoste = allPostes[0];
-        expect(firstPoste.getName()).toMatch(/^Jean Dupont\.postes\[\d+\]$/);
+        // getName() returns parent file name
+        expect(firstPoste.getName()).toBe('Jean Dupont');
+        // Use getPropertyValue for ObjectProperty notation
+        const filename = await firstPoste.getPropertyValue('_filename');
+        expect(filename).toMatch(/^Jean Dupont\.postes\[\d+\]$/);
         expect(firstPoste._objectData.entreprise).toBeDefined();
         expect(firstPoste._parentInstance.getName()).toBe('Jean Dupont');
 
@@ -97,7 +101,8 @@ describe('DisplayRenderer - ObjectProperty Table Integration', () => {
 
         const fileNameProp = firstPoste.getProperty('_fileName');
         const fileName = await fileNameProp.read();
-        expect(fileName).toBe(firstPoste.getName());
+        const expectedFilename = await firstPoste.getPropertyValue('_filename');
+        expect(fileName).toBe(expectedFilename);
 
         // Test 3: Filtering with conditions
         console.log('\n⚡ Test 3: Condition filtering');
@@ -131,7 +136,10 @@ describe('DisplayRenderer - ObjectProperty Table Integration', () => {
         // Test 4: SmartFilter with current instance
         console.log('\n🎯 Test 4: SmartFilter children');
         
-        // Create institution with employees
+        // Create institution with employees (Note: getName() returns class name for instances)
+        jean.name = 'Personne';
+        marie.name = 'Personne';
+        
         const techStart = {
             getName: () => 'TechStart',
             findChildren: jest.fn().mockResolvedValue([jean, marie])

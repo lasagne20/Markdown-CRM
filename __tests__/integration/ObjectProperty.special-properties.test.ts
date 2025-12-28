@@ -80,6 +80,10 @@ describe('ObjectProperty - Special Properties and Complex Expressions', () => {
         const parentFileValue = await employee.getPropertyValue('_parentFile');
         expect(parentFileValue).toBe('Test Entreprise');
 
+        // Test getName() and getClassName()
+        expect(employee.getName()).toBe('Test Entreprise'); // Nom du fichier
+        expect(employee.getClassName()).toBe('Entreprise'); // Nom de la classe
+
         console.log('✅ _filename and _parentFile properties working correctly!');
     });
 
@@ -190,9 +194,9 @@ describe('ObjectProperty - Special Properties and Complex Expressions', () => {
         // Test getFile method
         const file = employee.getFile();
         expect(file).toBeDefined();
-        expect(file.getName(false)).toBe('Test Company.employes[0]');
-        expect(file.getName(true)).toBe('Test Company.employes[0].md');
-        expect(file.getPath()).toBe('Test Company#employes[0]');
+        expect(file.getName(false)).toBe('Test Company'); // Nom du fichier parent
+        expect(file.getName(true)).toBe('Test Company.md'); // Avec extension
+        expect(file.getPath()).toBe('Test Company'); // Path du parent
 
         console.log('✅ getFile method working correctly!');
     });

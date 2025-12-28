@@ -68,6 +68,9 @@ export class File implements IFile {
     }
 
     getName(md=true){
+      if (!this.file?.name) {
+        return 'Unknown';
+      }
       if (md){
         return this.file.name
       }

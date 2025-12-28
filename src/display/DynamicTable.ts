@@ -208,7 +208,7 @@ export class DynamicTable {
             if (this.config.columns) {
                 for (const col of this.config.columns) {
                     const td = document.createElement('td');
-                    const propName = col.propertyName || col.name || col.property;
+                    const propName = col.propertyName || col.name;
                     
                     // Skip if no property name is defined
                     if (!propName) {
