@@ -208,7 +208,14 @@ export class DynamicTable {
             if (this.config.columns) {
                 for (const col of this.config.columns) {
                     const td = document.createElement('td');
-                    const propName = col.propertyName || col.name;
+                    const propName = col.propertyName || col.name || col.property;
+                    
+                    // Skip if no property name is defined
+                    if (!propName) {
+                        td.textContent = '-';
+                        row.appendChild(td);
+                        continue;
+                    }
                     
                     // Special handling for _fileName property
                     if (propName === '_fileName') {

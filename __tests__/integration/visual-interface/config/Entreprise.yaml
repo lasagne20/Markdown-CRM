@@ -1,0 +1,133 @@
+name: Entreprise
+icon: 🏢
+description: Gestion des entreprises
+properties:
+  nom:
+    type: Property
+    title: "Nom de l'entreprise"
+    icon: "🏷️"
+  secteur:
+    type: Property
+    title: "Secteur d'activité"
+    icon: "📊"
+  employes:
+    type: ObjectProperty
+    title: "Employés"
+    icon: "👥"
+    display: table
+    properties:
+      nom:
+        type: Property
+        title: "Nom"
+      prenom:
+        type: Property
+        title: "Prénom"
+      poste:
+        type: Property
+        title: "Poste"
+      salaire:
+        type: NumberProperty
+        title: "Salaire"
+      dateEmbauche:
+        type: Property
+        title: "Date d'embauche"
+  projets:
+    type: ObjectProperty
+    title: "Projets"
+    icon: "📋"
+    display: table
+    properties:
+      nom:
+        type: Property
+        title: "Nom du projet"
+      budget:
+        type: NumberProperty
+        title: "Budget"
+      dateDebut:
+        type: Property
+        title: "Date de début"
+      statut:
+        type: SelectProperty
+        title: "Statut"
+        options:
+          - name: "En cours"
+            color: "blue"
+          - name: "Terminé"
+            color: "green"
+          - name: "En attente"
+            color: "orange"
+
+displays:
+  - type: tabs
+    title: "Vue d'ensemble"
+    tabs:
+      - name: "Informations"
+        items:
+          - type: property
+            name: nom
+          - type: property
+            name: secteur
+      
+      - name: "Employés individuels"
+        items:
+          - type: table
+            title: "Liste détaillée des employés"
+            source:
+              class: "Entreprise.employes"  # ← Utilise la nouvelle notation
+              smartFilter: "all"
+              conditions:
+                - property: "salaire"
+                  type: "greaterThan"
+                  value: 30000
+            columns:
+              - property: "_fileName"
+                label: "Entreprise"
+                width: 150
+              - property: "nom"
+                label: "Nom"
+                width: 120
+              - property: "prenom"
+                label: "Prénom"
+                width: 120
+              - property: "poste"
+                label: "Poste"
+                width: 180
+              - property: "salaire"
+                label: "Salaire"
+                width: 100
+                format: "currency"
+              - property: "dateEmbauche"
+                label: "Embauche"
+                width: 120
+      
+      - name: "Projets individuels"
+        items:
+          - type: table
+            title: "Tous les projets en détail"
+            source:
+              class: "Entreprise.projets"  # ← Utilise la nouvelle notation
+              smartFilter: "all"
+            columns:
+              - property: "_parentFile"
+                label: "Entreprise"
+                width: 150
+              - property: "nom"
+                label: "Projet"
+                width: 200
+              - property: "budget"
+                label: "Budget"
+                width: 120
+                format: "currency"
+              - property: "dateDebut"
+                label: "Début"
+                width: 120
+              - property: "statut"
+                label: "Statut"
+                width: 100
+      
+      - name: "Vue classique"
+        items:
+          - type: property
+            name: employes
+          - type: property
+            name: projets

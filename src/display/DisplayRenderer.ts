@@ -504,63 +504,77 @@ export class DisplayRenderer {
                     return {
                         read: async () => `${parentInstance.getName()}.${propertyName}[${index}]`,
                         type: 'text',
-                        name: '_fileName'
+                        name: '_fileName',
+                        getDisplay: async (instance: any) => {
+                            const div = document.createElement('div');
+                            div.classList.add('property-display', 'filename-property');
+                            div.textContent = `${parentInstance.getName()}.${propertyName}[${index}]`;
+                            return div;
+                        }
                     };
                 }
                 if (propName === '_parentFile') {
                     return {
                         read: async () => parentInstance.getName(),
                         type: 'text',
-                        name: '_parentFile'
+                        name: '_parentFile',
+                        getDisplay: async (instance: any) => {
+                            const div = document.createElement('div');
+                            div.classList.add('property-display', 'parent-file-property');
+                            div.textContent = parentInstance.getName();
+                            return div;
+                        }
                     };
                 }
                 
-                // Return a mock property that reads from the object data
+                // Get the real ObjectProperty and its configured properties
+                const objectProperty = parentInstance.getProperty(propertyName);
+                if (objectProperty && (objectProperty as any).properties) {
+                    const realProperty = (objectProperty as any).properties[propName];
+                    if (realProperty) {
+                        // Clone the real property and adapt it for our object data
+                        return {
+                            ...realProperty,
+                            read: async () => obj[propName],
+                            getDisplay: async (instance: any) => {
+                                // Use the real property's fillDisplay method with our data
+                                const value = obj[propName];
+                                const updateFn = async (newValue: any) => {
+                                    obj[propName] = newValue;
+                                    // Could trigger parent update here if needed
+                                };
+                                return realProperty.fillDisplay(value, updateFn);
+                            }
+                        };
+                    }
+                }
+                
+                // Fallback to mock property if no real property found
                 return {
                     read: async () => obj[propName],
                     type: 'text', // Default type
-                    name: propName
+                    name: propName,
+                    getDisplay: async (instance: any) => {
+                        // Create a simple display for the property value
+                        const div = document.createElement('div');
+                        div.classList.add('property-display');
+                        
+                        const value = obj[propName];
+                        if (value !== undefined && value !== null) {
+                            div.textContent = String(value);
+                        } else {
+                            div.textContent = '-';
+                            div.classList.add('empty-value');
+                        }
+                        
+                        return div;
+                    }
                 };
             },
             
             // For special properties like _fileName
             getFileName: () => `${parentInstance.getName()}.${propertyName}[${index}]`,
             
-            // Add getDisplay method for rendering
-            getDisplay: async () => {
-                const container = document.createElement('div');
-                container.classList.add('object-property-item-display');
-                
-                // Add item header
-                const header = document.createElement('div');
-                header.classList.add('object-property-header');
-                header.textContent = `${parentInstance.getName()}.${propertyName}[${index}]`;
-                container.appendChild(header);
-                
-                // Add object properties
-                const content = document.createElement('div');
-                content.classList.add('object-property-content');
-                
-                Object.keys(obj).forEach(key => {
-                    const row = document.createElement('div');
-                    row.classList.add('property-row');
-                    
-                    const label = document.createElement('label');
-                    label.textContent = key;
-                    label.classList.add('property-label');
-                    
-                    const value = document.createElement('span');
-                    value.textContent = String(obj[key] || '');
-                    value.classList.add('property-value');
-                    
-                    row.appendChild(label);
-                    row.appendChild(value);
-                    content.appendChild(row);
-                });
-                
-                container.appendChild(content);
-                return container;
-            },
             
             // Provide direct access to object properties
             ...obj
