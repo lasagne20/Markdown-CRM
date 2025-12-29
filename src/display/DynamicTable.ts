@@ -825,9 +825,11 @@ export class DynamicTable {
         try {
             // Check if the array property has ObjectProperty configuration
             if ((arrayProperty as any).type === 'ObjectProperty') {
-                const objectPropertyConfig = (arrayProperty as any).config;
-                if (objectPropertyConfig && objectPropertyConfig.properties && objectPropertyConfig.properties[targetProperty]) {
-                    const propertyConfig = objectPropertyConfig.properties[targetProperty];
+                // ObjectProperty has direct access to properties, no need for config
+                const objectProperties = (arrayProperty as any).properties;
+                
+                if (objectProperties && objectProperties[targetProperty]) {
+                    const propertyInstance = objectProperties[targetProperty];
                     
                     // Create a pseudo-instance for this item
                     const pseudoInstance = {
@@ -836,16 +838,20 @@ export class DynamicTable {
                             return this.extractNestedValue(item, propName);
                         },
                         getProperty: (propName: string) => {
-                            if (objectPropertyConfig.properties && objectPropertyConfig.properties[propName]) {
-                                return objectPropertyConfig.properties[propName];
+                            if (objectProperties[propName]) {
+                                return objectProperties[propName];
                             }
                             return null;
+                        },
+                        updatePropertyValue: async (propName: string, value: any) => {
+                            // For display-only mode, we don't need to implement update
+                            return;
                         }
                     };
                     
-                    // Try to use the property's display method
-                    if (propertyConfig && propertyConfig.getDisplay && typeof propertyConfig.getDisplay === 'function') {
-                        const displayElement = await propertyConfig.getDisplay(pseudoInstance);
+                    // Use the property instance's getDisplay method (real Property objects)
+                    if (propertyInstance && typeof propertyInstance.getDisplay === 'function') {
+                        const displayElement = await propertyInstance.getDisplay(pseudoInstance, { staticMode: true });
                         return displayElement;
                     }
                 }
