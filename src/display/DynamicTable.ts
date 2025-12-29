@@ -546,6 +546,7 @@ export class DynamicTable {
             
             // Get the array
             const arrayValue = await file.getPropertyValue(arrayProperty);
+            
             if (!Array.isArray(arrayValue)) {
                 return undefined;
             }
@@ -675,11 +676,12 @@ export class DynamicTable {
             
             // Get the array property object
             const arrayPropertyObj = file.getProperty(arrayProperty);
+            
             if (arrayPropertyObj && Array.isArray(await file.getPropertyValue(arrayProperty))) {
                 // Get the array value and filter it
                 const arrayValue = await file.getPropertyValue(arrayProperty);
                 const filteredItems = await this.filterArrayItems(arrayValue, filterProperty, filterValue);
-
+                
                 if (filteredItems.length === 0) {
                     container.textContent = '-';
                     return container;
@@ -707,9 +709,8 @@ export class DynamicTable {
                     // Try to create a display for the total using the first item's property config
                     const firstDisplayElement = await this.getPropertyDisplayForItem(file, arrayPropertyObj, { [targetProperty]: total }, targetProperty);
                     if (firstDisplayElement) {
-                        container.innerHTML = firstDisplayElement.innerHTML;
-                        container.className = firstDisplayElement.className;
-                        return container;
+                        // Return the actual element instead of copying innerHTML to preserve event listeners
+                        return firstDisplayElement;
                     }
                     
                     // Fallback to formatting the total
@@ -720,20 +721,16 @@ export class DynamicTable {
                 // If we got proper display elements for non-numeric or single values, use them
                 if (displayElements.length > 0) {
                     if (displayElements.length === 1) {
-                        // Single element: copy its content and classes
-                        const displayElement = displayElements[0];
-                        container.innerHTML = displayElement.innerHTML;
-                        container.className = displayElement.className;
+                        // Single element: return the actual element, don't copy innerHTML
+                        return displayElements[0];
                     } else {
                         // Multiple elements: join them with commas (for non-numeric values)
                         displayElements.forEach((element, index) => {
                             if (index > 0) {
                                 container.appendChild(document.createTextNode(', '));
                             }
-                            const span = document.createElement('span');
-                            span.innerHTML = element.innerHTML;
-                            span.className = element.className;
-                            container.appendChild(span);
+                            // Use appendChild instead of innerHTML to preserve event listeners
+                            container.appendChild(element);
                         });
                     }
                     return container;
@@ -832,13 +829,23 @@ export class DynamicTable {
                     const propertyInstance = objectProperties[targetProperty];
                     const itemValue = this.extractNestedValue(item, targetProperty);
                     
-                    // Use fillDisplay like ObjectProperty does - this is the correct approach
+                    // Use fillDisplay like ObjectProperty does - allow editing by not forcing static mode
                     if (propertyInstance && typeof propertyInstance.fillDisplay === 'function') {
-                        const displayElement = propertyInstance.fillDisplay(itemValue, async (newValue: any) => {
-                            // Update the item data in place
-                            await this.updateItemProperty(parentFile, arrayProperty, item, targetProperty, newValue);
-                        });
-                        return displayElement;
+                        try {
+                            const displayElement = propertyInstance.fillDisplay(itemValue, async (newValue: any) => {
+                                // Update the item data in place
+                                await this.updateItemProperty(parentFile, arrayProperty, item, targetProperty, newValue);
+                            });
+                            
+                            return displayElement;
+                        } catch (fillDisplayError) {
+                            // Fallback to simple span with the value
+                            const fallbackSpan = document.createElement('span');
+                            fallbackSpan.textContent = String(itemValue || '');
+                            fallbackSpan.style.color = '#ff6b6b'; // Red to indicate error
+                            fallbackSpan.title = `Error displaying property: ${fillDisplayError instanceof Error ? fillDisplayError.message : String(fillDisplayError)}`;
+                            return fallbackSpan;
+                        }
                     }
                 }
             }
@@ -855,6 +862,7 @@ export class DynamicTable {
         try {
             // Get the current array value from the file
             const currentArrayValue = await parentFile.getPropertyValue(arrayProperty.name);
+            
             if (!Array.isArray(currentArrayValue)) {
                 return;
             }

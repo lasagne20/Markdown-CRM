@@ -21,32 +21,30 @@ describe('DynamicTable - Property Display Integration', () => {
             if (propertyName === 'partenariats') {
                 return {
                     name: propertyName,
-                    type: 'ObjectProperty',
-                    config: {
-                        properties: {
-                            montant: {
-                                name: 'montant',
-                                type: 'NumberProperty',
-                                getDisplay: async (obj: any) => {
-                                    const span = document.createElement('span');
-                                    span.textContent = new Intl.NumberFormat('fr-FR', {
-                                        style: 'currency',
-                                        currency: 'EUR',
-                                        minimumFractionDigits: 2
-                                    }).format(obj.montant);
-                                    span.className = 'currency-amount';
-                                    return span;
-                                }
-                            },
-                            statut: {
-                                name: 'statut',
-                                type: 'TextProperty',
-                                getDisplay: async (obj: any) => {
-                                    const span = document.createElement('span');
-                                    span.textContent = obj.statut.toUpperCase();
-                                    span.className = `status-${obj.statut}`;
-                                    return span;
-                                }
+                    type: 'object',
+                    properties: {
+                        montant: {
+                            name: 'montant',
+                            type: 'number',
+                            fillDisplay: (value: any, callback: any) => {
+                                const span = document.createElement('span');
+                                span.textContent = new Intl.NumberFormat('fr-FR', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                    minimumFractionDigits: 2
+                                }).format(value);
+                                span.className = 'currency-amount';
+                                return span;
+                            }
+                        },
+                        statut: {
+                            name: 'statut',
+                            type: 'text',
+                            fillDisplay: (value: any, callback: any) => {
+                                const span = document.createElement('span');
+                                span.textContent = value.toUpperCase();
+                                span.className = `status-${value}`;
+                                return span;
                             }
                         }
                     }
@@ -55,8 +53,8 @@ describe('DynamicTable - Property Display Integration', () => {
             
             return {
                 name: propertyName,
-                type: 'TextProperty',
-                getDisplay: async (file: any) => {
+                type: 'text',
+                fillDisplay: (value: any, callback: any) => {
                     const span = document.createElement('span');
                     span.textContent = String(this.data[propertyName] || '-');
                     return span;
