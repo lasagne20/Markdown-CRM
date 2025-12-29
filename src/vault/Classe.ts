@@ -155,7 +155,7 @@ export class Classe {
     
     async updatePropertyValue(propertyName: string, value: any): Promise<void> {
         // Get old metadata and parent property before update
-        const metadata = await this.getMetadata();
+        const metadata = await this.getMetadata() || {};
         // Deep copy the old value to preserve it for comparison
         // Handle undefined/null values that can't be JSON stringified
         const oldValue = metadata[propertyName] !== undefined && metadata[propertyName] !== null
