@@ -824,34 +824,20 @@ export class DynamicTable {
     private async getPropertyDisplayForItem(parentFile: Classe, arrayProperty: any, item: any, targetProperty: string): Promise<HTMLElement | null> {
         try {
             // Check if the array property has ObjectProperty configuration
-            if ((arrayProperty as any).type === 'ObjectProperty') {
+            if ((arrayProperty as any).type === 'object') {
                 // ObjectProperty has direct access to properties, no need for config
                 const objectProperties = (arrayProperty as any).properties;
                 
                 if (objectProperties && objectProperties[targetProperty]) {
                     const propertyInstance = objectProperties[targetProperty];
+                    const itemValue = this.extractNestedValue(item, targetProperty);
                     
-                    // Create a pseudo-instance for this item
-                    const pseudoInstance = {
-                        ...item,
-                        getPropertyValue: async (propName: string) => {
-                            return this.extractNestedValue(item, propName);
-                        },
-                        getProperty: (propName: string) => {
-                            if (objectProperties[propName]) {
-                                return objectProperties[propName];
-                            }
-                            return null;
-                        },
-                        updatePropertyValue: async (propName: string, value: any) => {
-                            // For display-only mode, we don't need to implement update
-                            return;
-                        }
-                    };
-                    
-                    // Use the property instance's getDisplay method (real Property objects)
-                    if (propertyInstance && typeof propertyInstance.getDisplay === 'function') {
-                        const displayElement = await propertyInstance.getDisplay(pseudoInstance, { staticMode: true });
+                    // Use fillDisplay like ObjectProperty does - this is the correct approach
+                    if (propertyInstance && typeof propertyInstance.fillDisplay === 'function') {
+                        const displayElement = propertyInstance.fillDisplay(itemValue, async (newValue: any) => {
+                            // Update the item data in place
+                            await this.updateItemProperty(parentFile, arrayProperty, item, targetProperty, newValue);
+                        });
                         return displayElement;
                     }
                 }
@@ -859,6 +845,54 @@ export class DynamicTable {
             return null;
         } catch (error) {
             return null;
+        }
+    }
+
+    /**
+     * Update a property value in an ObjectProperty array item and save to file
+     */
+    private async updateItemProperty(parentFile: Classe, arrayProperty: any, item: any, targetProperty: string, newValue: any): Promise<void> {
+        try {
+            // Get the current array value from the file
+            const currentArrayValue = await parentFile.getPropertyValue(arrayProperty.name);
+            if (!Array.isArray(currentArrayValue)) {
+                return;
+            }
+
+            // Find the item in the original array (by reference or by matching properties)
+            const itemIndex = currentArrayValue.findIndex(originalItem => {
+                // Try to match by reference first
+                if (originalItem === item) {
+                    return true;
+                }
+                
+                // Fallback to matching by key properties (you can customize this logic)
+                // For now, match by comparing all existing properties
+                const itemKeys = Object.keys(item);
+                return itemKeys.every(key => {
+                    if (key === targetProperty) {
+                        // Skip the property we're about to update
+                        return true;
+                    }
+                    return originalItem[key] === item[key];
+                });
+            });
+
+            if (itemIndex !== -1) {
+                // Update the property in the original array
+                currentArrayValue[itemIndex][targetProperty] = newValue;
+                
+                // Update the item object in place for immediate UI feedback
+                item[targetProperty] = newValue;
+                
+                // Save the updated array to the file
+                await parentFile.updatePropertyValue(arrayProperty.name, currentArrayValue);
+                
+                // Optionally refresh the table to show the changes
+                // await this.filterAndRender();
+            }
+        } catch (error) {
+            console.error('Failed to update item property:', error);
         }
     }
 
