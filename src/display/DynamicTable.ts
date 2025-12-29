@@ -663,7 +663,7 @@ export class DynamicTable {
 
     /**
      * Get nested property display with proper formatting for filtered properties
-     * Handles both simple nested properties (obj.prop) and filtered arrays (array.filter(prop=val).target)
+     * Uses the property display system systematically, even with filters
      */
     private async getNestedPropertyDisplay(file: Classe, propertyPath: string): Promise<HTMLElement> {
         const container = document.createElement('span');
@@ -676,169 +676,81 @@ export class DynamicTable {
             // Get the array property object
             const arrayPropertyObj = file.getProperty(arrayProperty);
             if (arrayPropertyObj && Array.isArray(await file.getPropertyValue(arrayProperty))) {
-                // Get the array value
+                // Get the array value and filter it
                 const arrayValue = await file.getPropertyValue(arrayProperty);
-                
-                // Filter the array with support for special values
-                const filteredItems = arrayValue.filter((item: any) => {
-                    if (typeof item !== 'object' || item === null) {
-                        return false;
-                    }
-                    
-                    let targetValue = filterValue;
-                    
-                    // Handle special values
-                    if (targetValue.toLowerCase() === '$current') {
-                        // '$current' refers to the current file where the table is displayed
-                        const currentFileObj = this.currentFile;
-                        if (!currentFileObj) {
-                            throw new Error('$current filter requires currentFile to be passed to DynamicTable constructor');
-                        }
-                        const fileObj = currentFileObj.getFile?.();
-                        if (fileObj) {
-                            if (typeof fileObj.getName === 'function') {
-                                targetValue = fileObj.getName(false); // false = without .md extension
-                            } else if ((fileObj as any).name) {
-                                targetValue = (fileObj as any).name.replace(/\.md$/i, '');
-                            } else if ((fileObj as any).basename) {
-                                targetValue = (fileObj as any).basename.replace(/\.md$/i, '');
-                            }
-                        } else if ((currentFileObj as any).basename) {
-                            targetValue = (currentFileObj as any).basename.replace(/\.md$/i, '');
-                        }
-                    }
-                    
-                    const itemValue = String(item[filterProperty] || '').toLowerCase();
-                    const compareValue = String(targetValue).toLowerCase();
-                    
-                    // For $current, use contains instead of strict equality
-                    if (filterValue.toLowerCase() === '$current') {
-                        return itemValue.includes(compareValue);
-                    } else {
-                        return itemValue === compareValue;
-                    }
-                });
+                const filteredItems = await this.filterArrayItems(arrayValue, filterProperty, filterValue);
 
                 if (filteredItems.length === 0) {
                     container.textContent = '-';
                     return container;
                 }
 
-                // Extract target values and try to find if the target property has display config
-                const targetValues = filteredItems.map((item: any) => {
-                    if (targetProperty.includes('.')) {
-                        return this.navigateNestedProperty(item, targetProperty.split('.'));
-                    } else {
-                        return item[targetProperty];
+                // Try to use proper property display for each filtered item
+                const displayElements: HTMLElement[] = [];
+                const rawValues: any[] = [];
+                
+                for (const item of filteredItems) {
+                    const rawValue = this.extractNestedValue(item, targetProperty);
+                    rawValues.push(rawValue);
+                    
+                    const displayElement = await this.getPropertyDisplayForItem(file, arrayPropertyObj, item, targetProperty);
+                    if (displayElement) {
+                        displayElements.push(displayElement);
                     }
-                }).filter((value: any) => value !== undefined && value !== null);
+                }
+
+                // If we got proper display elements and they're all numeric values that should be summed
+                if (displayElements.length > 0 && rawValues.length > 1 && rawValues.every(v => typeof v === 'number')) {
+                    // For multiple numeric values, sum them and use a single display
+                    const total = rawValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
+                    
+                    // Try to create a display for the total using the first item's property config
+                    const firstDisplayElement = await this.getPropertyDisplayForItem(file, arrayPropertyObj, { [targetProperty]: total }, targetProperty);
+                    if (firstDisplayElement) {
+                        container.innerHTML = firstDisplayElement.innerHTML;
+                        container.className = firstDisplayElement.className;
+                        return container;
+                    }
+                    
+                    // Fallback to formatting the total
+                    container.textContent = this.formatValue(total, targetProperty);
+                    return container;
+                }
+
+                // If we got proper display elements for non-numeric or single values, use them
+                if (displayElements.length > 0) {
+                    if (displayElements.length === 1) {
+                        // Single element: copy its content and classes
+                        const displayElement = displayElements[0];
+                        container.innerHTML = displayElement.innerHTML;
+                        container.className = displayElement.className;
+                    } else {
+                        // Multiple elements: join them with commas (for non-numeric values)
+                        displayElements.forEach((element, index) => {
+                            if (index > 0) {
+                                container.appendChild(document.createTextNode(', '));
+                            }
+                            const span = document.createElement('span');
+                            span.innerHTML = element.innerHTML;
+                            span.className = element.className;
+                            container.appendChild(span);
+                        });
+                    }
+                    return container;
+                }
+
+                // Fallback to basic value extraction and formatting
+                const targetValues = filteredItems.map(item => 
+                    this.extractNestedValue(item, targetProperty)
+                ).filter(value => value !== undefined && value !== null);
 
                 if (targetValues.length === 0) {
                     container.textContent = '-';
                     return container;
                 }
 
-                // Try to get display configuration for the target property
-                // Look for nested property configuration in the array property
-                let displayValue: any;
-                const firstValue = targetValues[0];
-                
-                if (typeof firstValue === 'number') {
-                    displayValue = targetValues.reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
-                } else if (targetValues.length === 1) {
-                    displayValue = firstValue;
-                } else if (typeof firstValue === 'string') {
-                    displayValue = targetValues.join(', ');
-                } else {
-                    displayValue = targetValues;
-                }
-
-                // Try to format the value using property display configuration
-                // First, try to find actual property configuration for the target property
-                let propertyConfig = null;
-                
-                try {
-                    // Check if the array property has ObjectProperty configuration
-                    const arrayPropertyObj = file.getProperty(arrayProperty);
-                    if (arrayPropertyObj && (arrayPropertyObj as any).type === 'ObjectProperty') {
-                        // For ObjectProperty, check if there are nested property configurations
-                        const objectPropertyConfig = (arrayPropertyObj as any).config;
-                        if (objectPropertyConfig && objectPropertyConfig.properties && objectPropertyConfig.properties[targetProperty]) {
-                            propertyConfig = objectPropertyConfig.properties[targetProperty];
-                        }
-                    }
-                } catch (error) {
-                    // Continue with fallback formatting
-                }
-                
-                // If we found a property configuration, try to use its display
-                if (propertyConfig && propertyConfig.getDisplay && typeof propertyConfig.getDisplay === 'function') {
-                    try {
-                        // Create a temporary object for display
-                        const tempObj = {};
-                        (tempObj as any)[targetProperty] = displayValue;
-                        const displayElement = await propertyConfig.getDisplay(tempObj);
-                        if (displayElement && displayElement.textContent) {
-                            container.textContent = displayElement.textContent;
-                            // Copy any CSS classes or styles if needed
-                            if (displayElement.className) {
-                                container.className = displayElement.className;
-                            }
-                            return container;
-                        }
-                    } catch (error) {
-                        // Fall back to intelligent formatting
-                    }
-                }
-                
-                // Enhanced intelligent formatting as fallback
-                if (filteredItems.length > 0 && typeof filteredItems[0] === 'object') {
-                    try {
-                        const mockItem = filteredItems[0];
-                        if (mockItem && typeof mockItem === 'object' && targetProperty in mockItem) {
-                            if (typeof displayValue === 'number') {
-                                // Enhanced currency detection
-                                const currencyProps = ['montant', 'prix', 'cost', 'amount', 'budget', 'salaire', 'revenu', 'chiffre', 'cout'];
-                                const isCurrency = currencyProps.some(prop => 
-                                    targetProperty.toLowerCase().includes(prop)
-                                );
-                                
-                                if (isCurrency) {
-                                    container.textContent = new Intl.NumberFormat('fr-FR', {
-                                        style: 'currency',
-                                        currency: 'EUR'
-                                    }).format(displayValue);
-                                } else {
-                                    container.textContent = displayValue.toLocaleString('fr-FR');
-                                }
-                            } else {
-                                container.textContent = String(displayValue);
-                            }
-                        } else {
-                            container.textContent = String(displayValue);
-                        }
-                    } catch (error) {
-                        container.textContent = String(displayValue);
-                    }
-                } else if (typeof displayValue === 'number') {
-                    // Enhanced currency detection for numbers
-                    const currencyProps = ['montant', 'prix', 'cost', 'amount', 'budget', 'salaire', 'revenu', 'chiffre', 'cout'];
-                    const isCurrency = currencyProps.some(prop => 
-                        targetProperty.toLowerCase().includes(prop)
-                    );
-                    
-                    if (isCurrency) {
-                        container.textContent = new Intl.NumberFormat('fr-FR', {
-                            style: 'currency',
-                            currency: 'EUR'
-                        }).format(displayValue);
-                    } else {
-                        container.textContent = displayValue.toLocaleString('fr-FR');
-                    }
-                } else {
-                    container.textContent = String(displayValue);
-                }
-
+                // Format the combined values
+                container.textContent = this.formatCombinedValues(targetValues, targetProperty);
                 return container;
             }
         }
@@ -846,43 +758,155 @@ export class DynamicTable {
         // Handle simple nested properties (obj.prop)
         const parts = propertyPath.split('.');
         if (parts.length > 1) {
-            // Try to get the root property for display configuration
-            const rootProperty = file.getProperty(parts[0]);
-            if (rootProperty) {
-                const value = await this.getNestedPropertyValue(file, propertyPath);
-                if (value !== undefined && value !== null) {
-                    // Basic formatting for nested properties
-                    if (typeof value === 'number') {
-                        // Apply currency formatting for amount-like properties
-                        if (parts[parts.length - 1].toLowerCase().includes('montant') ||
-                            parts[parts.length - 1].toLowerCase().includes('prix') ||
-                            parts[parts.length - 1].toLowerCase().includes('cost') ||
-                            parts[parts.length - 1].toLowerCase().includes('amount')) {
-                            container.textContent = new Intl.NumberFormat('fr-FR', {
-                                style: 'currency',
-                                currency: 'EUR'
-                            }).format(value);
-                        } else {
-                            container.textContent = value.toLocaleString('fr-FR');
-                        }
-                    } else {
-                        container.textContent = String(value);
-                    }
-                } else {
-                    container.textContent = '-';
-                }
+            // For simple nested properties, get the value and format it directly
+            const value = await this.getNestedPropertyValue(file, propertyPath);
+            if (value !== undefined && value !== null) {
+                // Format using our centralized formatting logic
+                container.textContent = this.formatValue(value, parts[parts.length - 1]);
             } else {
-                // Fallback to raw value
-                const value = await this.getNestedPropertyValue(file, propertyPath);
-                container.textContent = value || '-';
+                container.textContent = '-';
             }
         } else {
             // Single property - shouldn't reach here but fallback
             const value = await this.getNestedPropertyValue(file, propertyPath);
-            container.textContent = value || '-';
+            container.textContent = String(value || '-');
         }
 
         return container;
+    }
+
+    /**
+     * Filter array items with support for special values like $current
+     */
+    private async filterArrayItems(arrayValue: any[], filterProperty: string, filterValue: string): Promise<any[]> {
+        return arrayValue.filter((item: any) => {
+            if (typeof item !== 'object' || item === null) {
+                return false;
+            }
+            
+            let targetValue = filterValue;
+            
+            // Handle special values
+            if (targetValue.toLowerCase() === '$current') {
+                const currentFileObj = this.currentFile;
+                if (!currentFileObj) {
+                    throw new Error('$current filter requires currentFile to be passed to DynamicTable constructor');
+                }
+                const fileObj = currentFileObj.getFile?.();
+                if (fileObj) {
+                    if (typeof fileObj.getName === 'function') {
+                        targetValue = fileObj.getName(false);
+                    } else if ((fileObj as any).name) {
+                        targetValue = (fileObj as any).name.replace(/\.md$/i, '');
+                    } else if ((fileObj as any).basename) {
+                        targetValue = (fileObj as any).basename.replace(/\.md$/i, '');
+                    }
+                } else if ((currentFileObj as any).basename) {
+                    targetValue = (currentFileObj as any).basename.replace(/\.md$/i, '');
+                }
+            }
+            
+            const itemValue = String(item[filterProperty] || '').toLowerCase();
+            const compareValue = String(targetValue).toLowerCase();
+            
+            // For $current, use contains instead of strict equality
+            if (filterValue.toLowerCase() === '$current') {
+                return itemValue.includes(compareValue);
+            } else {
+                return itemValue === compareValue;
+            }
+        });
+    }
+
+    /**
+     * Get proper property display for an item from an ObjectProperty array
+     */
+    private async getPropertyDisplayForItem(parentFile: Classe, arrayProperty: any, item: any, targetProperty: string): Promise<HTMLElement | null> {
+        try {
+            // Check if the array property has ObjectProperty configuration
+            if ((arrayProperty as any).type === 'ObjectProperty') {
+                const objectPropertyConfig = (arrayProperty as any).config;
+                if (objectPropertyConfig && objectPropertyConfig.properties && objectPropertyConfig.properties[targetProperty]) {
+                    const propertyConfig = objectPropertyConfig.properties[targetProperty];
+                    
+                    // Create a pseudo-instance for this item
+                    const pseudoInstance = {
+                        ...item,
+                        getPropertyValue: async (propName: string) => {
+                            return this.extractNestedValue(item, propName);
+                        },
+                        getProperty: (propName: string) => {
+                            if (objectPropertyConfig.properties && objectPropertyConfig.properties[propName]) {
+                                return objectPropertyConfig.properties[propName];
+                            }
+                            return null;
+                        }
+                    };
+                    
+                    // Try to use the property's display method
+                    if (propertyConfig && propertyConfig.getDisplay && typeof propertyConfig.getDisplay === 'function') {
+                        const displayElement = await propertyConfig.getDisplay(pseudoInstance);
+                        return displayElement;
+                    }
+                }
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /**
+     * Extract nested value from object using dot notation
+     */
+    private extractNestedValue(obj: any, path: string): any {
+        if (!path.includes('.')) {
+            return obj[path];
+        }
+        return this.navigateNestedProperty(obj, path.split('.'));
+    }
+
+    /**
+     * Format combined values based on their type and property name
+     */
+    private formatCombinedValues(values: any[], targetProperty: string): string {
+        const firstValue = values[0];
+        
+        if (typeof firstValue === 'number') {
+            // Always sum numeric values when we have multiple items
+            const total = values.reduce((sum, val) => sum + (Number(val) || 0), 0);
+            return this.formatValue(total, targetProperty);
+        } else if (values.length === 1) {
+            return this.formatValue(firstValue, targetProperty);
+        } else if (typeof firstValue === 'string') {
+            return values.join(', ');
+        } else {
+            return values.map(v => String(v)).join(', ');
+        }
+    }
+
+    /**
+     * Format a single value based on its type and property name
+     */
+    private formatValue(value: any, propertyName: string): string {
+        if (typeof value === 'number') {
+            // Enhanced currency detection
+            const currencyProps = ['montant', 'prix', 'cost', 'amount', 'budget', 'salaire', 'revenu', 'chiffre', 'cout'];
+            const isCurrency = currencyProps.some(prop => 
+                propertyName.toLowerCase().includes(prop)
+            );
+            
+            if (isCurrency) {
+                return new Intl.NumberFormat('fr-FR', {
+                    style: 'currency',
+                    currency: 'EUR'
+                }).format(value);
+            } else {
+                return value.toLocaleString('fr-FR');
+            }
+        } else {
+            return String(value);
+        }
     }
 
     /**
