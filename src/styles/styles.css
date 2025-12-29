@@ -213,6 +213,15 @@ If your plugin does not need CSS, delete this file.
     margin-bottom: 4px;
 }
 
+/* Ligne de contenu (icône + champ) - centrée */
+.metadata-content-line {
+    display: flex;
+    align-items: baseline; /* Aligne sur la ligne de base du texte */
+    justify-content: center;
+    width: 100%;
+    gap: 0; /* Aucun espace entre icône et texte */
+}
+
 /* Conteneur pour l'icône et le champ - sur une ligne horizontale */
 .metadata-field > .icon-container,
 .metadata-field > .field-container {
@@ -230,6 +239,11 @@ If your plugin does not need CSS, delete this file.
     word-wrap: break-word;  
     overflow-wrap: break-word; 
     white-space: normal; 
+    text-align: center;
+    line-height: 1; /* Ligne de base standard */
+    margin: 0;
+    padding: 0;
+    vertical-align: baseline; /* Force l'alignement baseline */
 }
 .metadata-field-email input,
 .metadata-field input {
@@ -246,39 +260,64 @@ If your plugin does not need CSS, delete this file.
     word-wrap: break-word;  
     overflow-wrap: break-word; 
     white-space: normal; 
+    line-height: 1; /* Aligne avec les autres éléments */
+    vertical-align: baseline; /* Force l'alignement baseline */
+    margin: 0; /* Supprime les marges par défaut */
 }
 
 .field-link {
     margin: 0;  /* Enlève toute marge */
     padding: 0;  /* Enlève tout espacement interne */
     display: flex;
-    align-items: center;  /* Aligne verticalement avec le champ */
-    justify-content: flex-start;
+    align-items: baseline; /* Aligne sur la baseline pour correspondre à l'icône */
+    justify-content: center; /* Centre le contenu du lien */
+    text-align: center; /* Centre le texte */
     max-width: 300px;
     word-wrap: break-word;  
     overflow-wrap: break-word; 
     white-space: normal; 
+    line-height: 1; /* Ligne de base standard comme les labels */
+    vertical-align: baseline; /* Force l'alignement baseline */
+}
+
+/* Spécifique aux liens <a> dans les FileProperty */
+.field-container a.field-link {
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    vertical-align: baseline;
+    text-decoration: none; /* Enlève le soulignement par défaut */
 }
 
 .icon-container {
     display: flex;
-    align-items: center; /* Aligne l'icône avec le texte */
-    justify-content: center; /* Centre l'icône dans son conteneur */
-    margin-right: 8px;  /* Espace entre l'icône et le champ */
+    align-items: baseline; /* Aligne sur la ligne de base */
+    justify-content: center;
+    flex-shrink: 0;
+    height: auto;
+    margin-right: 2px; /* Très petit espace entre icône et texte */
+}
+
+.icon-container svg,
+.icon-container .lucide {
+    display: block;
+    margin: 0;
+    padding: 0;
 }
 
 .field-container{
-    flex: 1;
+    flex: 0 0 auto; /* Ne prend que l'espace nécessaire */
     display: flex;
-    align-items: center;  /* Aligne l'input ou le lien avec l'icône */
-    gap: 4px;
+    align-items: baseline; /* Aligne sur la baseline */
+    justify-content: flex-start; /* Aligne le texte à gauche du container */
+    gap: 0; /* Aucun gap interne */
 }
 
 .field-container-column{
     flex: 1;
     flex-direction: column;
     display: flex;
-    align-items: center;  /* Aligne l'input ou le lien avec l'icône */
+    align-items: center;
     gap: 4px;
 }
 

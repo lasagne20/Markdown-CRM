@@ -14,21 +14,36 @@ export class ClasseProperty extends Property{
     }
 
     override fillDisplay(value: any, update: (value: any) => Promise<void>)  {
-          const field = document.createElement("div");
-          field.classList.add("metadata-field");
-      
-          const label = document.createElement("label");
-          label.textContent = value;
+        const field = document.createElement("div");
+        field.classList.add("metadata-field");
 
-          if (this.icon){
-            const icon = document.createElement("div"); 
-            icon.classList.add("icon-container");
+        // First line: title (if present)
+        if (this.title) {
+            const title = document.createElement("div");
+            title.textContent = this.title;
+            title.classList.add("metadata-title");
+            field.appendChild(title);
+        }
+
+        // Second line: icon and content container (centered)
+        const contentLine = document.createElement("div");
+        contentLine.classList.add("metadata-content-line");
+        
+        if (this.icon) {
+            const iconContainer = document.createElement("div");
+            iconContainer.classList.add("icon-container");
+            const icon = document.createElement("div");
             this.vault.app.setIcon(icon, this.icon);
-            field.appendChild(icon);
-          }
-          
-          field.appendChild(label);
-          return field;
-      }
+            iconContainer.appendChild(icon);
+            contentLine.appendChild(iconContainer);
+        }
+
+        const label = document.createElement("label");
+        label.textContent = value;
+        contentLine.appendChild(label);
+
+        field.appendChild(contentLine);
+        return field;
+    }
 
 }

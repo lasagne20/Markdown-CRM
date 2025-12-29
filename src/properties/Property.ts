@@ -196,6 +196,7 @@ export class Property {
     /**
      * Fills and builds the complete DOM display of the property.
      * Creates the HTML structure with optional title, icon and editable content.
+     * For normal properties: displays title on first line, then icon and content on second line (both centered).
      * 
      * @param value - Current property value to display
      * @param update - Update function called during changes
@@ -205,6 +206,7 @@ export class Property {
     fillDisplay(value: any, update: (value: any) => Promise<void>, args? : { classe?: any }) {
         const field = this.createFieldContainer();
 
+        // First line: title (if present)
         if (this.title) {
             const title = document.createElement("div");
             title.textContent = this.title;
@@ -212,11 +214,16 @@ export class Property {
             field.appendChild(title);
         }
 
+        // Second line: icon and content container (centered)
+        const contentLine = document.createElement("div");
+        contentLine.classList.add("metadata-content-line");
+        
         const iconContainer = this.createIconContainer(update, args?.classe);
         const fieldContainer = this.createFieldContainerContent(update, value);
 
-        field.appendChild(iconContainer);
-        field.appendChild(fieldContainer);
+        contentLine.appendChild(iconContainer);
+        contentLine.appendChild(fieldContainer);
+        field.appendChild(contentLine);
 
         return field;
     }

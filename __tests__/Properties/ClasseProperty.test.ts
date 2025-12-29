@@ -234,8 +234,11 @@ describe('ClasseProperty', () => {
             
             const result = propertyWithoutIcon.fillDisplay(value, mockUpdate);
             
-            expect(result.children.length).toBe(1); // Only label
-            expect(result.children[0].tagName).toBe('LABEL');
+            expect(result.children.length).toBe(1); // Only metadata-content-line
+            expect(result.children[0].classList.contains('metadata-content-line')).toBe(true);
+            const contentLine = result.children[0];
+            expect(contentLine.children.length).toBe(1); // Only label (no icon)
+            expect(contentLine.children[0].tagName).toBe('LABEL');
         });
 
         it('should have correct DOM structure with icon', () => {
@@ -246,9 +249,12 @@ describe('ClasseProperty', () => {
             
             const result = propertyWithIcon.fillDisplay(value, mockUpdate);
             
-            expect(result.children.length).toBe(2); // Icon container + label
-            expect(result.children[0].classList.contains('icon-container')).toBe(true);
-            expect(result.children[1].tagName).toBe('LABEL');
+            expect(result.children.length).toBe(1); // Only metadata-content-line
+            expect(result.children[0].classList.contains('metadata-content-line')).toBe(true);
+            const contentLine = result.children[0];
+            expect(contentLine.children.length).toBe(2); // Icon container + label
+            expect(contentLine.children[0].classList.contains('icon-container')).toBe(true);
+            expect(contentLine.children[1].tagName).toBe('LABEL');
         });
 
         it('should maintain correct order: icon first, then label', () => {
@@ -259,8 +265,9 @@ describe('ClasseProperty', () => {
             
             const result = propertyWithIcon.fillDisplay(value, mockUpdate);
             
-            const firstChild = result.children[0];
-            const secondChild = result.children[1];
+            const contentLine = result.children[0];
+            const firstChild = contentLine.children[0];
+            const secondChild = contentLine.children[1];
             
             expect(firstChild.classList.contains('icon-container')).toBe(true);
             expect(secondChild.tagName).toBe('LABEL');

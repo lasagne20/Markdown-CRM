@@ -64,8 +64,10 @@ display:
             - type: property
               name: postes
             - type: property
+              title: Date d'entrée
               name: dateEntree
             - type: property
+              title: Statut actuel
               name: statut
             - type: property
               name: competences
