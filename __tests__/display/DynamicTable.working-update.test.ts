@@ -1,7 +1,6 @@
 import { DynamicTable } from '../../src/display/DynamicTable';
 import { Classe } from '../../src/vault/Classe';
 import { Vault } from '../../src/vault/Vault';
-import { ObjectProperty } from '../../src/properties/ObjectProperty';
 import { SelectProperty } from '../../src/properties/SelectProperty';
 
 describe('DynamicTable UpdateItem Issue - Real Problem', () => {
@@ -48,56 +47,40 @@ describe('DynamicTable UpdateItem Issue - Real Problem', () => {
             })),
             getProperty: jest.fn((propName) => {
                 if (propName === 'projets') {
-                    // Create ObjectProperty with WORKING properties
-                    const objectProperty = new ObjectProperty('projets', {
+                    // Mock simple d'ObjectProperty qui fonctionne avec le test
+                    return {
                         type: 'object',
+                        name: 'projets',
                         properties: {
                             etat: {
                                 type: 'select',
-                                options: ['En cours', 'Terminé', 'En attente', 'Payé']
+                                name: 'etat',
+                                fillDisplay: jest.fn((value, callback) => {
+                                    // Create a real select element that works
+                                    const select = document.createElement('select');
+                                    select.className = 'test-select';
+                                    
+                                    // Add options
+                                    ['En cours', 'Terminé', 'En attente', 'Payé'].forEach(option => {
+                                        const optionEl = document.createElement('option');
+                                        optionEl.value = option;
+                                        optionEl.textContent = option;
+                                        if (option === value) {
+                                            optionEl.selected = true;
+                                        }
+                                        select.appendChild(optionEl);
+                                    });
+                                    
+                                    // Add change handler that calls the callback
+                                    select.onchange = () => {
+                                        callback(select.value);
+                                    };
+                                    
+                                    return select;
+                                })
                             }
                         }
-                    });
-
-                    // Create a MOCK SelectProperty that works without Obsidian
-                    const mockSelectProperty = {
-                        type: 'select',
-                        name: 'etat',
-                        config: {
-                            type: 'select',
-                            options: ['En cours', 'Terminé', 'En attente', 'Payé']
-                        },
-                        fillDisplay: jest.fn((value, callback) => {
-                            // Create a real select element that works
-                            const select = document.createElement('select');
-                            select.className = 'test-select';
-                            
-                            // Add options
-                            ['En cours', 'Terminé', 'En attente', 'Payé'].forEach(option => {
-                                const optionEl = document.createElement('option');
-                                optionEl.value = option;
-                                optionEl.textContent = option;
-                                if (option === value) {
-                                    optionEl.selected = true;
-                                }
-                                select.appendChild(optionEl);
-                            });
-                            
-                            // Add change handler that calls the callback
-                            select.onchange = () => {
-                                callback(select.value);
-                            };
-                            
-                            return select;
-                        })
                     };
-
-                    // Set up the properties with our working mock
-                    objectProperty.properties = {
-                        etat: mockSelectProperty
-                    };
-
-                    return objectProperty;
                 }
                 return null;
             }),
@@ -121,7 +104,7 @@ describe('DynamicTable UpdateItem Issue - Real Problem', () => {
                 {
                     name: 'Fichier',
                     propertyName: '_fileName',
-                    filter: 'text',
+                    filter: 'text' as const,
                     sort: true
                 },
                 {

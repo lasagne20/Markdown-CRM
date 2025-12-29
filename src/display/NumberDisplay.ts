@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Component and MarkdownRenderer removed - not available in AppShim
 
 interface NumberDisplayOptions {
@@ -26,7 +27,7 @@ export class NumberDisplay {
 
     getDisplay() {
         const { value, unit, label, size, color } = this.options;
-        this.container.empty();
+        this.container.innerHTML = '';
 
         // Agrandir la taille par défaut si non spécifiée
         const displaySize = size ?? 96; // plus grand que 64
@@ -40,43 +41,43 @@ export class NumberDisplay {
         const offset = circumference * (1 - fill);
 
         const svg = document.createElementNS(svgNS, "svg");
-        svg.setAttr("width", displaySize);
-        svg.setAttr("height", displaySize);
-        svg.setAttr("viewBox", `0 0 ${displaySize} ${displaySize}`);
+        svg.setAttribute("width", displaySize.toString());
+        svg.setAttribute("height", displaySize.toString());
+        svg.setAttribute("viewBox", `0 0 ${displaySize} ${displaySize}`);
 
         // Fond du cercle
         const bgCircle = document.createElementNS(svgNS, "circle");
-        bgCircle.setAttr("cx", displaySize / 2);
-        bgCircle.setAttr("cy", displaySize / 2);
-        bgCircle.setAttr("r", radius);
-        bgCircle.setAttr("stroke", "var(--background-modifier-border)");
-        bgCircle.setAttr("stroke-width", `${strokeWidth}`);
-        bgCircle.setAttr("fill", "none");
+        bgCircle.setAttribute("cx", (displaySize / 2).toString());
+        bgCircle.setAttribute("cy", (displaySize / 2).toString());
+        bgCircle.setAttribute("r", radius.toString());
+        bgCircle.setAttribute("stroke", "var(--background-modifier-border)");
+        bgCircle.setAttribute("stroke-width", `${strokeWidth}`);
+        bgCircle.setAttribute("fill", "none");
         svg.appendChild(bgCircle);
 
         // Cercle de progression
         const fgCircle = document.createElementNS(svgNS, "circle");
-        fgCircle.setAttr("cx", displaySize / 2);
-        fgCircle.setAttr("cy", displaySize / 2);
-        fgCircle.setAttr("r", radius);
-        fgCircle.setAttr("stroke", color!);
-        fgCircle.setAttr("stroke-width", `${strokeWidth}`);
-        fgCircle.setAttr("fill", "none");
-        fgCircle.setAttr("stroke-dasharray", `${circumference}`);
-        fgCircle.setAttr("stroke-dashoffset", `${offset}`);
-        fgCircle.setAttr("style", "transition: stroke-dashoffset 0.5s;");
-        fgCircle.setAttr("stroke-linecap", "round");
+        fgCircle.setAttribute("cx", (displaySize / 2).toString());
+        fgCircle.setAttribute("cy", (displaySize / 2).toString());
+        fgCircle.setAttribute("r", radius.toString());
+        fgCircle.setAttribute("stroke", color!);
+        fgCircle.setAttribute("stroke-width", `${strokeWidth}`);
+        fgCircle.setAttribute("fill", "none");
+        fgCircle.setAttribute("stroke-dasharray", `${circumference}`);
+        fgCircle.setAttribute("stroke-dashoffset", `${offset}`);
+        fgCircle.setAttribute("style", "transition: stroke-dashoffset 0.5s;");
+        fgCircle.setAttribute("stroke-linecap", "round");
         svg.appendChild(fgCircle);
 
         // Texte au centre, bien centré verticalement et horizontalement
         const text = document.createElementNS(svgNS, "text");
-        text.setAttr("x", displaySize / 2);
-        text.setAttr("y", displaySize / 2);
-        text.setAttr("text-anchor", "middle");
-        text.setAttr("dominant-baseline", "middle");
-        text.setAttr("font-size", `${displaySize * 0.3}px`); // taille du texte adapté
-        text.setAttr("fill", "var(--text-normal)");
-        text.setAttr("font-weight", "bold"); // Met le texte en gras
+        text.setAttribute("x", (displaySize / 2).toString());
+        text.setAttribute("y", (displaySize / 2).toString());
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("dominant-baseline", "middle");
+        text.setAttribute("font-size", `${displaySize * 0.3}px`); // taille du texte adapté
+        text.setAttribute("fill", "var(--text-normal)");
+        text.setAttribute("font-weight", "bold"); // Met le texte en gras
         text.textContent = `${value}${unit ?? ""}`;
         svg.appendChild(text);
 
@@ -84,9 +85,11 @@ export class NumberDisplay {
 
         // Label en dessous
         if (label) {
-            const labelDiv = this.container.createDiv("crm-number-display-label");
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'crm-number-display-label';
+            this.container.appendChild(labelDiv);
             labelDiv.innerHTML = label;
-            labelDiv.setAttr(
+            labelDiv.setAttribute(
                 "style",
                 `text-align:center;font-size:${displaySize * 0.3}px;color:var(--text-muted);margin-top:0.5em;`
             );

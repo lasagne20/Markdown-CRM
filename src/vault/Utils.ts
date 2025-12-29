@@ -1,4 +1,4 @@
-import { IApp } from "../interfaces/IApp";
+import { IApp, IFile } from "../interfaces/IApp";
 // Utility functions for file metadata operations
 
 export const waitForFileMetaDataUpdate = async (
@@ -16,8 +16,8 @@ export const waitForFileMetaDataUpdate = async (
         while (attempts < maxAttempts) {
             try {
                 const file = await app.getFile(filePath);
-                if (file) {
-                    const metadata = await app.getMetadata(file);
+                if (file && !app.isFolder(file as any)) {
+                    const metadata = await app.getMetadata(file as IFile);
                     if (metadata && metadata[key] !== undefined) {
                         try {
                             await callback();

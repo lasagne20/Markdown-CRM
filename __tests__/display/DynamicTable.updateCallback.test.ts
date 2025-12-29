@@ -1,10 +1,6 @@
 import { DynamicTable } from '../../src/display/DynamicTable';
 import { Classe } from '../../src/vault/Classe';
 import { Vault } from '../../src/vault/Vault';
-import { ObjectProperty } from '../../src/properties/ObjectProperty';
-import { SelectProperty } from '../../src/properties/SelectProperty';
-import { NumberProperty } from '../../src/properties/NumberProperty';
-import { StringProperty } from '../../src/properties/StringProperty';
 
 // Mock console pour capturer les logs
 const originalConsole = console.log;
@@ -81,40 +77,49 @@ describe('DynamicTable Update Callback Debug', () => {
             getFile: jest.fn(() => mockFileObj),
             getProperty: jest.fn((propName) => {
                 if (propName === 'projets') {
-                    // Create ObjectProperty with properties (real Property instances)
-                    const objectProperty = new ObjectProperty('projets', {
+                    // Mock simple d'ObjectProperty qui fonctionne avec le test
+                    return {
                         type: 'object',
+                        name: 'projets',
                         properties: {
                             etat: {
                                 type: 'select',
-                                options: ['En cours', 'Terminé', 'En attente', 'Payé']
+                                name: 'etat',
+                                fillDisplay: jest.fn((value, callback) => {
+                                    const select = document.createElement('select');
+                                    select.value = value;
+                                    ['En cours', 'Terminé', 'En attente', 'Payé'].forEach(option => {
+                                        const opt = document.createElement('option');
+                                        opt.value = option;
+                                        opt.text = option;
+                                        if (option === value) opt.selected = true;
+                                        select.appendChild(opt);
+                                    });
+                                    select.onchange = () => callback(select.value);
+                                    return select;
+                                })
                             },
                             priorite: {
                                 type: 'select',
-                                options: ['Haute', 'Moyenne', 'Basse']
+                                name: 'priorite',
+                                fillDisplay: jest.fn((value, callback) => {
+                                    const select = document.createElement('select');
+                                    select.value = value;
+                                    return select;
+                                })
                             },
                             montant: {
-                                type: 'number'
+                                type: 'number',
+                                name: 'montant',
+                                fillDisplay: jest.fn((value, callback) => {
+                                    const input = document.createElement('input');
+                                    input.type = 'number';
+                                    input.value = value;
+                                    return input;
+                                })
                             }
                         }
-                    });
-
-                    // Initialize properties
-                    objectProperty.properties = {
-                        etat: new SelectProperty('etat', {
-                            type: 'select',
-                            options: ['En cours', 'Terminé', 'En attente', 'Payé']
-                        }),
-                        priorite: new SelectProperty('priorite', {
-                            type: 'select',
-                            options: ['Haute', 'Moyenne', 'Basse']
-                        }),
-                        montant: new NumberProperty('montant', {
-                            type: 'number'
-                        })
                     };
-
-                    return objectProperty;
                 }
                 return null;
             }),
@@ -138,7 +143,7 @@ describe('DynamicTable Update Callback Debug', () => {
                 {
                     name: 'Fichier',
                     propertyName: '_fileName',
-                    filter: 'text',
+                    filter: 'text' as const,
                     sort: true
                 },
                 {

@@ -484,6 +484,9 @@ export class DisplayRenderer {
      * Create a pseudo-instance that behaves like a Classe for ObjectProperty objects
      */
     private createPseudoInstance(obj: any, parentInstance: Classe, propertyName: string, index: number, parentClassName: string): Classe {
+        // Capture reference to DisplayRenderer instance
+        const displayRenderer = this;
+        
         // Create a pseudo-instance that implements the necessary Classe interface
         const pseudoInstance: any = {
             _isObjectPropertyItem: true,
@@ -510,7 +513,7 @@ export class DisplayRenderer {
                 // Handle complex property expressions (like "animateurs.filter(animateur=$current).tarif")
                 if (propName.includes('.') || propName.includes('filter') || propName.includes('$current')) {
                     try {
-                        return this.evaluateComplexProperty(propName, obj, parentInstance);
+                        return displayRenderer.evaluateComplexProperty(propName, obj, parentInstance);
                     } catch (error) {
                         console.warn(`Error processing complex property ${propName}:`, error);
                         return undefined;
@@ -653,9 +656,23 @@ export class DisplayRenderer {
                     basename: parentInstance.getName()
                 };
             },
-            getVault: () => parentInstance.getVault?.() || this.vault,
+            getVault: () => parentInstance.getVault?.() || displayRenderer.vault,
             updatePropertyValue: async (propName: string, value: any) => {
+                // Update the local object for immediate UI feedback
                 obj[propName] = value;
+                
+                // Get the current array value from the parent file
+                const currentArrayValue = await parentInstance.getPropertyValue(propertyName);
+                
+                if (Array.isArray(currentArrayValue) && index >= 0 && index < currentArrayValue.length) {
+                    // Update the specific item in the array
+                    currentArrayValue[index][propName] = value;
+                    
+                    // Save the entire updated array back to the parent file
+                    await parentInstance.updatePropertyValue(propertyName, currentArrayValue);
+                } else {
+                    console.error(`❌ Index ${index} invalide pour le tableau ${propertyName} de longueur ${currentArrayValue?.length}`);
+                }
             },
             
             // Provide direct access to object properties

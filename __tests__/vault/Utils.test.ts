@@ -4,6 +4,7 @@ import { waitForFileMetaDataUpdate, waitForMetaDataCacheUpdate } from '../../src
 const createMockApp = () => ({
     getFile: jest.fn(),
     getMetadata: jest.fn(),
+    isFolder: jest.fn(() => false)
 });
 
 describe('Utils', () => {

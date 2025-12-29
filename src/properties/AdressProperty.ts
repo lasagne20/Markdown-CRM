@@ -1,7 +1,6 @@
 import { LinkProperty } from "./LinkProperty";
 import { Property } from "./Property";
 import { Vault } from "../vault/Vault";
-import axios from 'axios';
 
 
 
