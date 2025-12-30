@@ -171,19 +171,46 @@ export class Vault {
         if (files.length > 0) {
             let file = files[0];
             if (files.length > 1) {
-                let path = this.readLinkFile(name, true);
-                if (path) {
-                    // Try to find the best match by walking up the path segments
-                    let segments = path.split("/");
-                    while (segments.length > 0) {
-                        const candidatePath = segments.join("/");
-                        const bestMatch = files.find((f : IFile) => f.path.endsWith("/" + candidatePath) || f.path === candidatePath);
-                        if (bestMatch) {
-                            file = bestMatch;
-                            break;
+                let originalPath = this.readLinkFile(name, true);
+                if (originalPath) {
+                    // Try to find the best match by scoring path similarity
+                    let bestScore = -1;
+                    let bestMatch = files[0];
+                    
+                    const originalSegments = originalPath.split("/");
+                    
+                    for (const candidateFile of files) {
+                        const candidateSegments = candidateFile.path.split("/");
+                        let score = 0;
+                        
+                        // Score based on matching path segments (order independent)
+                        for (const originalSegment of originalSegments) {
+                            if (candidateSegments.includes(originalSegment)) {
+                                score += 1;
+                            }
                         }
-                        segments.shift(); // Remove the first segment and try again
+                        
+                        // Bonus for matching the end of the path structure
+                        if (candidateFile.path.endsWith("/" + originalPath) || candidateFile.path === originalPath) {
+                            score += 10; // Strong preference for exact path match
+                        } else {
+                            // Check for partial suffix matches
+                            for (let i = 1; i <= originalSegments.length; i++) {
+                                const suffix = originalSegments.slice(-i).join("/");
+                                if (candidateFile.path.endsWith("/" + suffix) || candidateFile.path === suffix) {
+                                    score += i; // Score increases with longer suffix matches
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMatch = candidateFile;
+                        }
                     }
+                    
+                    file = bestMatch;
                 }
                 else {
                     console.error("Plusieurs fichiers trouvés pour le lien sans chemin : " + name, files);
@@ -390,13 +417,14 @@ export class Vault {
         // Move all files 
         let watchedFiles: string[] = [];
         for (let file of await this.app.listFiles()) {
-            if (watchedFiles.includes(file.name) || file.path.startsWith("Outils")) {
+            if (watchedFiles.includes(file.name) && !file.name.endsWith(".md")) {
                 continue;
             }
             console.log("Refresh : " + file.path);
             const classe = await this.getFromFile(file);
             if (classe) {
-                classe.onUpdate();
+                await classe.onCreate();
+                await classe.onUpdate();
             }
 
             // Remove the duplicates
@@ -415,7 +443,11 @@ export class Vault {
         // Remove empty folders 
         for (let folder of await this.app.listFolders()) {
             if (folder.children && folder.children.length === 0) {
-                await this.app.delete(folder);
+                try{
+                    await this.app.delete(folder);
+                } catch (error) {
+                    console.error(`Error deleting folder ${folder.path}:`, error);
+                }
             }
         }
 
