@@ -640,7 +640,12 @@ export class Classe {
                 const folder = await this.vault.app.getFile(sourceFolderPath);
                 if (folder && 'children' in folder) {
                     // Use the adapter's move method to move the entire folder
-                    await this.vault.app.move(folder, newFolderPath);
+                    try {
+                        await this.vault.app.move(folder, newFolderPath);
+                    } catch (error) {
+                        console.error(`Error moving folder: ${error}`);
+                    }
+                    
                     
                     // Update this.file reference to point to new location
                     const newFilePath = `${newFolderPath}/${this.file.getName()}`;

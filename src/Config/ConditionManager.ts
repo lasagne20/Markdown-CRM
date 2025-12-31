@@ -152,6 +152,10 @@ export class ConditionManager {
                     : !this.compareValues(propertyValue, resolveValue(propertyCondition.value));
 
             case 'equalsAny':
+                if (!Array.isArray(propertyCondition.values) || propertyCondition.values.length === 0) {
+                    console.warn(`equalsAny condition requires non-empty 'values' array`);
+                    return false;
+                }
                 return propertyCondition.values.some(value =>
                     this.isCurrentValue(value) && currentDocument
                         ? this.handleCurrentComparison(propertyValue, currentDocument)
@@ -159,6 +163,10 @@ export class ConditionManager {
                 );
 
             case 'notEqualsAny':
+                if (!Array.isArray(propertyCondition.values) || propertyCondition.values.length === 0) {
+                    console.warn(`notEqualsAny condition requires non-empty 'values' array`);
+                    return true; // If no values to exclude, everything is allowed
+                }
                 return !propertyCondition.values.some(value =>
                     this.isCurrentValue(value) && currentDocument
                         ? this.handleCurrentComparison(propertyValue, currentDocument)
@@ -172,20 +180,24 @@ export class ConditionManager {
                 return this.handleContainsLogic(propertyValue, propertyCondition.value, currentDocument, true);
 
             case 'greaterThan':
-                const gtValue = this.toNumber(propertyValue);
-                return gtValue !== null && gtValue > propertyCondition.value;
+                const gtValueProperty = this.toDateNumber(propertyValue);
+                const gtValueCondition = this.toDateNumber(propertyCondition.value);
+                return gtValueProperty !== null && gtValueCondition !== null && gtValueProperty > gtValueCondition;
 
             case 'lessThan':
-                const ltValue = this.toNumber(propertyValue);
-                return ltValue !== null && ltValue < propertyCondition.value;
+                const ltValueProperty = this.toDateNumber(propertyValue);
+                const ltValueCondition = this.toDateNumber(propertyCondition.value);
+                return ltValueProperty !== null && ltValueCondition !== null && ltValueProperty < ltValueCondition;
 
             case 'greaterThanOrEqual':
-                const gteValue = this.toNumber(propertyValue);
-                return gteValue !== null && gteValue >= propertyCondition.value;
+                const gteValueProperty = this.toDateNumber(propertyValue);
+                const gteValueCondition = this.toDateNumber(propertyCondition.value);
+                return gteValueProperty !== null && gteValueCondition !== null && gteValueProperty >= gteValueCondition;
 
             case 'lessThanOrEqual':
-                const lteValue = this.toNumber(propertyValue);
-                return lteValue !== null && lteValue <= propertyCondition.value;
+                const lteValueProperty = this.toDateNumber(propertyValue);
+                const lteValueCondition = this.toDateNumber(propertyCondition.value);
+                return lteValueProperty !== null && lteValueCondition !== null && lteValueProperty <= lteValueCondition;
 
             case 'isEmpty':
                 return propertyValue === null || propertyValue === undefined || propertyValue === '' || 
@@ -487,6 +499,53 @@ export class ConditionManager {
             const num = parseFloat(value);
             return isNaN(num) ? null : num;
         }
+        return null;
+    }
+
+    /**
+     * Convert value to date number (timestamp) for date comparisons
+     * Supports various input formats:
+     * - Year only: "2024" -> timestamp for January 1st, 2024
+     * - Date string: "2024-12-31" -> timestamp for that date
+     * - Timestamp: 1735689600000 -> returned as-is
+     * - Date object: new Date() -> converted to timestamp
+     */
+    private toDateNumber(value: any): number | null {
+        // Already a number (timestamp)
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        // Date object
+        if (value instanceof Date) {
+            return value.getTime();
+        }
+
+        // String conversion
+        if (typeof value === 'string') {
+            // Year only: "2024"
+            if (/^\d{4}$/.test(value)) {
+                const year = parseInt(value, 10);
+                return new Date(year, 0, 1).getTime(); // January 1st of that year
+            }
+
+            // Date format: "2024-12-31"
+            if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(value)) {
+                const date = new Date(value);
+                return isNaN(date.getTime()) ? null : date.getTime();
+            }
+
+            // ISO date format or other date strings
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+                return date.getTime();
+            }
+
+            // Fallback: try parsing as number
+            const num = parseFloat(value);
+            return isNaN(num) ? null : num;
+        }
+
         return null;
     }
 
