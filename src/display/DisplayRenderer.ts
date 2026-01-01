@@ -374,6 +374,18 @@ export class DisplayRenderer {
                 console.warn(`Unknown smartFilter type: ${smartFilter}`);
         }
 
+        // Filter by class name for smartFilter cases that don't inherently filter by class
+        if (smartFilter !== 'all' && smartFilter !== 'roots' && !source.class.includes('.')) {
+            console.log('🔧 DEBUG: Filtering by class', source.class, 'from', instances.length, 'instances');
+            instances = instances.filter((instance: Classe) => {
+                const instanceClassName = (instance as any).name;
+                const matches = instanceClassName === source.class;
+                console.log(`  - ${instance.getName()} (${instanceClassName}) matches ${source.class}:`, matches);
+                return matches;
+            });
+            console.log('🔧 DEBUG: After class filter:', instances.length, 'instances remain');
+        }
+
         // Apply conditions if specified
         if (source.conditions && source.conditions.length > 0) {
             const validationFn = this.vault.conditionManager.createValidationFunction(source.conditions, currentInstance);
