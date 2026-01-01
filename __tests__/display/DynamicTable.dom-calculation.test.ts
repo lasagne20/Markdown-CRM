@@ -77,10 +77,10 @@ describe('DynamicTable - DOM Calculation Methods', () => {
 
         tableConfig = {
             columns: [
-                { name: 'Fichier', propertyName: '_fileName', filter: 'text' },
-                { name: 'Nom', propertyName: 'nom', filter: 'text' },
-                { name: 'Budget', propertyName: 'budget', filter: false },
-                { name: 'Statut', propertyName: 'statut', filter: 'select' }
+                { name: 'Fichier', propertyName: '_fileName' },
+                { name: 'Nom', propertyName: 'nom' },
+                { name: 'Budget', propertyName: 'budget' },
+                { name: 'Statut', propertyName: 'statut' }
             ],
             totals: [
                 { formula: 'count', column: 'Total' },

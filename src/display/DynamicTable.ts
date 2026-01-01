@@ -145,8 +145,8 @@ export class DynamicTable {
                 await this.sortTable(index);
             };
             
-            // Appliquer le tri par défaut si spécifié et qu'aucun tri n'est encore actif
-            if (col.sort && this.tableData.currentSort.column === -1) {
+            // Appliquer le tri par défaut si spécifié (le dernier sort trouvé l'emporte)
+            if (col.sort) {
                 this.tableData.currentSort = {
                     column: index,
                     ascending: col.sort === 'asc'

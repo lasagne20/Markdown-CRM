@@ -111,12 +111,12 @@ describe('DynamicTable - Array Filtering', () => {
         // Table configuration with array filtering
         tableConfig = {
             columns: [
-                { name: 'Fichier', propertyName: '_fileName', filter: 'text' },
-                { name: 'Nom', propertyName: 'nom', filter: 'text' },
-                { name: 'Montant Current', propertyName: 'partenariats.filter(statut=current).montant', filter: false },
-                { name: 'Partenaire Current', propertyName: 'partenariats.filter(statut=current).partenariat', filter: 'text' },
-                { name: 'Montant Pending', propertyName: 'partenariats.filter(statut=pending).montant', filter: false },
-                { name: 'Budget', propertyName: 'budget', filter: false }
+                { name: 'Fichier', propertyName: '_fileName' },
+                { name: 'Nom', propertyName: 'nom' },
+                { name: 'Montant Current', propertyName: 'partenariats.filter(statut=current).montant' },
+                { name: 'Partenaire Current', propertyName: 'partenariats.filter(statut=current).partenariat' },
+                { name: 'Montant Pending', propertyName: 'partenariats.filter(statut=pending).montant' },
+                { name: 'Budget', propertyName: 'budget' }
             ],
             totals: [
                 { formula: 'count', column: 'Total' },

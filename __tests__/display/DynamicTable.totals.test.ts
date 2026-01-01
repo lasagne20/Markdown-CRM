@@ -95,11 +95,11 @@ describe('DynamicTable - Filtering and Totals', () => {
         // Basic table configuration
         tableConfig = {
             columns: [
-                { name: 'Fichier', propertyName: '_fileName', filter: 'text' },
-                { name: 'Nom', propertyName: 'nom', filter: 'text' },
-                { name: 'Budget', propertyName: 'budget', filter: false },
-                { name: 'Statut', propertyName: 'statut', filter: 'select' },
-                { name: 'Équipe', propertyName: 'equipe', filter: false }
+                { name: 'Fichier', propertyName: '_fileName' },
+                { name: 'Nom', propertyName: 'nom' },
+                { name: 'Budget', propertyName: 'budget' },
+                { name: 'Statut', propertyName: 'statut' },
+                { name: 'Équipe', propertyName: 'equipe' }
             ],
             totals: [
                 { formula: 'count', column: 'Total' },

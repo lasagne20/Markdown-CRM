@@ -99,12 +99,12 @@ describe('DynamicTable - Nested Properties', () => {
         // Table configuration with nested properties
         tableConfig = {
             columns: [
-                { name: 'Fichier', propertyName: '_fileName', filter: 'text' },
-                { name: 'Nom', propertyName: 'nom', filter: 'text' },
-                { name: 'Partenaire', propertyName: 'partenariats.partenariat', filter: 'text' },
-                { name: 'Montant Partenariat', propertyName: 'partenariats.montant', filter: false },
-                { name: 'Statut Partenariat', propertyName: 'partenariats.statut', filter: 'select' },
-                { name: 'Budget', propertyName: 'budget', filter: false }
+                { name: 'Fichier', propertyName: '_fileName' },
+                { name: 'Nom', propertyName: 'nom' },
+                { name: 'Partenaire', propertyName: 'partenariats.partenariat' },
+                { name: 'Montant Partenariat', propertyName: 'partenariats.montant' },
+                { name: 'Statut Partenariat', propertyName: 'partenariats.statut' },
+                { name: 'Budget', propertyName: 'budget' }
             ],
             totals: [
                 { formula: 'count', column: 'Total' },

@@ -104,8 +104,7 @@ describe('DynamicTable UpdateItem Issue - Real Problem', () => {
                 {
                     name: 'Fichier',
                     propertyName: '_fileName',
-                    filter: 'text' as const,
-                    sort: true
+                    sort: 'asc' as const
                 },
                 {
                     name: 'État',
