@@ -19,7 +19,11 @@ export class MultiFileProperty extends ObjectProperty {
         super(name, vault, {}, args);
         this.classes = classes;
         this.conditions = args.conditions;
-        this.property = new FileProperty(name, vault, classes, args);
+        // Créer le FileProperty sans titre pour éviter la duplication
+        const filePropertyArgs = {...args};
+        delete filePropertyArgs.icon; // Pas besoin de l'icône dans FileProperty
+        this.property = new FileProperty(name, vault, classes, filePropertyArgs);
+        this.property.title = ""; // Pas de titre pour les éléments individuels
     }
 
     override getClasses(): string[] {
@@ -90,28 +94,12 @@ export class MultiFileProperty extends ObjectProperty {
         container.classList.add("metadata-multiFiles-container");
         container.classList.add("metadata-multiFiles-container-" + this.name.toLowerCase().replace(/\s+/g, '-'));
 
-        // Créer l'en-tête avec titre et bouton d'ajout seulement si un titre existe
-        if (this.title) {
-            const headerRow = document.createElement("div");
-            headerRow.classList.add("metadata-object-header-row");
-
-            const title = document.createElement("div");
-            title.textContent = this.title;
-            title.classList.add("metadata-header");
-            headerRow.appendChild(title);
-
-            const addButton = this.createAddButton(values, update, container);
-            headerRow.appendChild(addButton);
-
-            container.appendChild(headerRow);
-        } else {
-            // Si pas de titre, ajouter le bouton d'ajout directement
-            const addButton = this.createAddButton(values, update, container);
-            container.appendChild(addButton);
-        }
-
         // Créer les lignes d'objet
         this.createObjects(values, update, container);
+
+        // Ajouter le bouton d'ajout à la fin
+        const addButton = this.createAddButton(values, update, container);
+        container.appendChild(addButton);
 
         return container;
     }
@@ -143,7 +131,6 @@ export class MultiFileProperty extends ObjectProperty {
 
         let propertyContainer = document.createElement("div");
         propertyContainer.classList.add("metadata-multiFiles-property-inline");
-        // Correction: FileProperty.fillDisplay attend (value, update, args) et non (vault, value, update)
         propertyContainer.appendChild(this.property.fillDisplay(value, async (newValue : any) => await this.updateObject(values, update, index, this.property, newValue)));
         row.appendChild(propertyContainer);
 

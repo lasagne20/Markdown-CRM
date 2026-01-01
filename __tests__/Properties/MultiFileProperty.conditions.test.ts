@@ -126,7 +126,8 @@ describe('MultiFileProperty with Conditions', () => {
             expect(multiFileProperty.icon).toBe('👤');
             expect(multiFileProperty.tooltip).toBe('Select active contacts');
             expect(multiFileProperty.conditions).toEqual(conditions);
-            expect(multiFileProperty.property.icon).toBe('👤');
+            // L'icône est supprimée du FileProperty car elle est affichée par le MultiFileProperty lui-même
+            expect(multiFileProperty.property.icon).toBe('align-left');
             expect(multiFileProperty.property.tooltip).toBe('Select active contacts');
         });
 

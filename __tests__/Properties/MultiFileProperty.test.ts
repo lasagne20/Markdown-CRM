@@ -88,7 +88,8 @@ describe('MultiFileProperty', () => {
             
             multiFileProperty = new MultiFileProperty('testFiles', mockVault, classes, args);
 
-            expect(FileProperty).toHaveBeenCalledWith('testFiles', mockVault, classes, args);
+            // L'icône est supprimée du FileProperty pour éviter la duplication
+            expect(FileProperty).toHaveBeenCalledWith('testFiles', mockVault, classes, {});
         });
 
         test('should handle empty classes array', () => {

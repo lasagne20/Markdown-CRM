@@ -56,6 +56,14 @@ properties:
     
     classes:
       - Institution
+
+  multipleInstitutions:
+    type: MultiFileProperty
+    title: Institutions associées
+    icon: 🏛️
+    tooltip: "Sélectionnez plusieurs institutions associées"
+    classes:
+      - Institution
     
   postes:
     type: ObjectProperty
@@ -267,4 +275,6 @@ display:
               title: "Date de début"
             - type: property
               name: heure
-  
+            - type: property
+              name: multipleInstitutions
+          

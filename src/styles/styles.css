@@ -738,59 +738,101 @@ If your plugin does not need CSS, delete this file.
 
 .metadata-multiFiles-container {
     display: flex;
-    flex-wrap: wrap; /* Permet le retour à la ligne si nécessaire */
-    gap: 2px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
 }
 
 .metadata-multiFiles-row-inline {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
+    padding: 6px 10px;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+    transition: all 0.2s ease;
+    max-width: fit-content;
+}
+
+.metadata-multiFiles-row-inline:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
 }
 
 .metadata-multiFiles-property-inline {
-    flex: 1;
-    min-width: 150px; /* Largeur minimale pour les propriétés */
+    display: flex;
+    align-items: center;
+}
+
+.metadata-multiFiles-property-inline .metadata-field {
+    margin: 0;
+}
+
+.metadata-multiFiles-property-inline .metadata-title {
+    display: none;
+}
+
+.metadata-multiFiles-property-inline .field-link {
+    font-weight: 500;
+    color: var(--text-normal);
+    white-space: nowrap;
+}
+
+.metadata-multiFiles-row-inline .icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--text-muted);
 }
 
 .metadata-delete-button-inline-small {
-    background: var(--background-modifier-error);
-    color: var(--text-on-accent);
-    width: 17px; /* Largeur spécifique */
-    height: 17px; /* Hauteur spécifique */
+    background: transparent;
+    color: var(--text-muted);
+    width: 18px;
+    height: 18px;
     border: none;
-    padding: 5px;
-    border-radius: 6px;
+    padding: 0;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
+    transition: all 0.2s ease;
     display: flex;
     justify-content: center;
     align-items: center;
+    opacity: 0.6;
 }
 
 .metadata-delete-button-inline-small:hover {
-    background: var(--background-modifier-error-hover);
+    background: var(--background-modifier-error);
+    color: var(--text-on-accent);
+    opacity: 1;
 }
 
 .metadata-add-button-inline-small {
-    background: var(--interactive-accent);
-    color: var(--text-on-accent);
-    width: 30px; /* Largeur spécifique */
-    height: 30px; /* Hauteur spécifique */
-    border: none;
-    padding: 5px;
-    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border: 2px dashed var(--background-modifier-border);
+    padding: 0;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
+    transition: all 0.2s ease;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 8px; /* Espace au-dessus du bouton */
-    align-self: flex-end; /* Aligne le bouton à la fin de la dernière ligne */
+    margin-top: 4px;
 }
 
 .metadata-add-button-inline-small:hover {
-    background: var(--interactive-accent-hover);
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+    border-style: solid;
 }
 
 
