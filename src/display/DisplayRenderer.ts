@@ -380,10 +380,39 @@ export class DisplayRenderer {
             
             const filtered: Classe[] = [];
             for (const instance of instances) {
-                if (await validationFn(instance)) {
+                const isValid = await validationFn(instance);
+                console.log(`🔧 DEBUG: Instance ${instance.getName()} (${(instance as any).name}) - isValid:`, isValid);
+                if (isValid) {
                     filtered.push(instance);
                 }
             }
+            console.log('🔧 DEBUG: Filtered results:', filtered.length, 'instances');
+            instances = filtered;
+        }
+
+        // Apply hierarchical groups if specified
+        if (source.groups && source.groups.length > 0) {
+            console.log('🔧 DEBUG: Applying hierarchical groups to', instances.length, 'instances');
+            console.log('🔧 DEBUG: Groups:', JSON.stringify(source.groups, null, 2));
+            
+            // Create a ConditionConfig with the groups
+            const conditionConfig = {
+                operator: source.operator || 'AND',
+                groups: source.groups,
+                conditions: source.conditions || []
+            };
+            
+            const validationFn = this.vault.conditionManager.createHierarchicalValidationFunction(conditionConfig, currentInstance);
+            
+            const filtered: Classe[] = [];
+            for (const instance of instances) {
+                const isValid = await validationFn(instance);
+                console.log(`🔧 DEBUG: Instance ${instance.getName()} (${(instance as any).name}) - isValid:`, isValid);
+                if (isValid) {
+                    filtered.push(instance);
+                }
+            }
+            console.log('🔧 DEBUG: Filtered results:', filtered.length, 'instances');
             instances = filtered;
         }
 
