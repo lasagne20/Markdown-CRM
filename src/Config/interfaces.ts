@@ -63,7 +63,7 @@ export interface TableTotalConfig {
 
 // Base interface for all display items
 interface BaseDisplayItem {
-    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table';
+    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table' | 'number';
 }
 
 // Property display item
@@ -121,6 +121,25 @@ export interface TableDisplayItem extends BaseDisplayItem {
     totals?: TableTotalConfig[];
 }
 
+// Number display item (circular progress with number)
+export interface NumberDisplayItem extends BaseDisplayItem {
+    type: 'number';
+    title?: string;
+    className?: string;
+    
+    // Data source with filtering (like tables)
+    source: TableSourceConfig; // Source class and smart filter
+    formula: 'sum' | 'average' | 'avg' | 'count' | 'min' | 'max'; // Required for calculation
+    propertyName?: string; // Property to calculate on (for sum, avg, min, max)
+    
+    // Display options
+    unit?: string; // Unit to display (ex: %)
+    label?: string; // Label below the circle
+    size?: number; // Size in px (default: 96)
+    color?: string; // Fill color (default: var(--interactive-accent))
+    max?: number; // Maximum value for progress calculation (value/max = fill level)
+}
+
 // Union type for all display items
 export type DisplayItem = 
     | PropertyDisplayItem 
@@ -128,7 +147,8 @@ export type DisplayItem =
     | ContainerDisplayItem 
     | TabsDisplayItem 
     | FoldDisplayItem 
-    | TableDisplayItem;
+    | TableDisplayItem
+    | NumberDisplayItem;
 
 export interface DisplayConfig {
     items?: DisplayItem[]; // Legacy format

@@ -1,9 +1,10 @@
-import { DisplayItem } from '../Config/interfaces';
+import { DisplayItem, NumberDisplayItem } from '../Config/interfaces';
 import { Property } from '../properties/Property';
 import { Vault } from '../vault/Vault';
 import { Classe } from '../vault/Classe';
 import { addFold } from '../utils/Utils';
 import { DynamicTable } from './DynamicTable';
+import { NumberDisplay } from './NumberDisplay';
 
 /**
  * Utility class for rendering display configurations
@@ -56,6 +57,9 @@ export class DisplayRenderer {
             
             case 'table':
                 return await this.renderTable(item, this.context);
+            
+            case 'number':
+                return await this.renderNumber(item);
             
             default:
                 console.warn(`Unknown display item type: ${(item as any).type}`);
@@ -788,5 +792,108 @@ export class DisplayRenderer {
         return path.split('.').reduce((current, key) => {
             return (current && typeof current === 'object') ? current[key] : undefined;
         }, obj);
+    }
+
+    /**
+     * Render a number display item
+     */
+    private async renderNumber(item: NumberDisplayItem): Promise<HTMLElement | null> {
+        try {
+            // Get files based on source (reuse table logic)
+            const files = await this.getFilesForTable(item.source, this.context);
+            
+            // Calculate value using formula
+            const value = await this.calculateNumberValue(files, item.formula, item.propertyName);
+            
+            // Calculate fill level based on max value
+            let fillLevel = 1; // Default to full if no max specified
+            if (item.max && item.max > 0) {
+                fillLevel = Math.min(value / item.max, 1); // Cap at 100%
+            }
+            
+            const numberDisplay = new NumberDisplay({
+                value: value,
+                unit: item.unit,
+                label: item.label,
+                size: item.size,
+                color: item.color,
+                fillLevel: fillLevel
+            });
+            
+            const container = document.createElement('div');
+            if (item.className) {
+                container.className = item.className;
+            }
+            
+            if (item.title) {
+                const title = document.createElement('h3');
+                title.textContent = item.title;
+                title.style.marginBottom = '10px';
+                container.appendChild(title);
+            }
+            
+            container.appendChild(numberDisplay.container);
+            
+            return container;
+        } catch (error) {
+            console.error('Error rendering number display:', error);
+            
+            // Return error placeholder
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'crm-number-display-error';
+            errorDiv.textContent = 'Error loading number display';
+            errorDiv.style.cssText = 'color: var(--text-error); padding: 10px; border: 1px solid var(--text-error); border-radius: 4px;';
+            return errorDiv;
+        }
+    }
+
+    /**
+     * Calculate number value from files using formula
+     */
+    private async calculateNumberValue(files: Classe[], formula: string, propertyName?: string): Promise<number> {
+        if (formula === 'count') {
+            return files.length;
+        }
+        
+        if (!propertyName) {
+            return 0; // Can't calculate without property for non-count formulas
+        }
+        
+        // Get all property values
+        const values: number[] = [];
+        for (const file of files) {
+            try {
+                let value: any;
+                if (file.getPropertyValue) {
+                    value = await file.getPropertyValue(propertyName);
+                } else {
+                    // Fallback for object data
+                    value = this.getNestedProperty(file, propertyName);
+                }
+                
+                const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+                if (!isNaN(numValue)) {
+                    values.push(numValue);
+                }
+            } catch (error) {
+                console.warn(`Error getting property ${propertyName} from file:`, error);
+            }
+        }
+        
+        // Apply formula
+        switch (formula) {
+            case 'sum':
+                return values.reduce((sum, val) => sum + val, 0);
+            case 'average':
+            case 'avg':
+                return values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
+            case 'min':
+                return values.length > 0 ? Math.min(...values) : 0;
+            case 'max':
+                return values.length > 0 ? Math.max(...values) : 0;
+            default:
+                console.warn(`Unknown formula: ${formula}`);
+                return 0;
+        }
     }
 }

@@ -22,7 +22,7 @@ export class NumberDisplay {
         };
         this.container = document.createElement("div");
         this.container.className = "crm-number-display";
-        this. getDisplay();
+        this.getDisplay();
     }
 
     getDisplay() {
