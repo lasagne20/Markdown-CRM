@@ -1,0 +1,195 @@
+# Examples of Hierarchical Condition Configuration
+# These examples show how to use the new group-based condition system
+
+# Example 1: Backward Compatible - Simple condition array (AND logic)
+conditions_simple:
+  - property: "status"
+    type: "equals"
+    value: "active"
+  - property: "priority"
+    type: "greaterThan"
+    value: 3
+
+# Example 2: Single Condition Group with OR logic
+conditions_or_group:
+  operator: "OR"
+  conditions:
+    - property: "status"
+      type: "equals"
+      value: "urgent"
+    - property: "priority"
+      type: "greaterThan"
+      value: 8
+
+# Example 3: Complex nested groups
+conditions_complex:
+  operator: "AND"
+  conditions:
+    - property: "status"
+      type: "equals"
+      value: "active"
+  groups:
+    - operator: "OR"
+      conditions:
+        - property: "category"
+          type: "equals"
+          value: "important"
+        - property: "tags"
+          type: "contains"
+          value: "urgent"
+
+# Example 4: NOT support at group level
+conditions_with_not:
+  operator: "AND"
+  conditions:
+    - property: "status"
+      type: "equals"
+      value: "active"
+  groups:
+    - operator: "AND"
+      not: true  # NOT group
+      conditions:
+        - property: "priority"
+          type: "lessThan"
+          value: 3
+        - property: "category"
+          type: "equals"
+          value: "unimportant"
+
+# Example 5: Individual condition NOT
+conditions_individual_not:
+  operator: "OR"
+  conditions:
+    - property: "status"
+      type: "equals"
+      value: "inactive"
+      not: true  # NOT this specific condition
+    - property: "priority"
+      type: "greaterThan"
+      value: 5
+
+# Example 6: Deeply nested groups
+conditions_deep_nested:
+  operator: "OR"
+  groups:
+    - operator: "AND"
+      conditions:
+        - property: "status"
+          type: "equals"
+          value: "completed"
+        - property: "archived"
+          type: "notEquals"
+          value: true
+    - operator: "AND"
+      groups:
+        - operator: "OR"
+          conditions:
+            - property: "priority"
+              type: "greaterThan"
+              value: 7
+            - property: "tags"
+              type: "contains"
+              value: "critical"
+        - operator: "AND"
+          conditions:
+            - property: "assignee"
+              type: "isNotEmpty"
+            - property: "due_date"
+              type: "greaterThan"
+              value: "2024-01-01"
+
+# Example 7: Business logic - Project filtering
+project_conditions:
+  operator: "AND"
+  conditions:
+    - property: "type"
+      type: "equals"
+      value: "project"
+  groups:
+    - operator: "OR"
+      groups:
+        # High priority active projects
+        - operator: "AND"
+          conditions:
+            - property: "status"
+              type: "equals"
+              value: "active"
+            - property: "priority"
+              type: "greaterThanOrEqual"
+              value: 7
+        # Recently updated projects
+        - operator: "AND"
+          conditions:
+            - property: "last_updated"
+              type: "greaterThan"
+              value: "2024-11-01"
+            - property: "status"
+              type: "equalsAny"
+              values: ["active", "on-hold"]
+        # Critical projects (regardless of status)
+        - operator: "AND"
+          conditions:
+            - property: "tags"
+              type: "contains"
+              value: "critical"
+            - property: "archived"
+              type: "notEquals"
+              value: true
+
+# Example 8: Exclusion patterns
+exclusion_conditions:
+  operator: "AND"
+  conditions:
+    - property: "visible"
+      type: "equals"
+      value: true
+  groups:
+    - operator: "OR"
+      not: true  # NOT (archived OR deleted OR private)
+      conditions:
+        - property: "archived"
+          type: "equals"
+          value: true
+        - property: "deleted"
+          type: "equals"
+          value: true
+        - property: "visibility"
+          type: "equals"
+          value: "private"
+
+# Example 9: Mixed formats for migration
+mixed_format:
+  conditions:
+    - property: "base_requirement"
+      type: "equals"
+      value: true
+  groups:
+    - operator: "OR"
+      conditions:
+        - property: "new_format"
+          type: "equals"
+          value: "supported"
+        - property: "legacy_support"
+          type: "equals"
+          value: true
+
+# Example 10: Date-based filtering with new syntax
+date_conditions:
+  operator: "OR"
+  groups:
+    - operator: "AND"
+      conditions:
+        - property: "created_date"
+          type: "greaterThan"
+          value: "2024"  # Year comparison
+        - property: "status"
+          type: "equals"
+          value: "new"
+    - operator: "AND"
+      conditions:
+        - property: "updated_date"
+          type: "greaterThan"
+          value: "2024-12-01"  # Date string comparison
+        - property: "priority"
+          type: "greaterThan"
+          value: 5

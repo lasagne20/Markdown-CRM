@@ -153,7 +153,7 @@ describe('ConditionManager - DateProperty Integration', () => {
             const condition: Condition = {
                 property: 'startDate',
                 type: 'greaterThan',
-                value: '2023' // Just a year
+                value: '2023' as any // Just a year
             };
 
             const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
@@ -167,7 +167,7 @@ describe('ConditionManager - DateProperty Integration', () => {
             const condition: Condition = {
                 property: 'startDate',
                 type: 'lessThan',
-                value: '2025' // Just a year
+                value: '2025' as any // Just a year
             };
 
             const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
@@ -181,7 +181,7 @@ describe('ConditionManager - DateProperty Integration', () => {
             const condition: Condition = {
                 property: 'startDate',
                 type: 'greaterThanOrEqual',
-                value: '2024-12-31' // Date string
+                value: '2024-12-31' as any // Date string
             };
 
             const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
@@ -195,7 +195,7 @@ describe('ConditionManager - DateProperty Integration', () => {
             const condition: Condition = {
                 property: 'startDate',
                 type: 'lessThanOrEqual',
-                value: '2024-12-31' // Date string
+                value: '2024-12-31' as any // Date string
             };
 
             const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
@@ -209,7 +209,7 @@ describe('ConditionManager - DateProperty Integration', () => {
             const condition: Condition = {
                 property: 'startDate',
                 type: 'greaterThan',
-                value: new Date('2024-12-30') // Date object (not timestamp)
+                value: new Date('2024-12-30') as any // Date object (not timestamp)
             };
 
             const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
@@ -223,7 +223,7 @@ describe('ConditionManager - DateProperty Integration', () => {
             const condition: Condition = {
                 property: 'startDate',
                 type: 'greaterThanOrEqual',
-                value: '2024' // Should match January 1st, 2024
+                value: '2024' as any // Should match January 1st, 2024
             };
 
             const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
@@ -237,7 +237,7 @@ describe('ConditionManager - DateProperty Integration', () => {
             const condition: Condition = {
                 property: 'startDate',
                 type: 'greaterThanOrEqual',
-                value: '2024' // Should be January 1st, 2024
+                value: '2024' as any // Should be January 1st, 2024
             };
 
             const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);

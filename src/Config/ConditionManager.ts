@@ -24,6 +24,7 @@ export type ConditionType =
 interface BaseCondition {
     property: string;
     type: ConditionType;
+    not?: boolean;  // NOT operator for individual conditions
 }
 
 /**
@@ -88,6 +89,26 @@ export interface IsNotEmptyCondition extends BaseCondition {
 }
 
 /**
+ * Condition group for hierarchical condition evaluation with logical operators
+ */
+export interface ConditionGroup {
+    operator?: 'AND' | 'OR';     // Default: AND
+    not?: boolean;               // NOT operator applied to entire group
+    conditions?: Condition[];     // Simple conditions in this group
+    groups?: ConditionGroup[];   // Nested condition groups
+}
+
+/**
+ * Root condition configuration supporting both legacy and new hierarchical format
+ */
+export interface ConditionConfig {
+    operator?: 'AND' | 'OR';     // Root operator (default: AND)
+    not?: boolean;               // NOT operator applied to entire config
+    conditions?: Condition[];     // Legacy format support
+    groups?: ConditionGroup[];   // New hierarchical format
+}
+
+/**
  * Direct link condition - Check if the instance has a direct link with the current document
  * This checks if any property of the instance links to the current document
  */
@@ -132,7 +153,8 @@ export class ConditionManager {
     async evaluateCondition(condition: Condition, instance: Classe, currentDocument?: Classe): Promise<boolean> {
         // Check if this is a DirectLinkCondition
         if ('conditionType' in condition && condition.conditionType === 'directLink') {
-            return await this.evaluateDirectLinkCondition(condition, instance, currentDocument);
+            const result = await this.evaluateDirectLinkCondition(condition, instance, currentDocument);
+            return (condition as any).not ? !result : result;
         }
 
         // Otherwise, it's a PropertyCondition
@@ -140,77 +162,98 @@ export class ConditionManager {
         const propertyValue = await this.getPropertyValue(instance, propertyCondition.property);
         const resolveValue = this.createResolveFunction(currentDocument);
 
+        let result: boolean;
+
         switch (propertyCondition.type) {
             case 'equals':
-                return this.isCurrentValue(propertyCondition.value) && currentDocument
+                result = this.isCurrentValue(propertyCondition.value) && currentDocument
                     ? this.handleCurrentComparison(propertyValue, currentDocument)
                     : this.compareValues(propertyValue, resolveValue(propertyCondition.value));
+                break;
 
             case 'notEquals':
-                return this.isCurrentValue(propertyCondition.value) && currentDocument
+                result = this.isCurrentValue(propertyCondition.value) && currentDocument
                     ? !this.handleCurrentComparison(propertyValue, currentDocument)
                     : !this.compareValues(propertyValue, resolveValue(propertyCondition.value));
+                break;
 
             case 'equalsAny':
                 if (!Array.isArray(propertyCondition.values) || propertyCondition.values.length === 0) {
                     console.warn(`equalsAny condition requires non-empty 'values' array`);
-                    return false;
+                    result = false;
+                    break;
                 }
-                return propertyCondition.values.some(value =>
+                result = propertyCondition.values.some(value =>
                     this.isCurrentValue(value) && currentDocument
                         ? this.handleCurrentComparison(propertyValue, currentDocument)
                         : this.compareValues(propertyValue, resolveValue(value))
                 );
+                break;
 
             case 'notEqualsAny':
                 if (!Array.isArray(propertyCondition.values) || propertyCondition.values.length === 0) {
                     console.warn(`notEqualsAny condition requires non-empty 'values' array`);
-                    return true; // If no values to exclude, everything is allowed
+                    result = true; // If no values to exclude, everything is allowed
+                    break;
                 }
-                return !propertyCondition.values.some(value =>
+                result = !propertyCondition.values.some(value =>
                     this.isCurrentValue(value) && currentDocument
                         ? this.handleCurrentComparison(propertyValue, currentDocument)
                         : this.compareValues(propertyValue, resolveValue(value))
                 );
+                break;
 
             case 'contains':
-                return this.handleContainsLogic(propertyValue, propertyCondition.value, currentDocument);
+                result = this.handleContainsLogic(propertyValue, propertyCondition.value, currentDocument);
+                break;
 
             case 'notContains':
-                return this.handleContainsLogic(propertyValue, propertyCondition.value, currentDocument, true);
+                result = this.handleContainsLogic(propertyValue, propertyCondition.value, currentDocument, true);
+                break;
 
             case 'greaterThan':
-                const gtValueProperty = this.toDateNumber(propertyValue);
-                const gtValueCondition = this.toDateNumber(propertyCondition.value);
-                return gtValueProperty !== null && gtValueCondition !== null && gtValueProperty > gtValueCondition;
+                const gtValueProperty = this.toNumericValueSmart(instance, propertyCondition.property, propertyValue);
+                const gtValueCondition = this.toNumericValueSmart(instance, propertyCondition.property, propertyCondition.value);
+                result = gtValueProperty !== null && gtValueCondition !== null && gtValueProperty > gtValueCondition;
+                break;
 
             case 'lessThan':
-                const ltValueProperty = this.toDateNumber(propertyValue);
-                const ltValueCondition = this.toDateNumber(propertyCondition.value);
-                return ltValueProperty !== null && ltValueCondition !== null && ltValueProperty < ltValueCondition;
+                const ltValueProperty = this.toNumericValueSmart(instance, propertyCondition.property, propertyValue);
+                const ltValueCondition = this.toNumericValueSmart(instance, propertyCondition.property, propertyCondition.value);
+                result = ltValueProperty !== null && ltValueCondition !== null && ltValueProperty < ltValueCondition;
+                break;
 
             case 'greaterThanOrEqual':
-                const gteValueProperty = this.toDateNumber(propertyValue);
-                const gteValueCondition = this.toDateNumber(propertyCondition.value);
-                return gteValueProperty !== null && gteValueCondition !== null && gteValueProperty >= gteValueCondition;
+                const gteValueProperty = this.toNumericValueSmart(instance, propertyCondition.property, propertyValue);
+                const gteValueCondition = this.toNumericValueSmart(instance, propertyCondition.property, propertyCondition.value);
+                result = gteValueProperty !== null && gteValueCondition !== null && gteValueProperty >= gteValueCondition;
+                break;
 
             case 'lessThanOrEqual':
-                const lteValueProperty = this.toDateNumber(propertyValue);
-                const lteValueCondition = this.toDateNumber(propertyCondition.value);
-                return lteValueProperty !== null && lteValueCondition !== null && lteValueProperty <= lteValueCondition;
+                const lteValueProperty = this.toNumericValueSmart(instance, propertyCondition.property, propertyValue);
+                const lteValueCondition = this.toNumericValueSmart(instance, propertyCondition.property, propertyCondition.value);
+                result = lteValueProperty !== null && lteValueCondition !== null && lteValueProperty <= lteValueCondition;
+                break;
 
             case 'isEmpty':
-                return propertyValue === null || propertyValue === undefined || propertyValue === '' || 
+                result = propertyValue === null || propertyValue === undefined || propertyValue === '' || 
                        (Array.isArray(propertyValue) && propertyValue.length === 0);
+                break;
 
             case 'isNotEmpty':
-                return propertyValue !== null && propertyValue !== undefined && propertyValue !== '' &&
+                result = propertyValue !== null && propertyValue !== undefined && propertyValue !== '' &&
                        (!Array.isArray(propertyValue) || propertyValue.length > 0);
+                break;
 
             default:
                 console.warn(`Unknown condition type: ${(propertyCondition as any).type}`);
-                return false;
+                result = false;
+                break;
         }
+
+        // Apply NOT if specified on the condition
+        // Apply NOT if specified on the condition
+        return propertyCondition.not ? !result : result;
     }
 
     /**
@@ -503,50 +546,74 @@ export class ConditionManager {
     }
 
     /**
-     * Convert value to date number (timestamp) for date comparisons
-     * Supports various input formats:
-     * - Year only: "2024" -> timestamp for January 1st, 2024
-     * - Date string: "2024-12-31" -> timestamp for that date
-     * - Timestamp: 1735689600000 -> returned as-is
-     * - Date object: new Date() -> converted to timestamp
+     * Smart numeric conversion that uses date conversion for DateProperty, number conversion for others
+     * Combines the logic of both toNumber and toDateNumber based on property type
      */
-    private toDateNumber(value: any): number | null {
-        // Already a number (timestamp)
-        if (typeof value === 'number') {
-            return value;
-        }
+    private toNumericValueSmart(instance: Classe, propertyName: string, value: any): number | null {
+        try {
+            const property = instance.getProperty(propertyName);
+            const isDateProperty = property && property.type === 'date';
+            
+            if (isDateProperty) {
+                // Date conversion logic
+                // Already a number (timestamp)
+                if (typeof value === 'number') {
+                    return value;
+                }
 
-        // Date object
-        if (value instanceof Date) {
-            return value.getTime();
-        }
+                // Date object
+                if (value instanceof Date) {
+                    return value.getTime();
+                }
 
-        // String conversion
-        if (typeof value === 'string') {
-            // Year only: "2024"
-            if (/^\d{4}$/.test(value)) {
-                const year = parseInt(value, 10);
-                return new Date(year, 0, 1).getTime(); // January 1st of that year
+                // String conversion for dates
+                if (typeof value === 'string') {
+                    // Year only: "2024"
+                    if (/^\d{4}$/.test(value)) {
+                        const year = parseInt(value, 10);
+                        return new Date(year, 0, 1).getTime(); // January 1st of that year
+                    }
+
+                    // Date format: "2024-12-31"
+                    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(value)) {
+                        const date = new Date(value);
+                        return isNaN(date.getTime()) ? null : date.getTime();
+                    }
+
+                    // ISO date format or other date strings
+                    const date = new Date(value);
+                    if (!isNaN(date.getTime())) {
+                        return date.getTime();
+                    }
+
+                    // Fallback: try parsing as number
+                    const num = parseFloat(value);
+                    return isNaN(num) ? null : num;
+                }
+                
+                return null;
+            } else {
+                // Regular number conversion logic
+                if (typeof value === 'number') {
+                    return value;
+                }
+                if (typeof value === 'string') {
+                    const num = parseFloat(value);
+                    return isNaN(num) ? null : num;
+                }
+                return null;
             }
-
-            // Date format: "2024-12-31"
-            if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(value)) {
-                const date = new Date(value);
-                return isNaN(date.getTime()) ? null : date.getTime();
+        } catch (error) {
+            // Fallback to regular number conversion if property lookup fails
+            if (typeof value === 'number') {
+                return value;
             }
-
-            // ISO date format or other date strings
-            const date = new Date(value);
-            if (!isNaN(date.getTime())) {
-                return date.getTime();
+            if (typeof value === 'string') {
+                const num = parseFloat(value);
+                return isNaN(num) ? null : num;
             }
-
-            // Fallback: try parsing as number
-            const num = parseFloat(value);
-            return isNaN(num) ? null : num;
+            return null;
         }
-
-        return null;
     }
 
     /**
@@ -581,5 +648,113 @@ export class ConditionManager {
             // Otherwise, it's a PropertyCondition
             return config as Condition;
         });
+    }
+
+    /**
+     * Evaluate hierarchical condition configuration
+     * @param conditionConfig The condition configuration (supports groups, operators, and backward compatibility)
+     * @param instance The Classe instance to test
+     * @param currentDocument The current document context
+     */
+    async evaluateConditionConfig(conditionConfig: ConditionConfig, instance: Classe, currentDocument?: Classe): Promise<boolean> {
+        // Handle backward compatibility: if it's just an array of conditions
+        if (Array.isArray(conditionConfig)) {
+            return await this.evaluateConditions(conditionConfig, instance, currentDocument);
+        }
+
+        // Handle single condition
+        if (this.isCondition(conditionConfig)) {
+            return await this.evaluateCondition(conditionConfig as Condition, instance, currentDocument);
+        }
+
+        // Handle condition group
+        if (this.isConditionGroup(conditionConfig)) {
+            return await this.evaluateConditionGroup(conditionConfig as ConditionGroup, instance, currentDocument);
+        }
+
+        // If none of the above, treat as an AND group of conditions
+        if (conditionConfig.conditions) {
+            const group: ConditionGroup = {
+                operator: 'AND',
+                conditions: conditionConfig.conditions,
+                groups: conditionConfig.groups
+            };
+            return await this.evaluateConditionGroup(group, instance, currentDocument);
+        }
+
+        return true; // Default to true if no valid conditions
+    }
+
+    /**
+     * Evaluate a condition group with AND/OR logic and nested groups
+     * @param group The condition group to evaluate
+     * @param instance The Classe instance to test
+     * @param currentDocument The current document context
+     */
+    async evaluateConditionGroup(group: ConditionGroup, instance: Classe, currentDocument?: Classe): Promise<boolean> {
+        const { operator = 'AND', conditions = [], groups = [], not = false } = group;
+        
+        const results: boolean[] = [];
+
+        // Evaluate direct conditions
+        for (const condition of conditions) {
+            const result = await this.evaluateCondition(condition, instance, currentDocument);
+            results.push(result);
+        }
+
+        // Evaluate nested groups
+        for (const nestedGroup of groups) {
+            const result = await this.evaluateConditionGroup(nestedGroup, instance, currentDocument);
+            results.push(result);
+        }
+
+        // If no conditions or groups, return true
+        if (results.length === 0) {
+            return !not; // Apply NOT if specified
+        }
+
+        // Apply operator logic
+        let finalResult: boolean;
+        if (operator === 'OR') {
+            finalResult = results.some(result => result);
+        } else { // AND
+            finalResult = results.every(result => result);
+        }
+
+        // Apply NOT if specified
+        return not ? !finalResult : finalResult;
+    }
+
+    /**
+     * Check if an object is a single condition
+     */
+    private isCondition(obj: any): boolean {
+        return obj && (
+            obj.property !== undefined || 
+            obj.conditionType === 'directLink' ||
+            obj.type !== undefined // Condition type (equals, greaterThan, etc.)
+        );
+    }
+
+    /**
+     * Check if an object is a condition group
+     */
+    private isConditionGroup(obj: any): boolean {
+        return obj && (
+            obj.operator !== undefined ||
+            obj.conditions !== undefined ||
+            obj.groups !== undefined
+        );
+    }
+
+    /**
+     * Create a validation function for hierarchical conditions
+     * @param conditionConfig The condition configuration
+     * @param currentDocument Optional current document for context
+     */
+    createHierarchicalValidationFunction(conditionConfig: ConditionConfig, currentDocument?: Classe): (instance: Classe) => Promise<boolean> {
+        return async (instance: Classe): Promise<boolean> => {
+            return await this.evaluateConditionConfig(conditionConfig, instance, currentDocument);
+        };
     }
 }

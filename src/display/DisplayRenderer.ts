@@ -327,9 +327,7 @@ export class DisplayRenderer {
             
             case 'children':
                 if (currentInstance) {
-                    const allChildren = await (currentInstance as any).findChildren?.() || [];
-                    // Filter to only include hierarchical children (in parent's dedicated folder)
-                    instances = this.filterHierarchicalChildren(currentInstance, allChildren);
+                    instances = await (currentInstance as any).findChildren?.() || [];
                 }
                 break;
             
@@ -393,43 +391,6 @@ export class DisplayRenderer {
     }
 
     /**
-     * Filter children to only include those in hierarchical relationship
-     * (files that are actually in the parent's dedicated folder structure)
-     */
-    private filterHierarchicalChildren(parent: Classe, allChildren: Classe[]): Classe[] {
-        const parentName = parent.getName();
-        const parentPath = parent.getPath();
-        
-        if (!parentName || !parentPath) {
-            console.warn('Parent instance missing name or path for hierarchical filtering');
-            return [];
-        }
-        
-        // Determine the expected parent folder path
-        const parentFolderPath = `${parentName}/`;
-        
-        return allChildren.filter(child => {
-            const childPath = child.getPath();
-            if (!childPath) {
-                return false;
-            }
-            
-            // Child should be directly in parent's dedicated folder or subfolder
-            // Examples:
-            // Parent: "France.md" -> Children in "France/" folder
-            // Valid: "France/Région1.md", "France/Départements/Dept1.md"
-            // Invalid: "SomeOtherFolder/File.md", "AnotherParent/File.md"
-            const isInParentHierarchy = childPath.startsWith(parentFolderPath);
-            
-            if (!isInParentHierarchy) {
-                console.debug(`Filtering out non-hierarchical child: ${childPath} (not under ${parentFolderPath})`);
-            }
-            
-            return isInParentHierarchy;
-        });
-    }
-
-    /**
      * Get ObjectProperty items from ClassName.propertyName notation
      */
     private async getObjectPropertyItems(source: any, currentInstance?: Classe): Promise<Classe[]> {
@@ -452,10 +413,7 @@ export class DisplayRenderer {
             
             case 'children':
                 if (currentInstance) {
-                    const allChildren = await (currentInstance as any).findChildren?.() || [];
-                    // Filter to only include hierarchical children with the correct class name
-                    const hierarchicalChildren = this.filterHierarchicalChildren(currentInstance, allChildren);
-                    instances = hierarchicalChildren.filter(i => i.name === className);
+                    instances = await (currentInstance as any).findChildren?.() || [];
                 }
                 break;
                 
