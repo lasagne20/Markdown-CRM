@@ -46,6 +46,36 @@ export class SelectProperty extends Property {
         return this.normalizeValue(value);
     }
 
+    /**
+     * Determine if a color is light or dark
+     * @param color The color in any CSS format (hex, rgb, named color)
+     * @returns true if the color is light, false if dark
+     */
+    private isLightColor(color: string): boolean {
+        // Create a temporary element to get the computed RGB value
+        const temp = document.createElement('div');
+        temp.style.color = color;
+        document.body.appendChild(temp);
+        const computedColor = window.getComputedStyle(temp).color;
+        document.body.removeChild(temp);
+
+        // Extract RGB values
+        const rgb = computedColor.match(/\d+/g);
+        if (!rgb || rgb.length < 3) {
+            return true; // Default to light if we can't parse
+        }
+
+        const r = parseInt(rgb[0]);
+        const g = parseInt(rgb[1]);
+        const b = parseInt(rgb[2]);
+
+        // Calculate relative luminance using the formula from WCAG
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        
+        // Return true if luminance is greater than 0.5 (light color)
+        return luminance > 0.5;
+    }
+
     override fillDisplay(value : any, update: (value: string) => Promise<void>) {
         const field = this.createFieldContainer();
 
@@ -80,12 +110,14 @@ export class SelectProperty extends Property {
         if (value) {
             const selectedOption = this.options.find(option => option.name === value);
             if (selectedOption) {
-            selectElement.style.backgroundColor = selectedOption.color;
+                selectElement.style.backgroundColor = selectedOption.color;
+                selectElement.style.color = this.isLightColor(selectedOption.color) ? '#000000' : '#ffffff';
             }
         }
         else {
             if (this.options.length > 0) {
                 selectElement.style.backgroundColor = this.options[0].color;
+                selectElement.style.color = this.isLightColor(this.options[0].color) ? '#000000' : '#ffffff';
                 // Met à jour avec la première valeur de la liste
                 update(this.options[0].name);
             }
@@ -98,6 +130,7 @@ export class SelectProperty extends Property {
             optionElement.value = option.name;
             optionElement.textContent = option.name;
             optionElement.style.backgroundColor = option.color;
+            optionElement.style.color = this.isLightColor(option.color) ? '#000000' : '#ffffff';
 
 
             // Si la valeur est déjà sélectionnée, l'option sera sélectionnée
@@ -115,6 +148,7 @@ export class SelectProperty extends Property {
             // Met à jour la couleur de l'option sélectionnée
             const selectedOption = this.options.find(option => option.name === selectedValue);
             if (selectedOption) {
+                selectElement.style.color = this.isLightColor(selectedOption.color) ? '#000000' : '#ffffff';
                 selectElement.style.backgroundColor = selectedOption.color;
             }
             await update(selectedValue);
