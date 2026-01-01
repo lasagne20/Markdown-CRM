@@ -41,8 +41,7 @@ export class DynamicTable {
             columns.unshift({
                 name: 'Fichier',
                 propertyName: '_fileName',
-                filter: 'text',
-                sort: true
+                sort: 'asc'
             });
         }
         
@@ -70,6 +69,62 @@ export class DynamicTable {
     }
 
     /**
+     * Automatically determine filter type based on property type
+     */
+    private getAutomaticFilterType(propertyName: string, files: Classe[]): 'text' | 'select' | false {
+        // Special cases
+        if (propertyName === '_fileName') {
+            return 'text';
+        }
+
+        // Try to get property from first file to determine type
+        const firstFile = files.find(file => {
+            const prop = file.getProperty(propertyName);
+            return prop !== null && prop !== undefined;
+        });
+
+        if (!firstFile) {
+            return 'text'; // Default fallback
+        }
+
+        const property = firstFile.getProperty(propertyName);
+        if (!property) {
+            return 'text'; // Default fallback
+        }
+
+        const propertyType = (property as any).type;
+
+        // Determine filter type based on property type
+        switch (propertyType) {
+            case 'select':
+            case 'multiselect':
+            case 'file':
+            case 'multifile':
+                return 'select';
+            
+            case 'number':
+            case 'date':
+            case 'rangedate':
+            case 'text':
+            case 'formula':
+                return 'text';
+            
+            case 'media':
+            case 'object':
+                return false; // No filter for complex types
+                
+            default:
+                // For unknown types, check if it has limited options
+                if ((property as any).options && Array.isArray((property as any).options)) {
+                    return 'select';
+                }
+                return 'text';
+        }
+    }
+
+
+
+    /**
      * Build the complete table structure (header, filters, body, footer)
      */
     private async buildTableStructure(): Promise<void> {
@@ -84,10 +139,17 @@ export class DynamicTable {
             const th = document.createElement('th');
             th.textContent = col.name;
             
-            if (col.sort !== false) {
-                th.classList.add('sortable');
-                th.onclick = async () => {
-                    await this.sortTable(index);
+            // Le tri est toujours activé
+            th.classList.add('sortable');
+            th.onclick = async () => {
+                await this.sortTable(index);
+            };
+            
+            // Appliquer le tri par défaut si spécifié et qu'aucun tri n'est encore actif
+            if (col.sort && this.tableData.currentSort.column === -1) {
+                this.tableData.currentSort = {
+                    column: index,
+                    ascending: col.sort === 'asc'
                 };
             }
             
@@ -99,17 +161,21 @@ export class DynamicTable {
         });
         thead.appendChild(headerRow);
         
-        // Create filter row if needed
-        const hasFilters = this.config.columns?.some(col => col.filter !== false);
-        if (hasFilters) {
-            const filterRow = document.createElement('tr');
-            filterRow.className = 'filter-row';
+        // Create filter row - automatically detect filter types
+        const filterRow = document.createElement('tr');
+        filterRow.className = 'filter-row';
+        let hasAnyFilters = false;
+        
+        this.config.columns?.forEach((col, index) => {
+            const th = document.createElement('th');
             
-            this.config.columns?.forEach((col, index) => {
-                const th = document.createElement('th');
-                
-                if (col.filter !== false) {
-                    if (col.filter === 'text') {
+            // Automatically determine filter type
+            const propName = col.propertyName || col.name;
+            const filterType = this.getAutomaticFilterType(propName, this.tableData.files);
+            
+            if (filterType !== false) {
+                hasAnyFilters = true;
+                if (filterType === 'text') {
                         const input = document.createElement('input');
                         input.type = 'text';
                         input.placeholder = `Filtrer...`;
@@ -119,7 +185,7 @@ export class DynamicTable {
                             void this.filterAndRender();
                         };
                         th.appendChild(input);
-                    } else if (col.filter === 'select' || col.filter === 'multi-select') {
+                } else if (filterType === 'select') {
                         const select = document.createElement('select');
                         select.innerHTML = '<option value="">Tous</option>';
                         
@@ -174,8 +240,12 @@ export class DynamicTable {
                 
                 filterRow.appendChild(th);
             });
-            thead.appendChild(filterRow);
-        }
+            
+            // Only add filter row if there are actual filters
+            if (hasAnyFilters) {
+                thead.appendChild(filterRow);
+            }
+
         
         this.table.appendChild(thead);
         

@@ -46,8 +46,7 @@ export interface TabConfig {
 export interface TableColumnConfig {
     name: string;
     propertyName?: string;
-    filter?: 'text' | 'select' | 'multi-select' | false;
-    sort?: boolean;
+    sort?: 'asc' | 'desc'; // Direction du tri par défaut (le tri est toujours activé)
 }
 
 export interface TableSourceConfig {
