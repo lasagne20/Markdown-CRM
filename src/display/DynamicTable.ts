@@ -131,13 +131,45 @@ export class DynamicTable {
         // Clear table
         this.table.innerHTML = '';
         
+        // Apply default sort based on configuration
+        this.applyDefaultSort();
+        
         // Create header
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
         
+        // Get filtered files count once for all columns
+        const filteredFiles = await this.getFilteredFiles();
+        const elementCount = filteredFiles.length;
+        
         this.config.columns?.forEach((col, index) => {
             const th = document.createElement('th');
-            th.textContent = col.name;
+            
+            // Create header content with title and count
+            const headerContent = document.createElement('div');
+            headerContent.style.display = 'flex';
+            headerContent.style.alignItems = 'center';
+            headerContent.style.justifyContent = 'space-between';
+            
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = col.name;
+            
+            const countSpan = document.createElement('span');
+            countSpan.style.fontSize = '0.8em';
+            countSpan.style.opacity = '0.7';
+            countSpan.style.marginLeft = '8px';
+            countSpan.textContent = `(${elementCount})`;
+            
+            const sortIcon = document.createElement('span');
+            sortIcon.style.marginLeft = 'auto';
+            sortIcon.style.fontSize = '0.8em';
+            sortIcon.style.opacity = '0.6';
+            
+            headerContent.appendChild(titleSpan);
+            headerContent.appendChild(countSpan);
+            headerContent.appendChild(sortIcon);
+            
+            th.appendChild(headerContent);
             
             // Le tri est toujours activé
             th.classList.add('sortable');
@@ -145,16 +177,13 @@ export class DynamicTable {
                 await this.sortTable(index);
             };
             
-            // Appliquer le tri par défaut si spécifié (le dernier sort trouvé l'emporte)
-            if (col.sort) {
-                this.tableData.currentSort = {
-                    column: index,
-                    ascending: col.sort === 'asc'
-                };
-            }
-            
+            // Update sort icon based on current sort state
             if (this.tableData.currentSort.column === index) {
                 th.classList.add(this.tableData.currentSort.ascending ? 'sorted-asc' : 'sorted-desc');
+                sortIcon.textContent = this.tableData.currentSort.ascending ? '▲' : '▼';
+                sortIcon.style.opacity = '1';
+            } else {
+                sortIcon.textContent = '⇅'; // Up-down arrows for sortable but not sorted
             }
             
             headerRow.appendChild(th);
@@ -1134,8 +1163,14 @@ export class DynamicTable {
         // Update files array with sorted order
         this.tableData.files = fileValues.map(fv => fv.file);
         
-        // Rebuild table
-        void this.buildTableStructure();
+        // Re-render body and update headers instead of rebuilding everything
+        await this.renderTableBody();
+        this.updateSortIcons();
+        
+        // Update footer if exists
+        if (this.config.totals && this.config.totals.length > 0) {
+            await this.renderTableFooter();
+        }
     }
     
     /**
@@ -1143,6 +1178,9 @@ export class DynamicTable {
      */
     private async filterAndRender(): Promise<void> {
         await this.renderTableBody();
+        
+        // Update header counts
+        await this.updateHeaderCounts();
         
         // Update footer if exists
         if (this.config.totals && this.config.totals.length > 0) {
@@ -1162,5 +1200,66 @@ export class DynamicTable {
      */
     private formatNumber(value: number): string {
         return value.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+    }
+    
+    /**
+     * Update header counts after filtering
+     */
+    private async updateHeaderCounts(): Promise<void> {
+        const filteredFiles = await this.getFilteredFiles();
+        const elementCount = filteredFiles.length;
+        
+        const headers = this.table.querySelectorAll('thead th');
+        headers.forEach(th => {
+            const countSpan = th.querySelector('div span:nth-child(2)');
+            if (countSpan) {
+                countSpan.textContent = `(${elementCount})`;
+            }
+        });
+    }
+    
+    /**
+     * Update sort icons in headers
+     */
+    private updateSortIcons(): void {
+        const headers = this.table.querySelectorAll('thead th');
+        headers.forEach((th, index) => {
+            const sortIcon = th.querySelector('div span:nth-child(3)');
+            if (sortIcon) {
+                if (this.tableData.currentSort.column === index) {
+                    sortIcon.textContent = this.tableData.currentSort.ascending ? '▲' : '▼';
+                    (sortIcon as HTMLElement).style.opacity = '1';
+                } else {
+                    sortIcon.textContent = '⇅';
+                    (sortIcon as HTMLElement).style.opacity = '0.6';
+                }
+            }
+        });
+    }
+    
+    /**
+     * Apply default sort from column configuration
+     */
+    private applyDefaultSort(): void {
+        if (!this.config.columns) return;
+        
+        // Find the last column with sort specification (it takes priority)
+        let defaultSortColumn = -1;
+        let defaultSortDirection = true;
+        
+        this.config.columns.forEach((col, index) => {
+            if (col.sort) {
+                defaultSortColumn = index;
+                defaultSortDirection = col.sort === 'asc';
+            }
+        });
+        
+        // Apply the default sort if found
+        if (defaultSortColumn >= 0) {
+            this.tableData.currentSort = {
+                column: defaultSortColumn,
+                ascending: defaultSortDirection
+            };
+        }
     }
 }
