@@ -380,14 +380,12 @@ export class DisplayRenderer {
 
         // Filter by class name for smartFilter cases that don't inherently filter by class
         if (smartFilter !== 'all' && smartFilter !== 'roots' && !source.class.includes('.')) {
-            console.log('🔧 DEBUG: Filtering by class', source.class, 'from', instances.length, 'instances');
             instances = instances.filter((instance: Classe) => {
                 const instanceClassName = (instance as any).name;
                 const matches = instanceClassName === source.class;
                 console.log(`  - ${instance.getName()} (${instanceClassName}) matches ${source.class}:`, matches);
                 return matches;
             });
-            console.log('🔧 DEBUG: After class filter:', instances.length, 'instances remain');
         }
 
         // Apply conditions if specified
@@ -397,20 +395,16 @@ export class DisplayRenderer {
             const filtered: Classe[] = [];
             for (const instance of instances) {
                 const isValid = await validationFn(instance);
-                console.log(`🔧 DEBUG: Instance ${instance.getName()} (${(instance as any).name}) - isValid:`, isValid);
                 if (isValid) {
                     filtered.push(instance);
                 }
             }
-            console.log('🔧 DEBUG: Filtered results:', filtered.length, 'instances');
             instances = filtered;
         }
 
         // Apply hierarchical groups if specified
         if (source.groups && source.groups.length > 0) {
-            console.log('🔧 DEBUG: Applying hierarchical groups to', instances.length, 'instances');
-            console.log('🔧 DEBUG: Groups:', JSON.stringify(source.groups, null, 2));
-            
+
             // Create a ConditionConfig with the groups
             const conditionConfig = {
                 operator: source.operator || 'AND',
@@ -423,12 +417,10 @@ export class DisplayRenderer {
             const filtered: Classe[] = [];
             for (const instance of instances) {
                 const isValid = await validationFn(instance);
-                console.log(`🔧 DEBUG: Instance ${instance.getName()} (${(instance as any).name}) - isValid:`, isValid);
                 if (isValid) {
                     filtered.push(instance);
                 }
             }
-            console.log('🔧 DEBUG: Filtered results:', filtered.length, 'instances');
             instances = filtered;
         }
 
@@ -733,7 +725,7 @@ export class DisplayRenderer {
      * @param parentInstance - The parent Classe instance for context
      * @returns The evaluated property value
      */
-    private evaluateComplexProperty(propName: string, obj: any, parentInstance: Classe): any {
+    private async evaluateComplexProperty(propName: string, obj: any, parentInstance: Classe): Promise<any> {
         // Check if this is a filter expression
         const filterMatch = propName.match(/^(.+?)\.filter\((.+?)\)(?:\.(.+))?$/);
         
@@ -779,19 +771,78 @@ export class DisplayRenderer {
         }
         
         // For other complex expressions, fall back to basic navigation
-        return this.getNestedProperty(obj, propName);
+        return await this.getNestedProperty(obj, propName);
     }
 
     /**
-     * Get nested property using dot notation (simple navigation)
+     * Get nested property using dot notation with support for linked classes
      * @param obj - The object to navigate
-     * @param path - The property path (e.g., "user.profile.name")
+     * @param path - The property path (e.g., "user.profile.name" or "clients[0].institution.lieu")
      * @returns The property value
      */
-    private getNestedProperty(obj: any, path: string): any {
-        return path.split('.').reduce((current, key) => {
-            return (current && typeof current === 'object') ? current[key] : undefined;
-        }, obj);
+    private async getNestedProperty(obj: any, path: string): Promise<any> {
+        const parts = path.split('.');
+        let current = obj;
+        
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            
+            if (current === null || current === undefined) {
+                return undefined;
+            }
+            
+            // Handle array indexing (e.g., "clients[0]")
+            const arrayMatch = part.match(/^(\w+)\[(\d+)\]$/);
+            if (arrayMatch) {
+                const [, arrayName, indexStr] = arrayMatch;
+                const index = parseInt(indexStr, 10);
+                
+                if (current[arrayName] && Array.isArray(current[arrayName])) {
+                    current = current[arrayName][index];
+                } else {
+                    return undefined;
+                }
+            } else {
+                // Get property value - try different methods
+                if (current.getPropertyValue && typeof current.getPropertyValue === 'function') {
+                    // If it's a Classe instance, use getPropertyValue for the rest of the path
+                    const remainingPath = parts.slice(i).join('.');
+                    current = await current.getPropertyValue(remainingPath);
+                    
+                    // If we got a value from getPropertyValue, we need to check if there are more parts
+                    // But getPropertyValue might have handled the whole path already
+                    // So we break here and check for links below
+                    break;
+                } else {
+                    // Simple object property access
+                    current = current[part];
+                }
+            }
+            
+            // Check if current value is a link to another class (format: [[ClassName]])
+            if (typeof current === 'string' && current.match(/^\[\[.+\]\]$/)) {
+                try {
+                    const linkedClasse = await this.vault.getFromLink(current);
+                    if (linkedClasse) {
+                        current = linkedClasse;
+                        
+                        // If there are remaining parts in the path, continue navigation
+                        const remainingParts = parts.slice(i + 1);
+                        if (remainingParts.length > 0) {
+                            const remainingPath = remainingParts.join('.');
+                            return await this.getNestedProperty(current, remainingPath);
+                        }
+                    } else {
+                        return undefined;
+                    }
+                } catch (error) {
+                    console.warn(`Error loading linked class from ${current}:`, error);
+                    return undefined;
+                }
+            }
+        }
+        
+        return current;
     }
 
     /**
@@ -812,9 +863,9 @@ export class DisplayRenderer {
                     // max is a property name - get it from current context
                     if (this.context && this.context.getPropertyValue) {
                         maxValue = await this.context.getPropertyValue(item.max);
-                        // Handle nested properties (e.g., "items[0].total")
+                        // Handle nested properties (e.g., "items[0].total" or "clients[0].institution.lieu")
                         if (maxValue === undefined) {
-                            maxValue = this.getNestedProperty(this.context, item.max);
+                            maxValue = await this.getNestedProperty(this.context, item.max);
                         }
                         // Convert to number if needed
                         maxValue = typeof maxValue === 'number' ? maxValue : (maxValue != null ? parseFloat(maxValue) : undefined) || undefined;
@@ -898,7 +949,7 @@ export class DisplayRenderer {
                         value = await file.getPropertyValue(propertyName);
                     } else {
                         // Fallback for object data
-                        value = this.getNestedProperty(file, propertyName);
+                        value = await this.getNestedProperty(file, propertyName);
                     }
                 }
                 
@@ -940,7 +991,7 @@ export class DisplayRenderer {
                     return 0;
                 }
                 const sum = values.reduce((sum, val) => sum + val, 0);
-                return (sum / maxValue) * 100;
+                return Math.round((sum / maxValue) * 100);
             default:
                 console.warn(`Unknown formula: ${formula}`);
                 return 0;

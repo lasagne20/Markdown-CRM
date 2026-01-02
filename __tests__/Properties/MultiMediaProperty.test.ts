@@ -27,6 +27,7 @@ describe('MultiMediaProperty', () => {
         mockVault = {
             getMediaFromLink: jest.fn().mockReturnValue({ name: 'test.jpg', path: 'path/to/test.jpg' }),
             readLinkFile: jest.fn().mockReturnValue('path/to/test.jpg'),
+            getFromLink: jest.fn().mockResolvedValue(null), // Add missing method
             files: [],
             app: {
                 setIcon: jest.fn()
@@ -51,7 +52,7 @@ describe('MultiMediaProperty', () => {
         });
 
         it('should pass args to parent constructor and MediaProperty', () => {
-            const customArgs = { flexSpan: 3 };
+            const customArgs = { icon: 'image', tooltip: 'Custom media' };
             const customProperty = new MultiMediaProperty('customName', mockVault, customArgs);
             expect(customProperty.name).toBe('customName');
             // flexSpan is hardcoded to 2 in the class, so we test the default value

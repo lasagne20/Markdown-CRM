@@ -73,7 +73,7 @@ describe('NumberDisplay with Sources', () => {
         test('should handle fillLevel override', () => {
             const display = new NumberDisplay({
                 value: 100,
-                fillLevel: 0.5, // Force 50% fill
+                max: 200, // 50% fill (100/200)
                 unit: '%'
             });
 
@@ -325,10 +325,10 @@ describe('NumberDisplay with Sources', () => {
 
         test('should use property name string for max value from context', async () => {
             // Create a mock context with a budget property
-            const vault = new Vault(mockApp as any);
+            const vault = new Vault(mockApp as any, { vaultPath: './test-vault' } as any);
             const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
             
-            const rendererWithContext = new DisplayRenderer(vault, contextFile);
+            const rendererWithContext = new DisplayRenderer(vault, {}, contextFile);
 
             const numberItem: NumberDisplayItem = {
                 type: 'number',
@@ -347,7 +347,7 @@ describe('NumberDisplay with Sources', () => {
 
         test('should handle nested property path for max value', async () => {
             // Create a mock context with nested data
-            const vault = new Vault(mockApp as any);
+            const vault = new Vault(mockApp as any, { vaultPath: './test-vault' } as any);
             const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
             
             // Add nested property support
@@ -360,7 +360,7 @@ describe('NumberDisplay with Sources', () => {
                 return (contextFile as any).mockData[propName];
             });
 
-            const rendererWithContext = new DisplayRenderer(vault, contextFile);
+            const rendererWithContext = new DisplayRenderer(vault, {}, contextFile);
 
             const numberItem: NumberDisplayItem = {
                 type: 'number',
@@ -398,10 +398,10 @@ describe('NumberDisplay with Sources', () => {
         });
 
         test('should fallback gracefully if property name for max does not exist', async () => {
-            const vault = new Vault(mockApp as any);
+            const vault = new Vault(mockApp as any, { vaultPath: './test-vault' } as any);
             const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
             
-            const rendererWithContext = new DisplayRenderer(vault, contextFile);
+            const rendererWithContext = new DisplayRenderer(vault, {}, contextFile);
 
             const numberItem: NumberDisplayItem = {
                 type: 'number',
@@ -420,10 +420,10 @@ describe('NumberDisplay with Sources', () => {
         });
 
         test('should calculate percentage with percent formula', async () => {
-            const vault = new Vault(mockApp as any);
+            const vault = new Vault(mockApp as any, { vaultPath: './test-vault' } as any);
             const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
             
-            const rendererWithContext = new DisplayRenderer(vault, contextFile);
+            const rendererWithContext = new DisplayRenderer(vault, {}, contextFile);
 
             const numberItem: NumberDisplayItem = {
                 type: 'number',
@@ -460,9 +460,10 @@ describe('NumberDisplay with Sources', () => {
         });
 
         test('should return 0 for percent formula without max', async () => {
-            const vault = new Vault(mockApp as any);
+            const vault = new Vault(mockApp as any, { vaultPath: './test-vault' } as any);
+            const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
             
-            const rendererWithoutMax = new DisplayRenderer(vault);
+            const rendererWithoutMax = new DisplayRenderer(vault, {}, contextFile);
 
             const numberItem: NumberDisplayItem = {
                 type: 'number',

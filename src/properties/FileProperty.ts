@@ -168,16 +168,21 @@ export class FileProperty extends LinkProperty{
 
     // Fonction pour gérer le clic sur l'icône
     override async modifyField(event: Event) {
+      const mouseEvent = event as MouseEvent;
       const link = (event.target as HTMLElement).closest('.metadata-field')?.querySelector('.field-link') as HTMLElement;
       let currentField = link.textContent
       if (!currentField){return}
+      
+      // Déterminer si on doit ouvrir dans un nouvel onglet (clic molette ou Ctrl/Cmd+clic)
+      const newTab = mouseEvent.button === 1 || mouseEvent.ctrlKey || mouseEvent.metaKey;
+      
       event.preventDefault();
      
       const classe = await this.vault.getFromLink(currentField);
       if (classe) {
         let path = classe.getPath()
         if (path){
-           await this.vault.app.open(path);
+           await this.vault.app.open(path, newTab);
          }
       } else {
         console.error(`Le fichier ${currentField}.md n'existe pas`) // TODO: Use Notice when available

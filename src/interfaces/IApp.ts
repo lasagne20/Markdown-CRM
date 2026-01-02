@@ -83,7 +83,7 @@ export interface IApp {
     getSetting(key: string): any;
     setSetting(key: string, value: any): Promise<void>;
     getVaultPath(): string;
-    open(absoluteMediaPath: string): void;
+    open(absoluteMediaPath: string, newTab?: boolean): void;
     
     // Utility functions
     waitForFileMetaDataUpdate(filePath: string, key: string, callback: () => Promise<void>): Promise<void>;
