@@ -550,7 +550,7 @@ export class DynamicTable {
 
         if (values.length === 0) {
             // For count and sum, return '0'; for others return '-'
-            if (total.formula === 'count' || total.formula === 'sum') {
+            if (total.formula === 'count' || total.formula === 'countDistinct' || total.formula === 'sum') {
                 return '0';
             }
             return '-';
@@ -564,6 +564,10 @@ export class DynamicTable {
             case 'average':
                 const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
                 return this.formatNumber(avg);
+            
+            case 'countDistinct':
+                const uniqueValues = new Set(values);
+                return `${uniqueValues.size}`;
                 
             case 'min':
                 return this.formatCurrency(Math.min(...values));
@@ -601,7 +605,7 @@ export class DynamicTable {
         }
 
         if (values.length === 0) {
-            if (total.formula === 'count' || total.formula === 'sum') {
+            if (total.formula === 'count' || total.formula === 'countDistinct' || total.formula === 'sum') {
                 return '0';
             }
             return '-';
@@ -615,6 +619,10 @@ export class DynamicTable {
             case 'average':
                 const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
                 return this.formatNumber(avg);
+            
+            case 'countDistinct':
+                const uniqueValues = new Set(values);
+                return `${uniqueValues.size}`;
                 
             case 'min':
                 return this.formatCurrency(Math.min(...values));

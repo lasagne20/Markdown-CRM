@@ -57,7 +57,7 @@ export interface TableSourceConfig {
 
 export interface TableTotalConfig {
     column: string;
-    formula: 'sum' | 'average' | 'avg' | 'count' | 'min' | 'max' | string;
+    formula: 'sum' | 'average' | 'avg' | 'count' | 'countDistinct' | 'min' | 'max' | string;
     propertyName?: string; // Property to calculate on (for sum, avg, min, max)
 }
 
@@ -129,7 +129,7 @@ export interface NumberDisplayItem extends BaseDisplayItem {
     
     // Data source with filtering (like tables)
     source: TableSourceConfig; // Source class and smart filter
-    formula: 'sum' | 'average' | 'avg' | 'count' | 'min' | 'max' | 'percent'; // Required for calculation
+    formula: 'sum' | 'average' | 'avg' | 'count' | 'countDistinct' | 'min' | 'max' | 'percent'; // Required for calculation
     propertyName?: string; // Property to calculate on (for sum, avg, min, max, percent)
     
     // Display options
@@ -143,7 +143,7 @@ export interface NumberDisplayItem extends BaseDisplayItem {
 // Configuration for calculating max value dynamically
 export interface MaxCalculationConfig {
     source: TableSourceConfig; // Source for max calculation (can be different from main source)
-    formula: 'sum' | 'average' | 'avg' | 'count' | 'min' | 'max' | 'percent'; // Formula for max calculation
+    formula: 'sum' | 'average' | 'avg' | 'count' | 'countDistinct' | 'min' | 'max' | 'percent'; // Formula for max calculation
     propertyName?: string; // Property to calculate on
 }
 

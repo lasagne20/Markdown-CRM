@@ -173,6 +173,38 @@ describe('NumberDisplay with Sources', () => {
             expect(text?.textContent).toBe('4'); // 4 mock files
         });
 
+        test('should render number display with countDistinct formula', async () => {
+            // Create mock files with duplicate budget values
+            const mockFilesWithDuplicates = [
+                new MockTestFile(vault, 'project-1', 10000, 2500),
+                new MockTestFile(vault, 'project-2', 10000, 3000), // Duplicate budget
+                new MockTestFile(vault, 'project-3', 8000, 1500),
+                new MockTestFile(vault, 'project-4', 8000, 4000)  // Duplicate budget
+            ];
+            
+            // Override mock for this test
+            (renderer as any).getFilesForTable = jest.fn().mockResolvedValue(mockFilesWithDuplicates);
+            
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                title: 'Unique Budgets',
+                source: {
+                    class: 'Project'
+                },
+                formula: 'countDistinct',
+                propertyName: 'budget',
+                label: 'Distinct Budget Values'
+            };
+
+            const result = await (renderer as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            
+            const svg = result?.querySelector('svg');
+            const text = svg?.querySelector('text');
+            expect(text?.textContent).toBe('2'); // Only 2 unique values: 10000 and 8000
+        });
+
         test('should render number display with average formula', async () => {
             const numberItem: NumberDisplayItem = {
                 type: 'number',

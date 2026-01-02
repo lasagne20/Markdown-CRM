@@ -976,6 +976,10 @@ export class DisplayRenderer {
         switch (formula) {
             case 'count':
                 return values.length; // Count the number of values, not files
+            case 'countDistinct':
+                // Count unique values only
+                const uniqueValues = new Set(values);
+                return uniqueValues.size;
             case 'sum':
                 return values.reduce((sum, val) => sum + val, 0);
             case 'average':
