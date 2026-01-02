@@ -137,7 +137,14 @@ export interface NumberDisplayItem extends BaseDisplayItem {
     label?: string; // Label below the circle
     size?: number; // Size in px (default: 96)
     color?: string; // Fill color (default: var(--interactive-accent))
-    max?: number; // Maximum value for progress calculation (value/max = fill level)
+    max?: number | MaxCalculationConfig; // Maximum value for progress calculation (value/max = fill level)
+}
+
+// Configuration for calculating max value dynamically
+export interface MaxCalculationConfig {
+    source: TableSourceConfig; // Source for max calculation (can be different from main source)
+    formula: 'sum' | 'average' | 'avg' | 'count' | 'min' | 'max'; // Formula for max calculation
+    propertyName?: string; // Property to calculate on
 }
 
 // Union type for all display items

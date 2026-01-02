@@ -83,6 +83,32 @@ export class FileProperty extends LinkProperty{
     return "";
    }
   
+   override fillDisplay(value: any, update: (value: any) => Promise<void>, args? : { classe?: any }) {
+        const field = super.fillDisplay(value, update, args);
+
+        // Charger l'icône de la classe de manière asynchrone si aucune icône n'est configurée
+        if (!this.icon || this.icon === 'align-left') {
+            const iconContainer = field.querySelector('.icon-container') as HTMLDivElement;
+            if (iconContainer) {
+                this.loadClassIcon(value, iconContainer);
+            }
+        }
+
+        return field;
+    }
+
+    async loadClassIcon(value: string, iconContainer: HTMLDivElement) {
+        const linkedClasse = await this.vault.getFromLink(value);
+        if (linkedClasse && linkedClasse.icon) {
+            const icon = iconContainer.querySelector('div');
+            if (icon) {
+                // Vider l'icône actuelle et mettre celle de la classe
+                icon.innerHTML = '';
+                this.vault.app.setIcon(icon, linkedClasse.icon);
+            }
+        }
+    }
+   
    override createIconContainer(update: (value: string) => Promise<void>, classe?: any) {
     const iconContainer = document.createElement("div");
     iconContainer.classList.add("icon-container");

@@ -805,10 +805,16 @@ export class DisplayRenderer {
             // Calculate value using formula
             const value = await this.calculateNumberValue(files, item.formula, item.propertyName);
             
-            // Calculate fill level based on max value
-            let fillLevel = 1; // Default to full if no max specified
-            if (item.max && item.max > 0) {
-                fillLevel = Math.min(value / item.max, 1); // Cap at 100%
+            // Calculate or get max value
+            let maxValue: number | undefined = undefined;
+            if (item.max !== undefined) {
+                if (typeof item.max === 'number') {
+                    maxValue = item.max;
+                } else {
+                    // max is a MaxCalculationConfig - calculate it
+                    const maxFiles = await this.getFilesForTable(item.max.source, this.context);
+                    maxValue = await this.calculateNumberValue(maxFiles, item.max.formula, item.max.propertyName);
+                }
             }
             
             const numberDisplay = new NumberDisplay({
@@ -817,7 +823,7 @@ export class DisplayRenderer {
                 label: item.label,
                 size: item.size,
                 color: item.color,
-                fillLevel: fillLevel
+                max: maxValue
             });
             
             const container = document.createElement('div');

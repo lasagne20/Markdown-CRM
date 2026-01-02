@@ -7,7 +7,7 @@ interface NumberDisplayOptions {
     label?: string; // label sous le rond
     size?: number; // taille du rond en px (défaut: 64)
     color?: string; // couleur de remplissage (défaut: var(--interactive-accent))
-    fillLevel?: number; // niveau de remplissage (0-1), si défini, remplace value pour le remplissage
+    max?: number; // valeur maximale pour le calcul du niveau de remplissage (value/max = fill level)
 }
 
 export class NumberDisplay {
@@ -26,7 +26,7 @@ export class NumberDisplay {
     }
 
     getDisplay() {
-        const { value, unit, label, size, color } = this.options;
+        const { value, unit, label, size, color, max } = this.options;
         this.container.innerHTML = '';
 
         // Agrandir la taille par défaut si non spécifiée
@@ -35,9 +35,16 @@ export class NumberDisplay {
         const strokeWidth = 10; // plus épais
         const radius = (displaySize / 2) - (strokeWidth / 2) - 2;
         const circumference = 2 * Math.PI * radius;
-        let fill = typeof this.options.fillLevel === "number"
-            ? Math.max(0, Math.min(1, this.options.fillLevel))
-            : Math.max(0, Math.min(100, value)) / 100;
+        
+        // Calculer le niveau de remplissage en fonction de max si défini
+        let fill: number;
+        if (typeof max === "number" && max > 0) {
+            fill = Math.max(0, Math.min(1, value / max));
+        } else {
+            // Sinon, traiter value comme un pourcentage (0-100)
+            fill = Math.max(0, Math.min(100, value)) / 100;
+        }
+        
         const offset = circumference * (1 - fill);
 
         const svg = document.createElementNS(svgNS, "svg");
