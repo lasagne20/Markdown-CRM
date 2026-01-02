@@ -26,7 +26,8 @@ export class NumberDisplay {
     }
 
     getDisplay() {
-        const { value, unit, label, size, color, max } = this.options;
+        const { value, unit, label, size, max } = this.options;
+        const color = this.options.color || "var(--interactive-accent)";
         this.container.innerHTML = '';
 
         // Agrandir la taille par défaut si non spécifiée
@@ -72,7 +73,7 @@ export class NumberDisplay {
         fgCircle.setAttribute("fill", "none");
         fgCircle.setAttribute("stroke-dasharray", `${circumference}`);
         fgCircle.setAttribute("stroke-dashoffset", `${offset}`);
-        fgCircle.setAttribute("style", "transition: stroke-dashoffset 0.5s;");
+        fgCircle.setAttribute("style", "transition: stroke-dashoffset 0.5s; transform: rotate(-90deg); transform-origin: center;");
         fgCircle.setAttribute("stroke-linecap", "round");
         svg.appendChild(fgCircle);
 

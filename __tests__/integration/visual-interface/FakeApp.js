@@ -455,12 +455,19 @@ export class FakeApp {
         const files = [];
         for (const [path, data] of this.fileSystem.entries()) {
             if (!data.isFolder) {
+                const fileName = path.split('/').pop();
+                const baseName = fileName.replace(/\.[^/.]+$/, '');
+                const extension = fileName.includes('.') ? fileName.split('.').pop() : '';
+                
                 files.push({
                     path: path,
-                    name: path.split('/').pop()
+                    name: fileName,
+                    basename: baseName,
+                    extension: extension
                 });
             }
         }
+        console.log(`📂 listFiles() returning ${files.length} files`);
         return files;
     }
 

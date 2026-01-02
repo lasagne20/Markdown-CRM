@@ -277,4 +277,18 @@ display:
               name: heure
             - type: property
               name: multipleInstitutions
-          
+
+        - name: "Autres"
+          items:
+            - type: number
+              name: id
+              title: "Identifiant unique"
+              label: "ID"
+              source: 
+                class: Personne
+                conditions: []
+              formula: count
+              propertyName: nom
+              size: 48
+              color: "#FF5733"
+              max: 10

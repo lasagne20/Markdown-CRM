@@ -809,7 +809,19 @@ export class DisplayRenderer {
             let maxValue: number | undefined = undefined;
             if (item.max !== undefined) {
                 if (typeof item.max === 'number') {
+                    // max is a fixed number
                     maxValue = item.max;
+                } else if (typeof item.max === 'string') {
+                    // max is a property name - get it from current context
+                    if (this.context && this.context.getPropertyValue) {
+                        maxValue = await this.context.getPropertyValue(item.max);
+                        // Handle nested properties (e.g., "items[0].total")
+                        if (maxValue === undefined) {
+                            maxValue = this.getNestedProperty(this.context, item.max);
+                        }
+                        // Convert to number if needed
+                        maxValue = typeof maxValue === 'number' ? maxValue : (maxValue != null ? parseFloat(maxValue) : undefined) || undefined;
+                    }
                 } else {
                     // max is a MaxCalculationConfig - calculate it
                     const maxFiles = await this.getFilesForTable(item.max.source, this.context);

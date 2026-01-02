@@ -137,7 +137,7 @@ export interface NumberDisplayItem extends BaseDisplayItem {
     label?: string; // Label below the circle
     size?: number; // Size in px (default: 96)
     color?: string; // Fill color (default: var(--interactive-accent))
-    max?: number | MaxCalculationConfig; // Maximum value for progress calculation (value/max = fill level)
+    max?: number | string | MaxCalculationConfig; // Maximum value: number, property name (e.g., "budget" or "items[0].total"), or calculation config
 }
 
 // Configuration for calculating max value dynamically

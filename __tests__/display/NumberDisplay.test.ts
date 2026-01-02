@@ -306,5 +306,117 @@ describe('NumberDisplay with Sources', () => {
             expect(result).toBeTruthy();
             expect(result?.className).toBe('custom-number-display');
         });
+
+        test('should use fixed number for max value', async () => {
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                source: { class: 'TestFile' },
+                formula: 'sum',
+                propertyName: 'budget',
+                max: 1000
+            };
+
+            const result = await (renderer as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            const numberDisplay = result?.querySelector('.crm-number-display');
+            expect(numberDisplay).toBeTruthy();
+        });
+
+        test('should use property name string for max value from context', async () => {
+            // Create a mock context with a budget property
+            const vault = new Vault(mockApp as any);
+            const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
+            
+            const rendererWithContext = new DisplayRenderer(vault, contextFile);
+
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                source: { class: 'TestFile' },
+                formula: 'sum',
+                propertyName: 'montant',
+                max: 'budget' // Reference to context's budget property
+            };
+
+            const result = await (rendererWithContext as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            const numberDisplay = result?.querySelector('.crm-number-display');
+            expect(numberDisplay).toBeTruthy();
+        });
+
+        test('should handle nested property path for max value', async () => {
+            // Create a mock context with nested data
+            const vault = new Vault(mockApp as any);
+            const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
+            
+            // Add nested property support
+            (contextFile as any).mockData = {
+                budget: 1000,
+                items: [{ total: 2000 }]
+            };
+            
+            (contextFile as any).getPropertyValue = jest.fn(async (propName: string) => {
+                return (contextFile as any).mockData[propName];
+            });
+
+            const rendererWithContext = new DisplayRenderer(vault, contextFile);
+
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                source: { class: 'TestFile' },
+                formula: 'sum',
+                propertyName: 'montant',
+                max: 'items.0.total' // Nested property reference
+            };
+
+            const result = await (rendererWithContext as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            const numberDisplay = result?.querySelector('.crm-number-display');
+            expect(numberDisplay).toBeTruthy();
+        });
+
+        test('should handle max as MaxCalculationConfig', async () => {
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                source: { class: 'TestFile' },
+                formula: 'sum',
+                propertyName: 'budget',
+                max: {
+                    source: { class: 'TestFile' },
+                    formula: 'sum',
+                    propertyName: 'budget'
+                }
+            };
+
+            const result = await (renderer as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            const numberDisplay = result?.querySelector('.crm-number-display');
+            expect(numberDisplay).toBeTruthy();
+        });
+
+        test('should fallback gracefully if property name for max does not exist', async () => {
+            const vault = new Vault(mockApp as any);
+            const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
+            
+            const rendererWithContext = new DisplayRenderer(vault, contextFile);
+
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                source: { class: 'TestFile' },
+                formula: 'sum',
+                propertyName: 'montant',
+                max: 'nonExistentProperty' // Property that doesn't exist
+            };
+
+            const result = await (rendererWithContext as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            // Should still render, just without max value constraint
+            const numberDisplay = result?.querySelector('.crm-number-display');
+            expect(numberDisplay).toBeTruthy();
+        });
     });
 });
