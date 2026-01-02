@@ -802,10 +802,7 @@ export class DisplayRenderer {
             // Get files based on source (reuse table logic)
             const files = await this.getFilesForTable(item.source, this.context);
             
-            // Calculate value using formula
-            const value = await this.calculateNumberValue(files, item.formula, item.propertyName);
-            
-            // Calculate or get max value
+            // Calculate or get max value first (needed for percent formula)
             let maxValue: number | undefined = undefined;
             if (item.max !== undefined) {
                 if (typeof item.max === 'number') {
@@ -825,9 +822,12 @@ export class DisplayRenderer {
                 } else {
                     // max is a MaxCalculationConfig - calculate it
                     const maxFiles = await this.getFilesForTable(item.max.source, this.context);
-                    maxValue = await this.calculateNumberValue(maxFiles, item.max.formula, item.max.propertyName);
+                    maxValue = await this.calculateNumberValue(maxFiles, item.max.formula, item.max.propertyName, undefined);
                 }
             }
+            
+            // Calculate value using formula (pass maxValue for percent formula)
+            const value = await this.calculateNumberValue(files, item.formula, item.propertyName, maxValue);
             
             const numberDisplay = new NumberDisplay({
                 value: value,
@@ -868,13 +868,19 @@ export class DisplayRenderer {
     /**
      * Calculate number value from files using formula
      */
-    private async calculateNumberValue(files: Classe[], formula: string, propertyName?: string): Promise<number> {
+    private async calculateNumberValue(files: Classe[], formula: string, propertyName?: string, maxValue?: number): Promise<number> {
         // If count without propertyName, just count files
         if (formula === 'count' && !propertyName) {
             return files.length;
         }
         
-        if (!propertyName) {
+        // Special case for percent: requires both propertyName and maxValue
+        if (formula === 'percent') {
+            if (!propertyName || maxValue === undefined) {
+                console.warn('percent formula requires both propertyName and max value');
+                return 0;
+            }
+        } else if (!propertyName) {
             return 0; // Can't calculate without property for non-count formulas
         }
         
@@ -928,6 +934,13 @@ export class DisplayRenderer {
                 return values.length > 0 ? Math.min(...values) : 0;
             case 'max':
                 return values.length > 0 ? Math.max(...values) : 0;
+            case 'percent':
+                // Calculate percentage: (sum / max) * 100
+                if (maxValue === undefined || maxValue === 0) {
+                    return 0;
+                }
+                const sum = values.reduce((sum, val) => sum + val, 0);
+                return (sum / maxValue) * 100;
             default:
                 console.warn(`Unknown formula: ${formula}`);
                 return 0;

@@ -418,5 +418,64 @@ describe('NumberDisplay with Sources', () => {
             const numberDisplay = result?.querySelector('.crm-number-display');
             expect(numberDisplay).toBeTruthy();
         });
+
+        test('should calculate percentage with percent formula', async () => {
+            const vault = new Vault(mockApp as any);
+            const contextFile = new MockTestFile(vault, 'context-file', 1000, 500);
+            
+            const rendererWithContext = new DisplayRenderer(vault, contextFile);
+
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                source: { class: 'TestFile' },
+                formula: 'percent',
+                propertyName: 'montant',
+                max: 'budget', // max is 1000
+                unit: '%'
+            };
+
+            const result = await (rendererWithContext as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            const numberDisplay = result?.querySelector('.crm-number-display');
+            expect(numberDisplay).toBeTruthy();
+            // The percent formula should calculate (sum of montant / budget) * 100
+        });
+
+        test('should handle percent formula with fixed max value', async () => {
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                source: { class: 'TestFile' },
+                formula: 'percent',
+                propertyName: 'budget',
+                max: 2000,
+                unit: '%'
+            };
+
+            const result = await (renderer as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            const numberDisplay = result?.querySelector('.crm-number-display');
+            expect(numberDisplay).toBeTruthy();
+        });
+
+        test('should return 0 for percent formula without max', async () => {
+            const vault = new Vault(mockApp as any);
+            
+            const rendererWithoutMax = new DisplayRenderer(vault);
+
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                source: { class: 'TestFile' },
+                formula: 'percent',
+                propertyName: 'budget'
+                // No max defined
+            };
+
+            const result = await (rendererWithoutMax as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            // Should render with 0% since max is required
+        });
     });
 });
