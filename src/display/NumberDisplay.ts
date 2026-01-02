@@ -1,6 +1,11 @@
 // @ts-nocheck
 // Component and MarkdownRenderer removed - not available in AppShim
 
+import { NumberDisplayItem } from '../Config/interfaces';
+import { Vault } from '../vault/Vault';
+import { Classe } from '../vault/Classe';
+import { PropertyNavigator } from '../utils/PropertyNavigator';
+
 interface NumberDisplayOptions {
     value: number; // valeur à afficher (0-100)
     unit?: string; // unité à afficher (ex: %)
@@ -23,6 +28,163 @@ export class NumberDisplay {
         this.container = document.createElement("div");
         this.container.className = "crm-number-display";
         this.getDisplay();
+    }
+
+    /**
+     * Create a NumberDisplay from a configuration item with automatic calculation
+     */
+    static async fromConfig(
+        item: NumberDisplayItem,
+        vault: Vault,
+        context: Classe,
+        getFilesForTable: (source: any, context?: Classe) => Promise<Classe[]>
+    ): Promise<NumberDisplay> {
+        const propertyNavigator = new PropertyNavigator(vault, context);
+        
+        // Get files based on source
+        const files = await getFilesForTable(item.source, context);
+        
+        // Calculate or get max value first (needed for percent formula)
+        let maxValue: number | undefined = undefined;
+        if (item.max !== undefined) {
+            if (typeof item.max === 'number') {
+                // max is a fixed number
+                maxValue = item.max;
+            } else if (typeof item.max === 'string') {
+                // max is a property name - get it from current context
+                if (context && context.getPropertyValue) {
+                    maxValue = await context.getPropertyValue(item.max);
+                    // Handle nested properties (e.g., "items[0].total" or "clients[0].institution.lieu")
+                    if (maxValue === undefined) {
+                        maxValue = await propertyNavigator.getNestedProperty(context, item.max);
+                    }
+                    // Convert to number if needed
+                    maxValue = typeof maxValue === 'number' ? maxValue : (maxValue != null ? parseFloat(maxValue) : undefined) || undefined;
+                }
+            } else {
+                // max is a MaxCalculationConfig - calculate it
+                const maxFiles = await getFilesForTable(item.max.source, context);
+                maxValue = await NumberDisplay.calculateValue(maxFiles, item.max.formula, item.max.propertyName, undefined, propertyNavigator);
+            }
+        }
+        
+        // Calculate value using formula (pass maxValue for percent formula)
+        const value = await NumberDisplay.calculateValue(files, item.formula, item.propertyName, maxValue, propertyNavigator);
+        
+        return new NumberDisplay({
+            value: value,
+            unit: item.unit,
+            label: item.label,
+            size: item.size,
+            color: item.color,
+            max: maxValue
+        });
+    }
+
+    /**
+     * Calculate number value from files using formula
+     */
+    private static async calculateValue(
+        files: Classe[],
+        formula: string,
+        propertyName?: string,
+        maxValue?: number,
+        propertyNavigator?: PropertyNavigator
+    ): Promise<number> {
+        // If count without propertyName, just count files
+        if (formula === 'count' && !propertyName) {
+            return files.length;
+        }
+        
+        // Special case for percent: requires both propertyName and maxValue
+        if (formula === 'percent') {
+            if (!propertyName || maxValue === undefined) {
+                console.warn('percent formula requires both propertyName and max value');
+                return 0;
+            }
+        } else if (!propertyName) {
+            return 0; // Can't calculate without property for non-count formulas
+        }
+        
+        // Get all property values
+        const values: any[] = [];
+        for (const file of files) {
+            try {
+                let value: any;
+                
+                // Check if this is a complex property expression (e.g., "partenariats.filter(property=value).target")
+                if (propertyName.includes('.filter(') && propertyName.includes(').')) {
+                    value = await propertyNavigator!.getNestedPropertyValue(file, propertyName);
+                } else {
+                    if (file.getPropertyValue) {
+                        value = await file.getPropertyValue(propertyName);
+                    } else if (propertyNavigator) {
+                        // Fallback for object data
+                        value = await propertyNavigator.getNestedProperty(file, propertyName);
+                    }
+                }
+                
+                // Handle arrays (from filter expressions like "partenariats.filter().montant")
+                if (Array.isArray(value)) {
+                    for (const item of value) {
+                        // For count/countDistinct, keep all types; for numeric formulas, convert to numbers
+                        if (formula === 'count' || formula === 'countDistinct') {
+                            if (item !== null && item !== undefined) {
+                                values.push(item);
+                            }
+                        } else {
+                            const numValue = typeof item === 'number' ? item : parseFloat(item) || 0;
+                            if (!isNaN(numValue)) {
+                                values.push(numValue);
+                            }
+                        }
+                    }
+                } else {
+                    // For count/countDistinct, keep all types; for numeric formulas, convert to numbers
+                    if (formula === 'count' || formula === 'countDistinct') {
+                        if (value !== null && value !== undefined) {
+                            values.push(value);
+                        }
+                    } else {
+                        const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+                        if (!isNaN(numValue)) {
+                            values.push(numValue);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn(`Error getting property ${propertyName} from file:`, error);
+            }
+        }
+        
+        // Apply formula
+        switch (formula) {
+            case 'count':
+                return values.length; // Count the number of values, not files
+            case 'countDistinct':
+                // Count unique values only
+                const uniqueValues = new Set(values);
+                return uniqueValues.size;
+            case 'sum':
+                return values.reduce((sum, val) => sum + val, 0);
+            case 'average':
+            case 'avg':
+                return values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
+            case 'min':
+                return values.length > 0 ? Math.min(...values) : 0;
+            case 'max':
+                return values.length > 0 ? Math.max(...values) : 0;
+            case 'percent':
+                // Calculate percentage: (sum / max) * 100
+                if (maxValue === undefined || maxValue === 0) {
+                    return 0;
+                }
+                const sum = values.reduce((sum, val) => sum + val, 0);
+                return Math.round((sum / maxValue) * 100);
+            default:
+                console.warn(`Unknown formula: ${formula}`);
+                return 0;
+        }
     }
 
     getDisplay() {

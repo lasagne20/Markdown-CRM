@@ -90,7 +90,7 @@ class MockProject extends Classe {
     }
 }
 
-describe('DisplayRenderer - Nested Links Support', () => {
+describe('PropertyNavigator - Nested Links Support', () => {
     let vault: Vault;
     let institutionParis: MockInstitution;
     let institutionLyon: MockInstitution;
@@ -127,7 +127,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
         ]);
     });
 
-    describe('getNestedProperty with links', () => {
+    describe('PropertyNavigator.getNestedProperty with links', () => {
         test('should resolve link property and access nested field', async () => {
             const renderer = new DisplayRenderer(vault, {}, client1, undefined);
             
@@ -136,7 +136,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 institution: '[[Institution-Paris]]'
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'institution.lieu');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'institution.lieu');
             
             expect(result).toBe('Paris');
         });
@@ -153,7 +153,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 institution: '[[Institution-Paris]]'
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'institution.lieu');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'institution.lieu');
             
             expect(result).toBe('Paris');
         });
@@ -168,7 +168,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 ]
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'clients[0].institution.lieu');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'clients[0].institution.lieu');
             
             expect(result).toBe('Paris');
         });
@@ -183,8 +183,8 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 ]
             };
             
-            const result1 = await (renderer as any).getNestedProperty(mockContext, 'clients[0].institution.lieu');
-            const result2 = await (renderer as any).getNestedProperty(mockContext, 'clients[1].institution.lieu');
+            const result1 = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'clients[0].institution.lieu');
+            const result2 = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'clients[1].institution.lieu');
             
             expect(result1).toBe('Paris');
             expect(result2).toBe('Lyon');
@@ -199,7 +199,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 ]
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'clients[0].institution.lieu');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'clients[0].institution.lieu');
             
             expect(result).toBeUndefined();
         });
@@ -213,7 +213,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 ]
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'clients[5].institution.lieu');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'clients[5].institution.lieu');
             
             expect(result).toBeUndefined();
         });
@@ -228,7 +228,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 ]
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'items[1].total');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'items[1].total');
             
             expect(result).toBe(200);
         });
@@ -277,7 +277,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 clients: null
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'clients[0].institution.lieu');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'clients[0].institution.lieu');
             
             expect(result).toBeUndefined();
         });
@@ -291,7 +291,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 ]
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'clients[0].institution.lieu');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'clients[0].institution.lieu');
             
             expect(result).toBeUndefined();
         });
@@ -303,7 +303,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 value: 'string-value'
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'value.property');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'value.property');
             
             expect(result).toBeUndefined();
         });
@@ -319,7 +319,7 @@ describe('DisplayRenderer - Nested Links Support', () => {
                 }
             };
             
-            const result = await (renderer as any).getNestedProperty(mockContext, 'data.clients[0].institution.lieu');
+            const result = await (renderer as any).propertyNavigator.getNestedProperty(mockContext, 'data.clients[0].institution.lieu');
             
             expect(result).toBe('Paris');
         });

@@ -5,6 +5,7 @@ import { Classe } from '../vault/Classe';
 import { addFold } from '../utils/Utils';
 import { DynamicTable } from './DynamicTable';
 import { NumberDisplay } from './NumberDisplay';
+import { PropertyNavigator } from '../utils/PropertyNavigator';
 
 /**
  * Utility class for rendering display configurations
@@ -15,6 +16,7 @@ export class DisplayRenderer {
     private properties: { [key: string]: Property };
     private context: any; // The Classe instance or object data
     private updateCallback?: (propertyName: string, value: any) => Promise<void>;
+    private propertyNavigator: PropertyNavigator;
 
     constructor(
         vault: Vault, 
@@ -26,6 +28,7 @@ export class DisplayRenderer {
         this.properties = properties;
         this.context = context;
         this.updateCallback = updateCallback;
+        this.propertyNavigator = new PropertyNavigator(vault, context);
     }
 
     async renderDisplayItems(container: HTMLElement, items: DisplayItem[]): Promise<void> {
@@ -549,7 +552,7 @@ export class DisplayRenderer {
                 // Handle complex property expressions (like "animateurs.filter(animateur=$current).tarif")
                 if (propName.includes('.') || propName.includes('filter') || propName.includes('$current')) {
                     try {
-                        return displayRenderer.evaluateComplexProperty(propName, obj, parentInstance);
+                        return displayRenderer.propertyNavigator.evaluateComplexProperty(propName, obj, parentInstance);
                     } catch (error) {
                         console.warn(`Error processing complex property ${propName}:`, error);
                         return undefined;
@@ -719,175 +722,17 @@ export class DisplayRenderer {
     }
 
     /**
-     * Evaluate complex property expressions like "animateurs.filter(animateur=$current).tarif"
-     * @param propName - The complex property expression
-     * @param obj - The current object being evaluated
-     * @param parentInstance - The parent Classe instance for context
-     * @returns The evaluated property value
-     */
-    private async evaluateComplexProperty(propName: string, obj: any, parentInstance: Classe): Promise<any> {
-        // Check if this is a filter expression
-        const filterMatch = propName.match(/^(.+?)\.filter\((.+?)\)(?:\.(.+))?$/);
-        
-        if (filterMatch) {
-            const [, baseProperty, filterCondition, targetProperty] = filterMatch;
-            
-            // Get the base property value from the current object
-            const baseValue = obj[baseProperty];
-            
-            if (!Array.isArray(baseValue)) {
-                console.warn(`Property ${baseProperty} is not an array, cannot apply filter`);
-                return undefined;
-            }
-            
-            // Parse the filter condition (e.g., "animateur=$current")
-            const conditionMatch = filterCondition.match(/^(\w+)=\$current$/);
-            if (conditionMatch) {
-                const [, conditionProperty] = conditionMatch;
-                const currentName = parentInstance.getName();
-                
-                // Filter the array based on the condition
-                const filteredItems = baseValue.filter(item => {
-                    if (typeof item === 'object' && item !== null) {
-                        return item[conditionProperty] === currentName;
-                    }
-                    return false;
-                });
-                
-                // If there's a target property, extract it from filtered items
-                if (targetProperty && filteredItems.length > 0) {
-                    const result = filteredItems.map(item => item[targetProperty]);
-                    // Return first value if only one match, otherwise return array
-                    return result.length === 1 ? result[0] : result;
-                }
-                
-                // Return the filtered items
-                return filteredItems.length === 1 ? filteredItems[0] : filteredItems;
-            }
-            
-            // If condition doesn't match expected pattern, return undefined
-            console.warn(`Unsupported filter condition: ${filterCondition}`);
-            return undefined;
-        }
-        
-        // For other complex expressions, fall back to basic navigation
-        return await this.getNestedProperty(obj, propName);
-    }
-
-    /**
-     * Get nested property using dot notation with support for linked classes
-     * @param obj - The object to navigate
-     * @param path - The property path (e.g., "user.profile.name" or "clients[0].institution.lieu")
-     * @returns The property value
-     */
-    private async getNestedProperty(obj: any, path: string): Promise<any> {
-        const parts = path.split('.');
-        let current = obj;
-        
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            
-            if (current === null || current === undefined) {
-                return undefined;
-            }
-            
-            // Handle array indexing (e.g., "clients[0]")
-            const arrayMatch = part.match(/^(\w+)\[(\d+)\]$/);
-            if (arrayMatch) {
-                const [, arrayName, indexStr] = arrayMatch;
-                const index = parseInt(indexStr, 10);
-                
-                if (current[arrayName] && Array.isArray(current[arrayName])) {
-                    current = current[arrayName][index];
-                } else {
-                    return undefined;
-                }
-            } else {
-                // Get property value - try different methods
-                if (current.getPropertyValue && typeof current.getPropertyValue === 'function') {
-                    // If it's a Classe instance, use getPropertyValue for the rest of the path
-                    const remainingPath = parts.slice(i).join('.');
-                    current = await current.getPropertyValue(remainingPath);
-                    
-                    // If we got a value from getPropertyValue, we need to check if there are more parts
-                    // But getPropertyValue might have handled the whole path already
-                    // So we break here and check for links below
-                    break;
-                } else {
-                    // Simple object property access
-                    current = current[part];
-                }
-            }
-            
-            // Check if current value is a link to another class (format: [[ClassName]])
-            if (typeof current === 'string' && current.match(/^\[\[.+\]\]$/)) {
-                try {
-                    const linkedClasse = await this.vault.getFromLink(current);
-                    if (linkedClasse) {
-                        current = linkedClasse;
-                        
-                        // If there are remaining parts in the path, continue navigation
-                        const remainingParts = parts.slice(i + 1);
-                        if (remainingParts.length > 0) {
-                            const remainingPath = remainingParts.join('.');
-                            return await this.getNestedProperty(current, remainingPath);
-                        }
-                    } else {
-                        return undefined;
-                    }
-                } catch (error) {
-                    console.warn(`Error loading linked class from ${current}:`, error);
-                    return undefined;
-                }
-            }
-        }
-        
-        return current;
-    }
-
-    /**
      * Render a number display item
      */
     private async renderNumber(item: NumberDisplayItem): Promise<HTMLElement | null> {
         try {
-            // Get files based on source (reuse table logic)
-            const files = await this.getFilesForTable(item.source, this.context);
-            
-            // Calculate or get max value first (needed for percent formula)
-            let maxValue: number | undefined = undefined;
-            if (item.max !== undefined) {
-                if (typeof item.max === 'number') {
-                    // max is a fixed number
-                    maxValue = item.max;
-                } else if (typeof item.max === 'string') {
-                    // max is a property name - get it from current context
-                    if (this.context && this.context.getPropertyValue) {
-                        maxValue = await this.context.getPropertyValue(item.max);
-                        // Handle nested properties (e.g., "items[0].total" or "clients[0].institution.lieu")
-                        if (maxValue === undefined) {
-                            maxValue = await this.getNestedProperty(this.context, item.max);
-                        }
-                        // Convert to number if needed
-                        maxValue = typeof maxValue === 'number' ? maxValue : (maxValue != null ? parseFloat(maxValue) : undefined) || undefined;
-                    }
-                } else {
-                    // max is a MaxCalculationConfig - calculate it
-                    const maxFiles = await this.getFilesForTable(item.max.source, this.context);
-                    maxValue = await this.calculateNumberValue(maxFiles, item.max.formula, item.max.propertyName, undefined);
-                }
-            }
-            
-            // Calculate value using formula (pass maxValue for percent formula)
-            const value = await this.calculateNumberValue(files, item.formula, item.propertyName, maxValue);
-            
-            const numberDisplay = new NumberDisplay({
-                value: value,
-                unit: item.unit,
-                label: item.label,
-                size: item.size,
-                color: item.color,
-                max: maxValue
-            });
+            // Use NumberDisplay.fromConfig to handle all calculation logic
+            const numberDisplay = await NumberDisplay.fromConfig(
+                item,
+                this.vault,
+                this.context,
+                this.getFilesForTable.bind(this)
+            );
             
             const container = document.createElement('div');
             if (item.className) {
@@ -916,211 +761,4 @@ export class DisplayRenderer {
         }
     }
 
-    /**
-     * Calculate number value from files using formula
-     */
-    private async calculateNumberValue(files: Classe[], formula: string, propertyName?: string, maxValue?: number): Promise<number> {
-        // If count without propertyName, just count files
-        if (formula === 'count' && !propertyName) {
-            return files.length;
-        }
-        
-        // Special case for percent: requires both propertyName and maxValue
-        if (formula === 'percent') {
-            if (!propertyName || maxValue === undefined) {
-                console.warn('percent formula requires both propertyName and max value');
-                return 0;
-            }
-        } else if (!propertyName) {
-            return 0; // Can't calculate without property for non-count formulas
-        }
-        
-        // Get all property values
-        const values: number[] = [];
-        for (const file of files) {
-            try {
-                let value: any;
-                
-                // Check if this is a complex property expression (e.g., "partenariats.filter(property=value).target")
-                if (propertyName.includes('.filter(') && propertyName.includes(').')) {
-                    value = await this.getNestedPropertyValue(file, propertyName);
-                } else {
-                    if (file.getPropertyValue) {
-                        value = await file.getPropertyValue(propertyName);
-                    } else {
-                        // Fallback for object data
-                        value = await this.getNestedProperty(file, propertyName);
-                    }
-                }
-                
-                // Handle arrays (from filter expressions like "partenariats.filter().montant")
-                if (Array.isArray(value)) {
-                    for (const item of value) {
-                        const numValue = typeof item === 'number' ? item : parseFloat(item) || 0;
-                        if (!isNaN(numValue)) {
-                            values.push(numValue);
-                        }
-                    }
-                } else {
-                    const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
-                    if (!isNaN(numValue)) {
-                        values.push(numValue);
-                    }
-                }
-            } catch (error) {
-                console.warn(`Error getting property ${propertyName} from file:`, error);
-            }
-        }
-        
-        // Apply formula
-        switch (formula) {
-            case 'count':
-                return values.length; // Count the number of values, not files
-            case 'countDistinct':
-                // Count unique values only
-                const uniqueValues = new Set(values);
-                return uniqueValues.size;
-            case 'sum':
-                return values.reduce((sum, val) => sum + val, 0);
-            case 'average':
-            case 'avg':
-                return values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
-            case 'min':
-                return values.length > 0 ? Math.min(...values) : 0;
-            case 'max':
-                return values.length > 0 ? Math.max(...values) : 0;
-            case 'percent':
-                // Calculate percentage: (sum / max) * 100
-                if (maxValue === undefined || maxValue === 0) {
-                    return 0;
-                }
-                const sum = values.reduce((sum, val) => sum + val, 0);
-                return Math.round((sum / maxValue) * 100);
-            default:
-                console.warn(`Unknown formula: ${formula}`);
-                return 0;
-        }
-    }
-
-    /**
-     * Get nested property value using dot notation (e.g., "partenariats.montant")
-     * Supports array filtering with syntax: "partenariats.filter(property=value).targetProperty"
-     * Falls back to regular getPropertyValue for simple properties
-     */
-    private async getNestedPropertyValue(file: Classe, propertyPath: string): Promise<any> {
-        // If no dots, use regular getPropertyValue
-        if (!propertyPath.includes('.')) {
-            return await file.getPropertyValue(propertyPath);
-        }
-
-        // Check for filter syntax: array.filter(property=value).targetProperty
-        const filterMatch = propertyPath.match(/^([^.]+)\.filter\(([^=]+)=([^)]+)\)\.(.+)$/);
-        if (filterMatch) {
-            const [, arrayProperty, filterProperty, filterValue, targetProperty] = filterMatch;
-            
-            // Get the array
-            const arrayValue = await file.getPropertyValue(arrayProperty);
-            if (!Array.isArray(arrayValue)) {
-                return undefined;
-            }
-
-            // Filter the array
-            const filteredItems = arrayValue.filter((item: any) => {
-                if (typeof item !== 'object' || item === null) {
-                    return false;
-                }
-                
-                // Handle special $current value for filtering
-                if (filterValue === '$current') {
-                    // Use context to get the current instance information
-                    const currentName = this.context?.getName?.() || '';
-                    const currentPath = this.context?.getPath?.() || '';
-                    
-                    // Support both direct name matching and path matching
-                    const itemValue = String(item[filterProperty] || '');
-                    return itemValue === currentName || 
-                           itemValue === currentPath ||
-                           itemValue.includes(`[[${currentName}]]`) ||
-                           itemValue.includes(currentName);
-                }
-                
-                // Regular value filtering (case insensitive)
-                const itemValue = String(item[filterProperty] || '').toLowerCase();
-                const targetValue = String(filterValue).toLowerCase();
-                return itemValue === targetValue;
-            });
-
-            if (filteredItems.length === 0) {
-                return undefined;
-            }
-
-            // Extract target property from filtered items
-            const targetValues = filteredItems.map(item => {
-                // Support nested target properties (e.g., "contact.nom")
-                if (targetProperty.includes('.')) {
-                    return this.navigateNestedProperty(item, targetProperty.split('.'));
-                } else {
-                    return item[targetProperty];
-                }
-            }).filter(value => value !== undefined && value !== null);
-
-            if (targetValues.length === 0) {
-                return undefined;
-            }
-
-            // Return the array of values for formulas to process
-            // Don't aggregate here - let the formula (sum/avg/count/min/max) handle it
-            return targetValues;
-        }
-
-        // Regular nested property navigation using dots
-        const parts = propertyPath.split('.');
-        let currentValue = await file.getPropertyValue(parts[0]);
-        return this.navigateNestedProperty(currentValue, parts.slice(1));
-    }
-
-    /**
-     * Navigate through nested properties
-     */
-    private navigateNestedProperty(currentValue: any, parts: string[]): any {
-        if (parts.length === 0) {
-            return currentValue;
-        }
-
-        if (currentValue === null || currentValue === undefined) {
-            return undefined;
-        }
-
-        const [nextPart, ...remainingParts] = parts;
-
-        // Handle arrays
-        if (Array.isArray(currentValue)) {
-            // For arrays, we try to get the property from each element
-            // This is used for cases like "partenariats.montant" where partenariats is an array
-            const values = currentValue.map(item => {
-                if (typeof item === 'object' && item !== null && item.hasOwnProperty(nextPart)) {
-                    return this.navigateNestedProperty(item[nextPart], remainingParts);
-                }
-                return undefined;
-            }).filter(val => val !== undefined);
-
-            if (values.length === 0) {
-                return undefined;
-            } else if (values.length === 1) {
-                return values[0];
-            } else {
-                // Multiple values - we should not automatically unwrap multi-element arrays
-                // This preserves the original behavior where arrays with multiple elements
-                // should use explicit filter() syntax
-                return undefined;
-            }
-        }
-
-        // Handle objects
-        if (typeof currentValue === 'object' && currentValue.hasOwnProperty(nextPart)) {
-            return this.navigateNestedProperty(currentValue[nextPart], remainingParts);
-        }
-
-        return undefined;
-    }
 }

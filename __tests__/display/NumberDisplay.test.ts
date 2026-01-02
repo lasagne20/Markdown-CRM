@@ -12,10 +12,10 @@ import { mockApp } from '../utils/mocks';
 
 // Mock class for testing
 class MockTestFile extends Classe {
-    constructor(vault: Vault, fileName: string, budget: number, montant: number) {
+    constructor(vault: Vault, fileName: string, budget: number, montant: number, status?: string, category?: string, clients?: any[]) {
         super(vault);
         this.fileName = fileName;
-        this.mockData = { budget, montant };
+        this.mockData = { budget, montant, status, category, clients };
     }
 
     private fileName: string;
@@ -34,7 +34,45 @@ class MockTestFile extends Classe {
     }
 
     async getPropertyValue(propertyName: string): Promise<any> {
-        return this.mockData[propertyName] || 0;
+        // Handle array indexing syntax: property[0] or property[0].subProperty
+        if (propertyName.includes('[')) {
+            // Split on dots to handle nested properties like clients[0].name
+            const parts = propertyName.split('.');
+            let current: any = this.mockData;
+            
+            for (const part of parts) {
+                if (current === null || current === undefined) {
+                    return undefined;
+                }
+                
+                // Handle array indexing (e.g., "clients[0]")
+                const arrayMatch = part.match(/^(\w+)\[(\d+)\]$/);
+                if (arrayMatch) {
+                    const [, arrayName, indexStr] = arrayMatch;
+                    const index = parseInt(indexStr, 10);
+                    
+                    if (current[arrayName] && Array.isArray(current[arrayName])) {
+                        current = current[arrayName][index];
+                    } else {
+                        return undefined;
+                    }
+                } else {
+                    // Regular property access
+                    current = current[part];
+                }
+            }
+            
+            return current;
+        }
+        
+        // Simple property access without brackets
+        const value = this.mockData[propertyName];
+        // Return undefined if property doesn't exist or is explicitly undefined
+        if (value === undefined) {
+            return undefined;
+        }
+        // Return the value as-is (preserving 0, false, empty strings, etc.)
+        return value;
     }
 
     getProperty(name: string) {
@@ -203,6 +241,106 @@ describe('NumberDisplay with Sources', () => {
             const svg = result?.querySelector('svg');
             const text = svg?.querySelector('text');
             expect(text?.textContent).toBe('2'); // Only 2 unique values: 10000 and 8000
+        });
+
+        test('should count non-numeric values with countDistinct', async () => {
+            // Create mock files with text status values
+            const mockFilesWithStatus = [
+                new MockTestFile(vault, 'project-1', 10000, 2500, 'active', 'web'),
+                new MockTestFile(vault, 'project-2', 15000, 3000, 'active', 'mobile'),
+                new MockTestFile(vault, 'project-3', 8000, 1500, 'pending', 'web'),
+                new MockTestFile(vault, 'project-4', 12000, 4000, 'active', 'web')
+            ];
+            
+            // Override mock for this test
+            (renderer as any).getFilesForTable = jest.fn().mockResolvedValue(mockFilesWithStatus);
+            
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                title: 'Unique Statuses',
+                source: {
+                    class: 'Project'
+                },
+                formula: 'countDistinct',
+                propertyName: 'status',
+                label: 'Distinct Statuses'
+            };
+
+            const result = await (renderer as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            
+            const svg = result?.querySelector('svg');
+            const text = svg?.querySelector('text');
+            expect(text?.textContent).toBe('2'); // Only 2 unique statuses: 'active' and 'pending'
+        });
+
+        test('should count all non-numeric values with count', async () => {
+            // Create mock files with category values
+            const mockFilesWithCategories = [
+                new MockTestFile(vault, 'project-1', 10000, 2500, 'active', 'web'),
+                new MockTestFile(vault, 'project-2', 15000, 3000, 'active', 'mobile'),
+                new MockTestFile(vault, 'project-3', 8000, 1500, 'pending', 'web'),
+                new MockTestFile(vault, 'project-4', 12000, 4000, 'active', undefined) // undefined category
+            ];
+            
+            // Override mock for this test
+            (renderer as any).getFilesForTable = jest.fn().mockResolvedValue(mockFilesWithCategories);
+            
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                title: 'Total Categories',
+                source: {
+                    class: 'Project'
+                },
+                formula: 'count',
+                propertyName: 'category',
+                label: 'All Categories'
+            };
+
+            const result = await (renderer as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            
+            const svg = result?.querySelector('svg');
+            const text = svg?.querySelector('text');
+            expect(text?.textContent).toBe('3'); // 3 non-undefined values: 'web', 'mobile', 'web'
+        });
+
+        test('should access array elements with index notation', async () => {
+            // Create mock files with clients array
+            const mockFilesWithClients = [
+                new MockTestFile(vault, 'project-1', 10000, 2500, 'active', 'web', [
+                    { name: 'Client A', amount: 1000 },
+                    { name: 'Client B', amount: 2000 }
+                ]),
+                new MockTestFile(vault, 'project-2', 15000, 3000, 'active', 'mobile', [
+                    { name: 'Client C', amount: 1500 }
+                ])
+            ];
+            
+            // Override mock for this test
+            (renderer as any).getFilesForTable = jest.fn().mockResolvedValue(mockFilesWithClients);
+            
+            // Test accessing first client's name with clients[0].name
+            const numberItem: NumberDisplayItem = {
+                type: 'number',
+                title: 'First Client Count',
+                source: {
+                    class: 'Project'
+                },
+                formula: 'count',
+                propertyName: 'clients[0].name',
+                label: 'First Clients'
+            };
+
+            const result = await (renderer as any).renderNumber(numberItem);
+            
+            expect(result).toBeTruthy();
+            
+            const svg = result?.querySelector('svg');
+            const text = svg?.querySelector('text');
+            expect(text?.textContent).toBe('2'); // 2 files with clients[0].name: 'Client A' and 'Client C'
         });
 
         test('should render number display with average formula', async () => {
