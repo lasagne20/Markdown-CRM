@@ -70,7 +70,7 @@ export class ProcessManager {
 
     constructor(vault: Vault) {
         this.vault = vault;
-        this.conditionManager = new ConditionManager();
+        this.conditionManager = new ConditionManager(vault);
     }
 
     /**

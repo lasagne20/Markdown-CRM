@@ -40,7 +40,7 @@ export class Vault {
         // Initialize the populate manager (one per Vault instance)
         this.populateManager = new PopulateManager(this);
         // Initialize the condition manager (one per Vault instance)
-        this.conditionManager = new ConditionManager();
+        this.conditionManager = new ConditionManager(this);
     }
 
     public getPath(): string {
