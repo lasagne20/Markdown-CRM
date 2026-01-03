@@ -33,46 +33,8 @@ class MockTestFile extends Classe {
         } as any;
     }
 
-    async getPropertyValue(propertyName: string): Promise<any> {
-        // Handle array indexing syntax: property[0] or property[0].subProperty
-        if (propertyName.includes('[')) {
-            // Split on dots to handle nested properties like clients[0].name
-            const parts = propertyName.split('.');
-            let current: any = this.mockData;
-            
-            for (const part of parts) {
-                if (current === null || current === undefined) {
-                    return undefined;
-                }
-                
-                // Handle array indexing (e.g., "clients[0]")
-                const arrayMatch = part.match(/^(\w+)\[(\d+)\]$/);
-                if (arrayMatch) {
-                    const [, arrayName, indexStr] = arrayMatch;
-                    const index = parseInt(indexStr, 10);
-                    
-                    if (current[arrayName] && Array.isArray(current[arrayName])) {
-                        current = current[arrayName][index];
-                    } else {
-                        return undefined;
-                    }
-                } else {
-                    // Regular property access
-                    current = current[part];
-                }
-            }
-            
-            return current;
-        }
-        
-        // Simple property access without brackets
-        const value = this.mockData[propertyName];
-        // Return undefined if property doesn't exist or is explicitly undefined
-        if (value === undefined) {
-            return undefined;
-        }
-        // Return the value as-is (preserving 0, false, empty strings, etc.)
-        return value;
+    async getMetadata(): Promise<Record<string, any>> {
+        return this.mockData;
     }
 
     getProperty(name: string) {

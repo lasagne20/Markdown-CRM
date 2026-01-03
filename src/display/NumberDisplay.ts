@@ -4,7 +4,6 @@
 import { NumberDisplayItem } from '../Config/interfaces';
 import { Vault } from '../vault/Vault';
 import { Classe } from '../vault/Classe';
-import { PropertyNavigator } from '../utils/PropertyNavigator';
 
 interface NumberDisplayOptions {
     value: number; // valeur à afficher (0-100)
@@ -39,8 +38,6 @@ export class NumberDisplay {
         context: Classe,
         getFilesForTable: (source: any, context?: Classe) => Promise<Classe[]>
     ): Promise<NumberDisplay> {
-        const propertyNavigator = new PropertyNavigator(vault, context);
-        
         // Get files based on source
         const files = await getFilesForTable(item.source, context);
         
@@ -53,23 +50,20 @@ export class NumberDisplay {
             } else if (typeof item.max === 'string') {
                 // max is a property name - get it from current context
                 if (context && context.getPropertyValue) {
-                    maxValue = await context.getPropertyValue(item.max);
-                    // Handle nested properties (e.g., "items[0].total" or "clients[0].institution.lieu")
-                    if (maxValue === undefined) {
-                        maxValue = await propertyNavigator.getNestedProperty(context, item.max);
-                    }
+                    // Classe.getPropertyValue() now handles all complex properties automatically
+                    maxValue = await context.getPropertyValue(item.max, context);
                     // Convert to number if needed
                     maxValue = typeof maxValue === 'number' ? maxValue : (maxValue != null ? parseFloat(maxValue) : undefined) || undefined;
                 }
             } else {
                 // max is a MaxCalculationConfig - calculate it
                 const maxFiles = await getFilesForTable(item.max.source, context);
-                maxValue = await NumberDisplay.calculateValue(maxFiles, item.max.formula, item.max.propertyName, undefined, propertyNavigator);
+                maxValue = await NumberDisplay.calculateValue(maxFiles, item.max.formula, item.max.propertyName, undefined, context);
             }
         }
         
         // Calculate value using formula (pass maxValue for percent formula)
-        const value = await NumberDisplay.calculateValue(files, item.formula, item.propertyName, maxValue, propertyNavigator);
+        const value = await NumberDisplay.calculateValue(files, item.formula, item.propertyName, maxValue, context);
         
         return new NumberDisplay({
             value: value,
@@ -89,7 +83,7 @@ export class NumberDisplay {
         formula: string,
         propertyName?: string,
         maxValue?: number,
-        propertyNavigator?: PropertyNavigator
+        context?: Classe
     ): Promise<number> {
         // If count without propertyName, just count files
         if (formula === 'count' && !propertyName) {
@@ -110,19 +104,9 @@ export class NumberDisplay {
         const values: any[] = [];
         for (const file of files) {
             try {
-                let value: any;
-                
-                // Check if this is a complex property expression (e.g., "partenariats.filter(property=value).target")
-                if (propertyName.includes('.filter(') && propertyName.includes(').')) {
-                    value = await propertyNavigator!.getNestedPropertyValue(file, propertyName);
-                } else {
-                    if (file.getPropertyValue) {
-                        value = await file.getPropertyValue(propertyName);
-                    } else if (propertyNavigator) {
-                        // Fallback for object data
-                        value = await propertyNavigator.getNestedProperty(file, propertyName);
-                    }
-                }
+                // Classe.getPropertyValue() handles all property navigation including filters
+                // Pass context for $current support in filter expressions
+                const value = await file.getPropertyValue(propertyName, context);
                 
                 // Handle arrays (from filter expressions like "partenariats.filter().montant")
                 if (Array.isArray(value)) {

@@ -3,6 +3,7 @@ import { Vault } from './Vault';
 import { Property } from '../properties/Property';
 import { File } from './File';
 import { Data } from './Data';
+import { PropertyNavigator } from '../utils/PropertyNavigator';
 
 export class Classe {
     protected static Properties: { [key: string]: Property } = {};
@@ -172,7 +173,15 @@ export class Classe {
         }
     }
     
-    async getPropertyValue(propertyName: string): Promise<any> {
+    async getPropertyValue(propertyName: string, context?: any): Promise<any> {
+        // Use PropertyNavigator for complex property paths (dot notation, array indexing, filters)
+        if (propertyName.includes('.') || propertyName.includes('[')) {
+            // Use provided context for $current support, fallback to this
+            const propertyNavigator = new PropertyNavigator(this.vault, context || this);
+            return await propertyNavigator.getNestedPropertyValue(this, propertyName);
+        }
+        
+        // Simple property - get from metadata
         const metadata = await this.getMetadata();
         return metadata[propertyName];
     }

@@ -39,31 +39,8 @@ class MockActionFile extends Classe {
         return `/vault/actions/${this.fileName}.md`;
     }
 
-    async getPropertyValue(propertyName: string): Promise<any> {
-        // Handle complex property expressions like "partenariats.filter(partenariat=$current).montant"
-        if (propertyName.includes('.filter(') && propertyName.includes('=$current')) {
-            // Parse the expression: partenariats.filter(partenariat=$current).montant
-            const baseProperty = propertyName.split('.filter(')[0]; // "partenariats"
-            const targetProperty = propertyName.split(').')[1]; // "montant"
-            const filterCondition = propertyName.match(/filter\(([^)]+)\)/)?.[1]; // "partenariat=$current"
-            
-            if (filterCondition?.includes('=$current')) {
-                const filterField = filterCondition.split('=')[0]; // "partenariat"
-                const baseValue = this.mockData[baseProperty];
-                
-                if (Array.isArray(baseValue)) {
-                    // Filter items where the filterField equals current file path
-                    const filteredItems = baseValue.filter((item: any) => {
-                        return item[filterField] === this.getPath();
-                    });
-                    
-                    // Extract the target property from filtered items
-                    return filteredItems.map((item: any) => item[targetProperty]);
-                }
-            }
-        }
-        
-        return this.mockData[propertyName] || '';
+    async getMetadata(): Promise<Record<string, any>> {
+        return this.mockData;
     }
 
     getProperty(name: string) {

@@ -21,19 +21,38 @@ export class PropertyNavigator {
     /**
      * Get nested property value using dot notation (e.g., "partenariats.montant")
      * Supports array filtering with syntax: "partenariats.filter(property=value).targetProperty"
-     * Supports array indexing with syntax: "clients[0].name"
-     * Falls back to regular getPropertyValue for simple properties
+     * Supports array indexing with syntax: "clients[0].name" or "clients[0]"
+     * Handles all property path complexities
      */
     async getNestedPropertyValue(file: Classe, propertyPath: string): Promise<any> {
-        // If no dots and no array indexing, use regular getPropertyValue
-        if (!propertyPath.includes('.') && !propertyPath.includes('[')) {
-            return await file.getPropertyValue(propertyPath);
+        // Handle simple array indexing without dots (e.g., "clients[0]")
+        const simpleArrayMatch = propertyPath.match(/^(\w+)\[(\d+)\]$/);
+        if (simpleArrayMatch) {
+            const [, arrayName, indexStr] = simpleArrayMatch;
+            const index = parseInt(indexStr, 10);
+            const metadata = await file.getMetadata();
+            const arrayValue = metadata[arrayName];
+            
+            if (Array.isArray(arrayValue) && index >= 0 && index < arrayValue.length) {
+                return arrayValue[index];
+            }
+            return undefined;
         }
         
-        // If has array indexing but no dots, still delegate to getPropertyValue
-        // to handle simple cases like "clients[0]"
-        if (!propertyPath.includes('.') && propertyPath.includes('[')) {
-            return await file.getPropertyValue(propertyPath);
+        // Handle array indexing with nested property (e.g., "clients[0].name")
+        const arrayWithPropertyMatch = propertyPath.match(/^(\w+)\[(\d+)\]\.(.+)$/);
+        if (arrayWithPropertyMatch) {
+            const [, arrayName, indexStr, nestedPath] = arrayWithPropertyMatch;
+            const index = parseInt(indexStr, 10);
+            const metadata = await file.getMetadata();
+            const arrayValue = metadata[arrayName];
+            
+            if (Array.isArray(arrayValue) && index >= 0 && index < arrayValue.length) {
+                const element = arrayValue[index];
+                // Navigate through the nested path
+                return this.navigateNestedProperty(element, nestedPath.split('.'));
+            }
+            return undefined;
         }
 
         // Check for filter syntax: array.filter(property=value).targetProperty
@@ -149,11 +168,16 @@ export class PropertyNavigator {
 
     /**
      * Get nested property using dot notation with support for linked classes
-     * @param obj - The object to navigate
+     * @param obj - The object to navigate (can be plain object or Classe instance)
      * @param path - The property path (e.g., "user.profile.name" or "clients[0].institution.lieu")
      * @returns The property value
      */
     async getNestedProperty(obj: any, path: string): Promise<any> {
+        // If obj is a Classe instance, delegate to getNestedPropertyValue
+        if (obj && obj.getPropertyValue && typeof obj.getPropertyValue === 'function' && obj.getMetadata) {
+            return await this.getNestedPropertyValue(obj, path);
+        }
+        
         const parts = path.split('.');
         let current = obj;
         
@@ -176,20 +200,8 @@ export class PropertyNavigator {
                     return undefined;
                 }
             } else {
-                // Get property value - try different methods
-                if (current.getPropertyValue && typeof current.getPropertyValue === 'function') {
-                    // If it's a Classe instance, use getPropertyValue for the rest of the path
-                    const remainingPath = parts.slice(i).join('.');
-                    current = await current.getPropertyValue(remainingPath);
-                    
-                    // If we got a value from getPropertyValue, we need to check if there are more parts
-                    // But getPropertyValue might have handled the whole path already
-                    // So we break here and check for links below
-                    break;
-                } else {
-                    // Simple object property access
-                    current = current[part];
-                }
+                // Simple object property access
+                current = current[part];
             }
             
             // Check if current value is a link to another class (format: [[ClassName]])
