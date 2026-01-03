@@ -178,7 +178,7 @@ export class Classe {
         if (propertyName.includes('.') || propertyName.includes('[')) {
             // Use provided context for $current support, fallback to this
             const propertyNavigator = new PropertyNavigator(this.vault, context || this);
-            return await propertyNavigator.getNestedPropertyValue(this, propertyName);
+            return await propertyNavigator.getNestedProperty(this, propertyName);
         }
         
         // Simple property - get from metadata

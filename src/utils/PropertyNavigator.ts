@@ -19,19 +19,109 @@ export class PropertyNavigator {
     }
 
     /**
-     * Get nested property value using dot notation (e.g., "partenariats.montant")
-     * Supports array filtering with syntax: "partenariats.filter(property=value).targetProperty"
-     * Supports array indexing with syntax: "clients[0].name" or "clients[0]"
-     * Handles all property path complexities
+     * Get nested property using dot notation with support for linked classes
+     * @param obj - The object to navigate (can be plain object or Classe instance)
+     * @param path - The property path (e.g., "user.profile.name" or "clients[0].institution.lieu")
+     * @returns The property value
      */
-    async getNestedPropertyValue(file: Classe, propertyPath: string): Promise<any> {
-        // Handle simple array indexing without dots (e.g., "clients[0]")
-        const simpleArrayMatch = propertyPath.match(/^(\w+)\[(\d+)\]$/);
+    async getNestedProperty(obj: any, path: string): Promise<any> {
+        // Handle filter syntax for Classe instances: array.filter(property=value).targetProperty
+        if (obj && obj.getPropertyValue && typeof obj.getPropertyValue === 'function') {
+            const filterMatch = path.match(/^([^.]+)\.filter\(([^=]+)=([^)]+)\)\.(.+)$/);
+            if (filterMatch) {
+                const [, arrayProperty, filterProperty, filterValue, targetProperty] = filterMatch;
+                
+                // Get the array
+                const arrayValue = await obj.getPropertyValue(arrayProperty);
+                if (!Array.isArray(arrayValue)) {
+                    return undefined;
+                }
+
+                // Filter the array
+                const filteredItems = arrayValue.filter((item: any) => {
+                    if (typeof item !== 'object' || item === null) {
+                        return false;
+                    }
+                    
+                    // Handle special $current value for filtering
+                    if (filterValue === '$current') {
+                        // Use context to get the current instance information
+                        const currentName = this.context?.getName?.() || '';
+                        const currentPath = this.context?.getPath?.() || '';
+                        
+                        // Support both direct name matching and path matching
+                        const itemValue = String(item[filterProperty] || '');
+                        return itemValue === currentName || 
+                               itemValue === currentPath ||
+                               itemValue.includes(`[[${currentName}]]`) ||
+                               itemValue.includes(currentName);
+                    }
+                    
+                    // Regular value filtering (case insensitive)
+                    const itemValue = String(item[filterProperty] || '').toLowerCase();
+                    const targetValue = String(filterValue).toLowerCase();
+                    return itemValue === targetValue;
+                });
+
+                if (filteredItems.length === 0) {
+                    return undefined;
+                }
+
+                // Extract target property from filtered items (now async)
+                const targetValues = await Promise.all(filteredItems.map(async (item) => {
+                    // Support nested target properties (e.g., "contact.nom")
+                    if (targetProperty.includes('.')) {
+                        return await this.navigateNestedProperty(item, targetProperty.split('.'));
+                    } else {
+                        return item[targetProperty];
+                    }
+                }));
+                
+                const filteredTargetValues = targetValues.filter(value => value !== undefined && value !== null);
+
+                if (filteredTargetValues.length === 0) {
+                    return undefined;
+                }
+
+                // Return the array of values for formulas to process
+                return filteredTargetValues;
+            }
+        }
+        
+        // Handle array indexing with nested property (e.g., "clients[0].institution.lieu")
+        const arrayWithPropertyMatch = path.match(/^(\w+)\[(\d+)\]\.(.+)$/);
+        if (arrayWithPropertyMatch) {
+            const [, arrayName, indexStr, nestedPath] = arrayWithPropertyMatch;
+            const index = parseInt(indexStr, 10);
+            
+            // Get the array value (use getPropertyValue for Classe, direct access for objects)
+            let arrayValue;
+            if (obj && obj.getPropertyValue && typeof obj.getPropertyValue === 'function') {
+                arrayValue = await obj.getPropertyValue(arrayName);
+            } else {
+                arrayValue = obj[arrayName];
+            }
+            
+            if (Array.isArray(arrayValue) && index >= 0 && index < arrayValue.length) {
+                const element = arrayValue[index];
+                return await this.navigateNestedProperty(element, nestedPath.split('.'));
+            }
+            return undefined;
+        }
+        
+        // Handle simple array indexing without nested path (e.g., "clients[0]")
+        const simpleArrayMatch = path.match(/^(\w+)\[(\d+)\]$/);
         if (simpleArrayMatch) {
             const [, arrayName, indexStr] = simpleArrayMatch;
             const index = parseInt(indexStr, 10);
-            const metadata = await file.getMetadata();
-            const arrayValue = metadata[arrayName];
+            
+            // Get the array value (use getPropertyValue for Classe, direct access for objects)
+            let arrayValue;
+            if (obj && obj.getPropertyValue && typeof obj.getPropertyValue === 'function') {
+                arrayValue = await obj.getPropertyValue(arrayName);
+            } else {
+                arrayValue = obj[arrayName];
+            }
             
             if (Array.isArray(arrayValue) && index >= 0 && index < arrayValue.length) {
                 return arrayValue[index];
@@ -39,92 +129,24 @@ export class PropertyNavigator {
             return undefined;
         }
         
-        // Handle array indexing with nested property (e.g., "clients[0].name")
-        const arrayWithPropertyMatch = propertyPath.match(/^(\w+)\[(\d+)\]\.(.+)$/);
-        if (arrayWithPropertyMatch) {
-            const [, arrayName, indexStr, nestedPath] = arrayWithPropertyMatch;
-            const index = parseInt(indexStr, 10);
-            const metadata = await file.getMetadata();
-            const arrayValue = metadata[arrayName];
-            
-            if (Array.isArray(arrayValue) && index >= 0 && index < arrayValue.length) {
-                const element = arrayValue[index];
-                // Navigate through the nested path
-                return this.navigateNestedProperty(element, nestedPath.split('.'));
-            }
-            return undefined;
+        // Regular dot notation navigation
+        const parts = path.split('.');
+        
+        // Get first value (use getPropertyValue for Classe, direct access for objects)
+        let firstValue;
+        if (obj && obj.getPropertyValue && typeof obj.getPropertyValue === 'function') {
+            firstValue = await obj.getPropertyValue(parts[0]);
+        } else {
+            firstValue = obj[parts[0]];
         }
-
-        // Check for filter syntax: array.filter(property=value).targetProperty
-        const filterMatch = propertyPath.match(/^([^.]+)\.filter\(([^=]+)=([^)]+)\)\.(.+)$/);
-        if (filterMatch) {
-            const [, arrayProperty, filterProperty, filterValue, targetProperty] = filterMatch;
-            
-            // Get the array
-            const arrayValue = await file.getPropertyValue(arrayProperty);
-            if (!Array.isArray(arrayValue)) {
-                return undefined;
-            }
-
-            // Filter the array
-            const filteredItems = arrayValue.filter((item: any) => {
-                if (typeof item !== 'object' || item === null) {
-                    return false;
-                }
-                
-                // Handle special $current value for filtering
-                if (filterValue === '$current') {
-                    // Use context to get the current instance information
-                    const currentName = this.context?.getName?.() || '';
-                    const currentPath = this.context?.getPath?.() || '';
-                    
-                    // Support both direct name matching and path matching
-                    const itemValue = String(item[filterProperty] || '');
-                    return itemValue === currentName || 
-                           itemValue === currentPath ||
-                           itemValue.includes(`[[${currentName}]]`) ||
-                           itemValue.includes(currentName);
-                }
-                
-                // Regular value filtering (case insensitive)
-                const itemValue = String(item[filterProperty] || '').toLowerCase();
-                const targetValue = String(filterValue).toLowerCase();
-                return itemValue === targetValue;
-            });
-
-            if (filteredItems.length === 0) {
-                return undefined;
-            }
-
-            // Extract target property from filtered items
-            const targetValues = filteredItems.map(item => {
-                // Support nested target properties (e.g., "contact.nom")
-                if (targetProperty.includes('.')) {
-                    return this.navigateNestedProperty(item, targetProperty.split('.'));
-                } else {
-                    return item[targetProperty];
-                }
-            }).filter(value => value !== undefined && value !== null);
-
-            if (targetValues.length === 0) {
-                return undefined;
-            }
-
-            // Return the array of values for formulas to process
-            // Don't aggregate here - let the formula (sum/avg/count/min/max) handle it
-            return targetValues;
-        }
-
-        // Regular nested property navigation using dots
-        const parts = propertyPath.split('.');
-        let currentValue = await file.getPropertyValue(parts[0]);
-        return this.navigateNestedProperty(currentValue, parts.slice(1));
+        
+        return await this.navigateNestedProperty(firstValue, parts.slice(1));
     }
 
     /**
-     * Navigate through nested properties
+     * Navigate through nested properties with link resolution support
      */
-    navigateNestedProperty(currentValue: any, parts: string[]): any {
+    async navigateNestedProperty(currentValue: any, parts: string[]): Promise<any> {
         if (parts.length === 0) {
             return currentValue;
         }
@@ -133,23 +155,63 @@ export class PropertyNavigator {
             return undefined;
         }
 
+        // Check if current value is a link to another class (format: [[ClassName]])
+        if (typeof currentValue === 'string' && currentValue.match(/^\[\[.+\]\]$/)) {
+            try {
+                const linkedClasse = await this.vault.getFromLink(currentValue);
+                if (linkedClasse) {
+                    // Continue navigation with the linked class
+                    const remainingPath = parts.join('.');
+                    return await this.getNestedProperty(linkedClasse, remainingPath);
+                } else {
+                    return undefined;
+                }
+            } catch (error) {
+                console.warn(`Error loading linked class from ${currentValue}:`, error);
+                return undefined;
+            }
+        }
+
         const [nextPart, ...remainingParts] = parts;
+
+        // Check if nextPart contains array indexing (e.g., "clients[0]")
+        const arrayMatch = nextPart.match(/^(\w+)\[(\d+)\]$/);
+        if (arrayMatch) {
+            const [, arrayName, indexStr] = arrayMatch;
+            const index = parseInt(indexStr, 10);
+            
+            // Get the array
+            let arrayValue;
+            if (currentValue && typeof currentValue === 'object' && currentValue.hasOwnProperty(arrayName)) {
+                arrayValue = currentValue[arrayName];
+            } else {
+                return undefined;
+            }
+            
+            if (Array.isArray(arrayValue) && index >= 0 && index < arrayValue.length) {
+                const element = arrayValue[index];
+                return await this.navigateNestedProperty(element, remainingParts);
+            }
+            return undefined;
+        }
 
         // Handle arrays
         if (Array.isArray(currentValue)) {
             // For arrays, we try to get the property from each element
             // This is used for cases like "partenariats.montant" where partenariats is an array
-            const values = currentValue.map(item => {
+            const values = await Promise.all(currentValue.map(async (item) => {
                 if (typeof item === 'object' && item !== null && item.hasOwnProperty(nextPart)) {
-                    return this.navigateNestedProperty(item[nextPart], remainingParts);
+                    return await this.navigateNestedProperty(item[nextPart], remainingParts);
                 }
                 return undefined;
-            }).filter(val => val !== undefined);
+            }));
+            
+            const filteredValues = values.filter(val => val !== undefined);
 
-            if (values.length === 0) {
+            if (filteredValues.length === 0) {
                 return undefined;
-            } else if (values.length === 1) {
-                return values[0];
+            } else if (filteredValues.length === 1) {
+                return filteredValues[0];
             } else {
                 // Multiple values - we should not automatically unwrap multi-element arrays
                 // This preserves the original behavior where arrays with multiple elements
@@ -160,74 +222,10 @@ export class PropertyNavigator {
 
         // Handle objects
         if (typeof currentValue === 'object' && currentValue.hasOwnProperty(nextPart)) {
-            return this.navigateNestedProperty(currentValue[nextPart], remainingParts);
+            return await this.navigateNestedProperty(currentValue[nextPart], remainingParts);
         }
 
         return undefined;
-    }
-
-    /**
-     * Get nested property using dot notation with support for linked classes
-     * @param obj - The object to navigate (can be plain object or Classe instance)
-     * @param path - The property path (e.g., "user.profile.name" or "clients[0].institution.lieu")
-     * @returns The property value
-     */
-    async getNestedProperty(obj: any, path: string): Promise<any> {
-        // If obj is a Classe instance, delegate to getNestedPropertyValue
-        if (obj && obj.getPropertyValue && typeof obj.getPropertyValue === 'function' && obj.getMetadata) {
-            return await this.getNestedPropertyValue(obj, path);
-        }
-        
-        const parts = path.split('.');
-        let current = obj;
-        
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            
-            if (current === null || current === undefined) {
-                return undefined;
-            }
-            
-            // Handle array indexing (e.g., "clients[0]")
-            const arrayMatch = part.match(/^(\w+)\[(\d+)\]$/);
-            if (arrayMatch) {
-                const [, arrayName, indexStr] = arrayMatch;
-                const index = parseInt(indexStr, 10);
-                
-                if (current[arrayName] && Array.isArray(current[arrayName])) {
-                    current = current[arrayName][index];
-                } else {
-                    return undefined;
-                }
-            } else {
-                // Simple object property access
-                current = current[part];
-            }
-            
-            // Check if current value is a link to another class (format: [[ClassName]])
-            if (typeof current === 'string' && current.match(/^\[\[.+\]\]$/)) {
-                try {
-                    const linkedClasse = await this.vault.getFromLink(current);
-                    if (linkedClasse) {
-                        current = linkedClasse;
-                        
-                        // If there are remaining parts in the path, continue navigation
-                        const remainingParts = parts.slice(i + 1);
-                        if (remainingParts.length > 0) {
-                            const remainingPath = remainingParts.join('.');
-                            return await this.getNestedProperty(current, remainingPath);
-                        }
-                    } else {
-                        return undefined;
-                    }
-                } catch (error) {
-                    console.warn(`Error loading linked class from ${current}:`, error);
-                    return undefined;
-                }
-            }
-        }
-        
-        return current;
     }
 
     /**
