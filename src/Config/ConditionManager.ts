@@ -125,7 +125,8 @@ export interface DirectLinkCondition {
  */
 export interface UndirectLinkCondition {
     conditionType: 'undirectLink';
-    referencingFiles?: Classe[]; // Pool of files to search through (injected at runtime)
+    referencingFiles?: Classe[]; // Pool of files to search through (can be injected at runtime, or auto-discovered)
+    searchAllFiles?: boolean; // If true, automatically search through all available files (requires vault access)
     filterCondition?: PropertyCondition; // Condition to apply on the referencing files
     linkProperty?: string; // Optional: specific property to check in referencing files
 }
@@ -159,6 +160,11 @@ export type Condition =
  * ConditionManager handles evaluation of conditions against classe instances
  */
 export class ConditionManager {
+    private vault?: any; // Optional vault reference for auto-discovery
+
+    constructor(vault?: any) {
+        this.vault = vault;
+    }
     /**
      * Evaluate a single condition against an instance
      * @param currentDocument The current document context (used for DirectLinkCondition and 'current' value)
@@ -413,18 +419,27 @@ export class ConditionManager {
      * @param currentDocument The current document context (for nested conditions)
      */
     private async evaluateUndirectLinkCondition(condition: UndirectLinkCondition, instance: Classe, currentDocument?: Classe): Promise<boolean> {
-        if (!condition.referencingFiles || condition.referencingFiles.length === 0) {
-            console.warn('UndirectLinkCondition requires referencingFiles to be provided');
-            return false;
-        }
-        
         const instanceFileName = instance.getName();
         const instanceFilePath = instance.getPath() || '';
+
+        // Determine the pool of files to search through
+        let filesToSearch: Classe[] = [];
+        
+        if (condition.referencingFiles && condition.referencingFiles.length > 0) {
+            // Use provided files
+            filesToSearch = condition.referencingFiles;
+        } else if (condition.searchAllFiles) {
+            // Auto-discover files from vault
+            filesToSearch = await this.getAllFilesFromVault(instance);
+        } else {
+            console.warn('UndirectLinkCondition requires either referencingFiles to be provided or searchAllFiles to be true');
+            return false;
+        }
 
         // Find all files that reference this instance
         const referencingFiles: Classe[] = [];
         
-        for (const file of condition.referencingFiles) {
+        for (const file of filesToSearch) {
             let hasReference = false;
 
             // If a specific property is specified, only check that property
@@ -738,8 +753,9 @@ export class ConditionManager {
                 return {
                     conditionType: 'undirectLink',
                     linkProperty: config.linkProperty,
+                    searchAllFiles: config.searchAllFiles,
                     filterCondition: config.filterCondition,
-                    // referencingFiles will be injected at runtime
+                    // referencingFiles will be injected at runtime if not using searchAllFiles
                 } as any as UndirectLinkCondition;
             }
 
@@ -903,5 +919,35 @@ export class ConditionManager {
         }
 
         return result;
+    }
+
+    /**
+     * Get all files from vault for auto-discovery
+     * This method attempts to get all Classe instances from the vault
+     */
+    private async getAllFilesFromVault(instance: Classe): Promise<Classe[]> {
+        if (!this.vault) {
+            console.warn('ConditionManager: No vault available for auto-discovery. Use referencingFiles instead or pass vault to constructor.');
+            return [];
+        }
+
+        try {
+            // Try to get all files from the vault
+            // This will depend on the actual vault implementation
+            if (typeof this.vault.getAllClasses === 'function') {
+                return await this.vault.getAllClasses();
+            }
+            
+            // Alternative method if vault has different API
+            if (typeof this.vault.getFiles === 'function') {
+                return await this.vault.getFiles();
+            }
+
+            console.warn('ConditionManager: Could not find method to get all files from vault');
+            return [];
+        } catch (error) {
+            console.error('ConditionManager: Error getting files from vault:', error);
+            return [];
+        }
     }
 }

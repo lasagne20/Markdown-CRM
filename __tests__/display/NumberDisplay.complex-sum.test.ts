@@ -43,9 +43,14 @@ class MockActionFile extends Classe {
         return this.mockData;
     }
 
+    // Méthode publique pour accéder aux données dans les tests
+    getMockData() {
+        return this.mockData;
+    }
+
     getProperty(name: string) {
         if (name === 'partenariats') {
-            return new ObjectProperty('partenariats', this.vault, [], 'object');
+            return new ObjectProperty('partenariats', this.vault, {}, { display: 'object' });
         }
         
         return {
@@ -90,7 +95,7 @@ describe('NumberDisplay Complex Sum with Filtered Properties', () => {
 
         const properties = {
             etat: new SelectProperty('etat', vault, []),
-            partenariats: new ObjectProperty('partenariats', vault, [], 'object')
+            partenariats: new ObjectProperty('partenariats', vault, {}, { display: 'object' })
         };
 
         Object.values(properties).forEach(prop => {
@@ -106,12 +111,12 @@ describe('NumberDisplay Complex Sum with Filtered Properties', () => {
             // 2. partenariats contains "current" (i.e., has partnership with current file)
             return mockFiles.filter(file => {
                 // Check etat condition
-                if (file.mockData.etat === 'Annulé') {
+                if (file.getMockData().etat === 'Annulé') {
                     return false;
                 }
                 
                 // Check contains condition for partenariats
-                const partenariats = file.mockData.partenariats || [];
+                const partenariats = file.getMockData().partenariats || [];
                 const hasCurrentPartnership = partenariats.some((p: any) => 
                     p.partenariat === currentFile.getPath()
                 );
