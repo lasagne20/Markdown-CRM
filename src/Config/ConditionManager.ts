@@ -119,6 +119,18 @@ export interface DirectLinkCondition {
 }
 
 /**
+ * Undirect link condition - Check if other files reference this instance, then filter those referencing files
+ * This is useful to filter instances based on their "children" or referencing documents
+ * Example: Find communes that have actions with a specific partnership
+ */
+export interface UndirectLinkCondition {
+    conditionType: 'undirectLink';
+    referencingFiles?: Classe[]; // Pool of files to search through (injected at runtime)
+    filterCondition?: PropertyCondition; // Condition to apply on the referencing files
+    linkProperty?: string; // Optional: specific property to check in referencing files
+}
+
+/**
  * Property condition - Standard condition on instance property (default)
  */
 export type PropertyCondition = 
@@ -140,7 +152,8 @@ export type PropertyCondition =
  */
 export type Condition = 
     | PropertyCondition
-    | DirectLinkCondition;
+    | DirectLinkCondition
+    | UndirectLinkCondition;
 
 /**
  * ConditionManager handles evaluation of conditions against classe instances
@@ -154,6 +167,12 @@ export class ConditionManager {
         // Check if this is a DirectLinkCondition
         if ('conditionType' in condition && condition.conditionType === 'directLink') {
             const result = await this.evaluateDirectLinkCondition(condition, instance, currentDocument);
+            return (condition as any).not ? !result : result;
+        }
+
+        // Check if this is an UndirectLinkCondition
+        if ('conditionType' in condition && condition.conditionType === 'undirectLink') {
+            const result = await this.evaluateUndirectLinkCondition(condition, instance, currentDocument);
             return (condition as any).not ? !result : result;
         }
 
@@ -384,6 +403,75 @@ export class ConditionManager {
         }
 
         return false;
+    }
+
+    /**
+     * Evaluate an UndirectLinkCondition
+     * Checks if other files reference this instance, then filters those referencing files
+     * @param condition The undirect link condition
+     * @param instance The current instance to find references to
+     * @param currentDocument The current document context (for nested conditions)
+     */
+    private async evaluateUndirectLinkCondition(condition: UndirectLinkCondition, instance: Classe, currentDocument?: Classe): Promise<boolean> {
+        if (!condition.referencingFiles || condition.referencingFiles.length === 0) {
+            console.warn('UndirectLinkCondition requires referencingFiles to be provided');
+            return false;
+        }
+        
+        const instanceFileName = instance.getName();
+        const instanceFilePath = instance.getPath() || '';
+
+        // Find all files that reference this instance
+        const referencingFiles: Classe[] = [];
+        
+        for (const file of condition.referencingFiles) {
+            let hasReference = false;
+
+            // If a specific property is specified, only check that property
+            if (condition.linkProperty) {
+                const propertyValue = await this.getPropertyValue(file, condition.linkProperty);
+                if (this.hasLinkToDocument(propertyValue, instanceFileName, instanceFilePath)) {
+                    hasReference = true;
+                }
+            } else {
+                // Otherwise, check all FileProperty and MultiFileProperty in the file
+                const properties = file.getAllProperties();
+                for (const [propertyName, property] of Object.entries(properties)) {
+                    // Check if this is a FileProperty or MultiFileProperty
+                    if (property.type === 'file' || property.type === 'multiFile') {
+                        const propertyValue = await property.read(file);
+                        if (this.hasLinkToDocument(propertyValue, instanceFileName, instanceFilePath)) {
+                            hasReference = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (hasReference) {
+                referencingFiles.push(file);
+            }
+        }
+
+        // If no files reference this instance, return false
+        if (referencingFiles.length === 0) {
+            return false;
+        }
+
+        // If no filter condition is specified, return true (there are referencing files)
+        if (!condition.filterCondition) {
+            return true;
+        }
+
+        // Apply the filter condition to the referencing files
+        for (const referencingFile of referencingFiles) {
+            const conditionResult = await this.evaluateCondition(condition.filterCondition, referencingFile, currentDocument);
+            if (conditionResult) {
+                return true; // At least one referencing file matches the filter condition
+            }
+        }
+
+        return false; // No referencing files match the filter condition
     }
 
     /**
@@ -645,6 +733,16 @@ export class ConditionManager {
                 } as any as DirectLinkCondition;
             }
 
+            // Check if it's an UndirectLinkCondition
+            if (config.conditionType === 'undirectLink') {
+                return {
+                    conditionType: 'undirectLink',
+                    linkProperty: config.linkProperty,
+                    filterCondition: config.filterCondition,
+                    // referencingFiles will be injected at runtime
+                } as any as UndirectLinkCondition;
+            }
+
             // Otherwise, it's a PropertyCondition
             return config as Condition;
         });
@@ -732,6 +830,7 @@ export class ConditionManager {
         return obj && (
             obj.property !== undefined || 
             obj.conditionType === 'directLink' ||
+            obj.conditionType === 'undirectLink' ||
             obj.type !== undefined // Condition type (equals, greaterThan, etc.)
         );
     }
@@ -756,5 +855,53 @@ export class ConditionManager {
         return async (instance: Classe): Promise<boolean> => {
             return await this.evaluateConditionConfig(conditionConfig, instance, currentDocument);
         };
+    }
+
+    /**
+     * Inject referencingFiles into UndirectLinkConditions recursively
+     * This method should be called before evaluating conditions that contain UndirectLinkCondition
+     * @param conditions Array of conditions to process
+     * @param referencingFiles Pool of files to search through for undirect links
+     */
+    injectReferencingFiles(conditions: Condition[], referencingFiles: Classe[]): Condition[] {
+        return conditions.map(condition => {
+            if ('conditionType' in condition && condition.conditionType === 'undirectLink') {
+                return {
+                    ...condition,
+                    referencingFiles: referencingFiles
+                } as UndirectLinkCondition;
+            }
+            return condition;
+        });
+    }
+
+    /**
+     * Inject referencingFiles into condition groups recursively
+     * @param conditionConfig The condition configuration
+     * @param referencingFiles Pool of files to search through for undirect links
+     */
+    injectReferencingFilesInConfig(conditionConfig: ConditionConfig, referencingFiles: Classe[]): ConditionConfig {
+        const result = { ...conditionConfig };
+
+        if (result.conditions) {
+            result.conditions = this.injectReferencingFiles(result.conditions, referencingFiles);
+        }
+
+        if (result.groups) {
+            result.groups = result.groups.map(group => {
+                const updatedGroup = { ...group };
+                if (updatedGroup.conditions) {
+                    updatedGroup.conditions = this.injectReferencingFiles(updatedGroup.conditions, referencingFiles);
+                }
+                if (updatedGroup.groups) {
+                    updatedGroup.groups = updatedGroup.groups.map(nestedGroup => 
+                        this.injectReferencingFilesInConfig(nestedGroup as ConditionConfig, referencingFiles) as ConditionGroup
+                    );
+                }
+                return updatedGroup;
+            });
+        }
+
+        return result;
     }
 }
