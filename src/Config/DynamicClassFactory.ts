@@ -515,5 +515,4 @@ export class DynamicClassFactory {
         this.configManager.clearCache();
         this.classRegistry.clear();
     }
-
 }

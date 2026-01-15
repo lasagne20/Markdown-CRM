@@ -28,7 +28,8 @@ class TestableClasse extends Classe {
     }
 
     async onCreate(): Promise<void> {
-        // Test implementation
+        // Call parent onCreate to test the functionality
+        await super.onCreate();
     }
 
     async onUpdate(): Promise<void> {
@@ -51,7 +52,8 @@ const mockApp = {
     getMetadata: jest.fn(),
     updateMetadata: jest.fn(),
     getTemplateContent: jest.fn(),
-    createFolder: jest.fn()
+    createFolder: jest.fn(),
+    getSettings: jest.fn().mockReturnValue({ deleteAliasesAfterMigration: true })
 };
 
 const mockVault = {
@@ -427,6 +429,15 @@ describe('Classe', () => {
             const spy = jest.spyOn(classe, 'onDelete');
             await classe.onDelete();
             expect(spy).toHaveBeenCalled();
+        });
+
+        it('should call initializeIdProperties on onCreate', async () => {
+            classe.setFile(mockFile);
+            const initSpy = jest.spyOn(classe as any, 'initializeIdProperties');
+            
+            await classe.onCreate();
+            
+            expect(initSpy).toHaveBeenCalled();
         });
     });
 

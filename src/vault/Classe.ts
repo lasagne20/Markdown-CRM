@@ -685,6 +685,10 @@ export class Classe {
     async onCreate(): Promise<void> {
         // Check if parent folder should be set up on creation
         console.log(`🚀 onCreate called for ${this.file?.getPath()}`);
+        
+        // Auto-initialize IdProperty fields if they don't have values
+        await this.initializeIdProperties();
+        
         const parentProperty = await this.getParentProperty();
         if (parentProperty) {
             const parentValue = await this.getPropertyValue(parentProperty.name);
@@ -726,6 +730,24 @@ export class Classe {
             await processManager.runProcesses(this.constructor.name, this, trigger, changedProperty);
         } catch (error) {
             console.error(`Error running processes for ${this.constructor.name}:`, error);
+        }
+    }
+
+    /**
+     * Initialize all IdProperty fields with UUIDs if they don't have values
+     */
+    protected async initializeIdProperties(): Promise<void> {
+        if (!this.file) return;
+
+        const metadata = await this.file.getMetadata();
+        let hasChanges = false;
+
+        for (const property of this.properties) {
+            if (property.type === 'id' && !metadata[property.name]) {
+                // IdProperty without a value - initialize it
+                const uuid = await property.read(this);
+                hasChanges = true;
+            }
         }
     }
 
