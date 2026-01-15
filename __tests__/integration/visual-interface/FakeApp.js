@@ -373,9 +373,34 @@ export class FakeApp {
     }
 
     async readFile(file) {
-        // Check if it's a request for a config file
+        // Check if it's a request for a config or data file
         const filePath = typeof file === 'string' ? file : file.path;
         
+        // Check if it's a request for a data file first (takes priority over config)
+        if (filePath.includes('data/') || (filePath.includes('../data/') && filePath.endsWith('.json'))) {
+            console.log(`📊 Tentative de lecture du fichier data: ${filePath}`);
+            try {
+                // Extract the relative path from config/
+                let dataPath = filePath;
+                if (dataPath.includes('config/')) {
+                    // Remove config/ and any ../ to get the actual path
+                    dataPath = dataPath.replace(/.*config\/\.\.\//, '');
+                }
+                const response = await fetch(`/${dataPath}`);
+                if (response.ok) {
+                    const content = await response.text();
+                    console.log(`✅ Fichier data lu avec succès: ${dataPath}, taille: ${content.length} bytes`);
+                    return content;
+                } else {
+                    console.warn(`⚠️ Fichier data non trouvé: ${dataPath} (${response.status})`);
+                }
+            } catch (error) {
+                console.error(`❌ Erreur lors de la lecture du fichier data: ${filePath}`, error);
+            }
+            return '';
+        }
+        
+        // Then check if it's a config file
         if (filePath.includes('config/') || filePath.endsWith('.yaml') || filePath.endsWith('.yml')) {
             console.log(`📋 Tentative de lecture du fichier config: ${filePath}`);
             try {
@@ -1612,4 +1637,316 @@ export class FakeApp {
 
         return url;
     }
+
+    // Méthodes pour le support des widgets map et displays
+    async createMapWidget(config, containerElement) {
+        console.log('🗺️ Création du widget map:', config);
+        
+        try {
+            // Créer le conteneur de la carte
+            const mapContainer = document.createElement('div');
+            mapContainer.className = 'map-widget-container';
+            mapContainer.style.height = config.height || '400px';
+            mapContainer.style.width = '100%';
+            mapContainer.style.border = '1px solid #ddd';
+            mapContainer.style.borderRadius = '4px';
+            mapContainer.style.marginTop = '10px';
+            
+            // Vérifier si Leaflet est disponible
+            if (typeof L === 'undefined') {
+                mapContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background-color: #f8f9fa; color: #6c757d;">
+                        <div style="text-align: center;">
+                            <h4>🗺️ Carte non disponible</h4>
+                            <p>Leaflet.js n'est pas chargé</p>
+                            <small>Configuration: ${config.title || 'Carte'}</small>
+                        </div>
+                    </div>
+                `;
+                containerElement.appendChild(mapContainer);
+                return mapContainer;
+            }
+            
+            // Créer l'ID unique pour la carte
+            const mapId = 'map-' + Math.random().toString(36).substr(2, 9);
+            mapContainer.id = mapId;
+            containerElement.appendChild(mapContainer);
+            
+            // Attendre que l'élément soit dans le DOM
+            setTimeout(async () => {
+                await this.initializeLeafletMap(mapId, config);
+            }, 100);
+            
+            return mapContainer;
+        } catch (error) {
+            console.error('❌ Erreur lors de la création du widget map:', error);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'map-error';
+            errorDiv.innerHTML = `
+                <div style="padding: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;">
+                    <h4>❌ Erreur de carte</h4>
+                    <p>Impossible d'initialiser la carte: ${error.message}</p>
+                </div>
+            `;
+            containerElement.appendChild(errorDiv);
+            return errorDiv;
+        }
+    }
+    
+    async initializeLeafletMap(mapId, config) {
+        try {
+            console.log(`🗺️ Initialisation de la carte Leaflet: ${mapId}`, config);
+            
+            // Configuration par défaut
+            const center = config.center || [46.6034, 1.8883]; // Centre de la France
+            const zoom = config.zoom || 6;
+            
+            // Créer la carte
+            const map = L.map(mapId).setView(center, zoom);
+            
+            // Ajouter la couche de tuiles OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Charger les données si une source est configurée
+            if (config.source && config.source.class) {
+                await this.addMarkersToMap(map, config);
+            }
+            
+            console.log(`✅ Carte ${mapId} initialisée avec succès`);
+        } catch (error) {
+            console.error(`❌ Erreur lors de l'initialisation de la carte ${mapId}:`, error);
+        }
+    }
+    
+    async addMarkersToMap(map, config) {
+        try {
+            const className = config.source.class;
+            console.log(`📍 Ajout des marqueurs pour la classe: ${className}`);
+            
+            // Récupérer tous les fichiers de la classe
+            const allFiles = await this.listFiles();
+            const classFiles = allFiles.filter(file => {
+                const fileData = this.fileSystem.get(file.path);
+                return fileData && fileData.metadata && fileData.metadata.classe === className;
+            });
+            
+            console.log(`📂 ${classFiles.length} fichiers trouvés pour ${className}`);
+            
+            for (const file of classFiles) {
+                const fileData = this.fileSystem.get(file.path);
+                if (!fileData || !fileData.metadata) continue;
+                
+                const metadata = fileData.metadata;
+                let coordinates = null;
+                
+                // Obtenir les coordonnées
+                if (config.coordinates) {
+                    if (config.coordinates.latitude && config.coordinates.longitude) {
+                        // Coordonnées directes
+                        const lat = parseFloat(metadata[config.coordinates.latitude]);
+                        const lng = parseFloat(metadata[config.coordinates.longitude]);
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            coordinates = { lat, lng };
+                        }
+                    } else if (config.coordinates.address && config.geocoding && config.geocoding.enabled) {
+                        // Géocodage d'adresse
+                        const address = metadata[config.coordinates.address];
+                        if (address) {
+                            coordinates = await this.geocodeAddress(address);
+                        }
+                    }
+                }
+                
+                // Ajouter le marqueur si les coordonnées sont disponibles
+                if (coordinates) {
+                    const fileName = file.name.replace('.md', '');
+                    const label = config.marker && config.marker.labelProperty 
+                        ? metadata[config.marker.labelProperty] || fileName
+                        : fileName;
+                    
+                    const marker = L.marker([coordinates.lat, coordinates.lng]).addTo(map);
+                    
+                    // Popup avec les informations
+                    const popupContent = `
+                        <div style="min-width: 200px;">
+                            <h4 style="margin: 0 0 10px 0; color: #333;">${label}</h4>
+                            <p style="margin: 5px 0; font-size: 14px;"><strong>Fichier:</strong> ${fileName}</p>
+                            ${coordinates.address ? `<p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Adresse:</strong> ${coordinates.address}</p>` : ''}
+                            <p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Coordonnées:</strong> ${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}</p>
+                        </div>
+                    `;
+                    
+                    marker.bindPopup(popupContent);
+                    
+                    console.log(`📍 Marqueur ajouté pour: ${label} (${coordinates.lat}, ${coordinates.lng})`);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Erreur lors de l\'ajout des marqueurs:', error);
+        }
+    }
+    
+    async geocodeAddress(address) {
+        try {
+            console.log(`🌍 Géocodage de l'adresse: ${address}`);
+            
+            // Simulation du géocodage avec des adresses prédéfinies
+            const mockGeocodingResults = {
+                "123 Tech Street, Paris, France": { lat: 48.8566, lng: 2.3522, address: address },
+                "456 Innovation Avenue, Lyon, France": { lat: 45.7640, lng: 4.8357, address: address },
+                "789 Business Park, Marseille, France": { lat: 43.2965, lng: 5.3698, address: address },
+                "101 Startup Plaza, Toulouse, France": { lat: 43.6045, lng: 1.4440, address: address }
+            };
+            
+            if (mockGeocodingResults[address]) {
+                console.log(`✅ Adresse géocodée: ${address}`);
+                return mockGeocodingResults[address];
+            }
+            
+            // Adresse par défaut (centre de la France)
+            console.log(`⚠️ Adresse non reconnue, utilisation de coordonnées par défaut: ${address}`);
+            return { lat: 46.6034, lng: 1.8883, address: address };
+        } catch (error) {
+            console.error('❌ Erreur lors du géocodage:', error);
+            return { lat: 46.6034, lng: 1.8883, address: address };
+        }
+    }
+    
+    async createTabsWidget(config, containerElement) {
+        console.log('📑 Création du widget tabs:', config);
+        
+        try {
+            const tabsContainer = document.createElement('div');
+            tabsContainer.className = 'tabs-widget';
+            
+            // Créer les onglets
+            const tabsHeader = document.createElement('div');
+            tabsHeader.className = 'tabs-header';
+            tabsHeader.style.cssText = `
+                display: flex;
+                border-bottom: 1px solid #dee2e6;
+                margin-bottom: 20px;
+                background-color: #f8f9fa;
+                border-radius: 8px 8px 0 0;
+            `;
+            
+            const tabsContent = document.createElement('div');
+            tabsContent.className = 'tabs-content';
+            
+            // Créer chaque onglet
+            config.tabs.forEach((tab, index) => {
+                // Bouton d'onglet
+                const tabButton = document.createElement('button');
+                tabButton.className = 'tab-button';
+                tabButton.textContent = tab.name;
+                tabButton.style.cssText = `
+                    padding: 12px 20px;
+                    border: none;
+                    background: ${index === 0 ? '#007bff' : 'transparent'};
+                    color: ${index === 0 ? 'white' : '#495057'};
+                    cursor: pointer;
+                    border-radius: ${index === 0 ? '8px 0 0 0' : '0'};
+                    transition: all 0.3s ease;
+                `;
+                
+                // Contenu de l'onglet
+                const tabPane = document.createElement('div');
+                tabPane.className = 'tab-pane';
+                tabPane.style.display = index === 0 ? 'block' : 'none';
+                
+                // Ajouter les items de l'onglet
+                if (tab.items) {
+                    this.createDisplayItems(tab.items, tabPane);
+                }
+                
+                // Gestionnaire de clic pour l'onglet
+                tabButton.addEventListener('click', () => {
+                    // Désactiver tous les onglets
+                    tabsHeader.querySelectorAll('.tab-button').forEach(btn => {
+                        btn.style.backgroundColor = 'transparent';
+                        btn.style.color = '#495057';
+                    });
+                    tabsContent.querySelectorAll('.tab-pane').forEach(pane => {
+                        pane.style.display = 'none';
+                    });
+                    
+                    // Activer l'onglet cliqué
+                    tabButton.style.backgroundColor = '#007bff';
+                    tabButton.style.color = 'white';
+                    tabPane.style.display = 'block';
+                });
+                
+                tabsHeader.appendChild(tabButton);
+                tabsContent.appendChild(tabPane);
+            });
+            
+            tabsContainer.appendChild(tabsHeader);
+            tabsContainer.appendChild(tabsContent);
+            containerElement.appendChild(tabsContainer);
+            
+            return tabsContainer;
+        } catch (error) {
+            console.error('❌ Erreur lors de la création du widget tabs:', error);
+            const errorDiv = document.createElement('div');
+            errorDiv.innerHTML = `<p style="color: red;">Erreur: ${error.message}</p>`;
+            containerElement.appendChild(errorDiv);
+            return errorDiv;
+        }
+    }
+    
+    async createDisplayItems(items, containerElement) {
+        if (!items || !Array.isArray(items)) return;
+        
+        for (const item of items) {
+            const itemContainer = document.createElement('div');
+            itemContainer.className = 'display-item';
+            itemContainer.style.marginBottom = '20px';
+            
+            if (item.title) {
+                const titleElement = document.createElement('h3');
+                titleElement.textContent = item.title;
+                titleElement.style.cssText = 'margin: 0 0 15px 0; color: #333; font-size: 1.2em;';
+                itemContainer.appendChild(titleElement);
+            }
+            
+            try {
+                switch (item.type) {
+                    case 'map':
+                        await this.createMapWidget(item, itemContainer);
+                        break;
+                    case 'table':
+                        await this.createTableWidget(item, itemContainer);
+                        break;
+                    case 'property':
+                        await this.createPropertyWidget(item, itemContainer);
+                        break;
+                    default:
+                        itemContainer.innerHTML = `<p style="color: #666; font-style: italic;">Type de widget non supporté: ${item.type}</p>`;
+                }
+            } catch (error) {
+                console.error(`❌ Erreur lors de la création du widget ${item.type}:`, error);
+                itemContainer.innerHTML = `<p style="color: red;">Erreur: ${error.message}</p>`;
+            }
+            
+            containerElement.appendChild(itemContainer);
+        }
+    }
+    
+    async createTableWidget(config, containerElement) {
+        const tableDiv = document.createElement('div');
+        tableDiv.innerHTML = `<p style="color: #666; font-style: italic;">🔧 Widget table - En développement</p>`;
+        containerElement.appendChild(tableDiv);
+        return tableDiv;
+    }
+    
+    async createPropertyWidget(config, containerElement) {
+        const propDiv = document.createElement('div');
+        propDiv.innerHTML = `<p style="color: #666; font-style: italic;">📝 Propriété: ${config.name}</p>`;
+        containerElement.appendChild(propDiv);
+        return propDiv;
+    }
+    
 }

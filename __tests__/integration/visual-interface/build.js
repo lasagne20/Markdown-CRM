@@ -290,6 +290,15 @@ const French = (window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l
             await this.copyDirectory(configSrc, configDest);
             console.log('✅ Configurations copiées');
         }
+        
+        // Copy data files (geo.json, etc.) to js directory
+        const dataSrc = path.join(this.interfaceDir, 'data');
+        const dataDest = path.join(this.outputDir, 'data');
+        
+        if (fs.existsSync(dataSrc)) {
+            await this.copyDirectory(dataSrc, dataDest);
+            console.log('✅ Fichiers de données copiés');
+        }
     }
 
     async copyStyles() {

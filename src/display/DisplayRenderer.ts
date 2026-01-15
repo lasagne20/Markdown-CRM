@@ -1,10 +1,11 @@
-import { DisplayItem, NumberDisplayItem } from '../Config/interfaces';
+import { DisplayItem, NumberDisplayItem, MapDisplayItem } from '../Config/interfaces';
 import { Property } from '../properties/Property';
 import { Vault } from '../vault/Vault';
 import { Classe } from '../vault/Classe';
 import { addFold } from '../utils/Utils';
 import { DynamicTable } from './DynamicTable';
 import { NumberDisplay } from './NumberDisplay';
+import { DynamicMap } from './DynamicMap';
 import { PropertyNavigator } from '../utils/PropertyNavigator';
 
 /**
@@ -63,6 +64,9 @@ export class DisplayRenderer {
             
             case 'number':
                 return await this.renderNumber(item);
+            
+            case 'map':
+                return await this.renderMap(item);
             
             default:
                 console.warn(`Unknown display item type: ${(item as any).type}`);
@@ -756,6 +760,79 @@ export class DisplayRenderer {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'crm-number-display-error';
             errorDiv.textContent = 'Error loading number display';
+            errorDiv.style.cssText = 'color: var(--text-error); padding: 10px; border: 1px solid var(--text-error); border-radius: 4px;';
+            return errorDiv;
+        }
+    }
+
+    /**
+     * Render a map display item
+     */
+    private async renderMap(item: MapDisplayItem): Promise<HTMLElement | null> {
+        try {
+            const container = document.createElement('div');
+            container.classList.add('crm-map-display');
+            
+            if (item.className) {
+                container.classList.add(item.className);
+            }
+            
+            if (item.title) {
+                const title = document.createElement('h3');
+                title.textContent = item.title;
+                title.classList.add('container-section-title');
+                container.appendChild(title);
+            }
+            
+            if (!item.source) {
+                console.warn("Map display item missing source configuration");
+                return container;
+            }
+            
+            // Create loading placeholder
+            const placeholder = document.createElement('div');
+            placeholder.className = 'map-loading-placeholder';
+            placeholder.style.cssText = `
+                height: ${item.height || '500px'};
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #f5f5f5;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                color: #666;
+                font-size: 14px;
+            `;
+            placeholder.innerHTML = '🗺️ Chargement de la carte...';
+            container.appendChild(placeholder);
+            
+            // Load map asynchronously
+            setTimeout(async () => {
+                try {
+                    // Get files based on source filter type  
+                    const files = await this.getFilesForTable(item.source, this.context);
+                    
+                    // Replace placeholder
+                    placeholder.remove();
+                    
+                    // Create map using DynamicMap.fromConfig
+                    await DynamicMap.fromConfig(item, this.vault, container, files, this.context);
+                    
+                } catch (error) {
+                    console.error('Error loading map:', error);
+                    placeholder.innerHTML = '❌ Erreur lors du chargement de la carte';
+                    placeholder.style.color = 'var(--text-error)';
+                }
+            }, 100);
+            
+            return container;
+            
+        } catch (error) {
+            console.error('Error rendering map display:', error);
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'crm-map-display-error';
+            errorDiv.textContent = 'Error loading map display';
             errorDiv.style.cssText = 'color: var(--text-error); padding: 10px; border: 1px solid var(--text-error); border-radius: 4px;';
             return errorDiv;
         }

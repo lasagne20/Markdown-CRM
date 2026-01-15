@@ -375,12 +375,30 @@ class AdminInterface {
             // Create the class instance to get the real display
             const dynamicFactory = this.fakeEnvironment.vault.getDynamicClassFactory();
             let classDisplay = null;
+            let classDisplays = null; // Configuration displays depuis le YAML
             
             if (dynamicFactory) {
                 // Utiliser createClasse pour créer correctement l'instance avec File wrappé
                 const classInstance = await this.fakeEnvironment.vault.createClasse(file);
                 if (classInstance) {
                     console.log('🔧 Instance de classe créée via DynamicFactory');
+                    
+                    // Récupérer les displays de la configuration YAML
+                    const configLoader = this.fakeEnvironment.factory.configManager?.configLoader;
+                    if (configLoader) {
+                        console.log('🔧 ConfigLoader disponible, chargement de la config pour:', className);
+                        const config = await configLoader.loadClassConfig(className);
+                        console.log('📋 Configuration chargée:', config);
+                        if (config && config.displays) {
+                            classDisplays = config.displays;
+                            console.log('✅ Displays trouvés dans la configuration:', classDisplays);
+                        } else {
+                            console.log('⚠️ Aucun displays trouvé dans la config');
+                        }
+                    } else {
+                        console.log('❌ ConfigLoader non disponible');
+                    }
+                    
                     classDisplay = await classInstance.getDisplay();
                     console.log('✅ Affichage réel généré via DynamicFactory');
                 } else {
@@ -425,20 +443,36 @@ class AdminInterface {
 
                 const propertiesSection = document.createElement('div');
                 propertiesSection.className = 'properties-section';
-                propertiesSection.innerHTML = '<h3>🎨 Affichage des propriétés (getDisplay réel)</h3>';
                 
-                const propertiesDisplay = document.createElement('div');
-                propertiesDisplay.className = 'properties-display';
-                propertiesDisplay.id = 'realPropertiesDisplay';
-                
-                if (classDisplay) {
-                    // Append the live DOM element to preserve event listeners
-                    propertiesDisplay.appendChild(classDisplay);
+                // Si des displays sont configurés dans le YAML, les utiliser en priorité
+                if (classDisplays && classDisplays.length > 0) {
+                    propertiesSection.innerHTML = '<h3>🎨 Affichages configurés (displays YAML)</h3>';
+                    
+                    const displaysContainer = document.createElement('div');
+                    displaysContainer.className = 'displays-container';
+                    
+                    for (const displayConfig of classDisplays) {
+                        await this.createDisplayWidget(displayConfig, displaysContainer);
+                    }
+                    
+                    propertiesSection.appendChild(displaysContainer);
                 } else {
-                    propertiesDisplay.innerHTML = '<div class="empty-state"><p>Aucun affichage disponible</p></div>';
+                    // Fallback sur getDisplay() classique
+                    propertiesSection.innerHTML = '<h3>🎨 Affichage des propriétés (getDisplay réel)</h3>';
+                    
+                    const propertiesDisplay = document.createElement('div');
+                    propertiesDisplay.className = 'properties-display';
+                    propertiesDisplay.id = 'realPropertiesDisplay';
+                    
+                    if (classDisplay) {
+                        // Append the live DOM element to preserve event listeners
+                        propertiesDisplay.appendChild(classDisplay);
+                    } else {
+                        propertiesDisplay.innerHTML = '<div class="empty-state"><p>Aucun affichage disponible</p></div>';
+                    }
+                    
+                    propertiesSection.appendChild(propertiesDisplay);
                 }
-                
-                propertiesSection.appendChild(propertiesDisplay);
                 detailsContent.appendChild(propertiesSection);
 
                 const metadataGroup = document.createElement('div');
@@ -580,7 +614,7 @@ class AdminInterface {
         
         // Vérifier si la classe a des données configurées
         try {
-            const configLoader = this.fakeEnvironment.factory['configLoader'];
+            const configLoader = this.fakeEnvironment.factory.configManager?.configLoader;
             const config = await configLoader.loadClassConfig(className);
             
             if (config.data && config.data.length > 0) {
@@ -1613,6 +1647,51 @@ class AdminInterface {
             } catch (error) {
                 this.showError(`Erreur lors de la suppression: ${error.message}`);
             }
+        }
+    }
+    
+    // Méthode pour créer des widgets d'affichage depuis les configurations YAML
+    async createDisplayWidget(displayConfig, containerElement) {
+        console.log('🎨 Création du widget display:', displayConfig);
+        
+        try {
+            const widgetContainer = document.createElement('div');
+            widgetContainer.className = 'display-widget';
+            widgetContainer.style.cssText = 'margin-bottom: 30px; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px; background-color: #fff;';
+            
+            if (displayConfig.title) {
+                const titleElement = document.createElement('h3');
+                titleElement.textContent = displayConfig.title;
+                titleElement.style.cssText = 'margin: 0 0 20px 0; color: #333; font-size: 1.4em; border-bottom: 2px solid #007bff; padding-bottom: 10px;';
+                widgetContainer.appendChild(titleElement);
+            }
+            
+            // Déléguer la création à FakeApp
+            switch (displayConfig.type) {
+                case 'tabs':
+                    await this.fakeEnvironment.app.createTabsWidget(displayConfig, widgetContainer);
+                    break;
+                case 'map':
+                    await this.fakeEnvironment.app.createMapWidget(displayConfig, widgetContainer);
+                    break;
+                case 'table':
+                    await this.fakeEnvironment.app.createTableWidget(displayConfig, widgetContainer);
+                    break;
+                case 'property':
+                    await this.fakeEnvironment.app.createPropertyWidget(displayConfig, widgetContainer);
+                    break;
+                default:
+                    widgetContainer.innerHTML += `<p style="color: #666; font-style: italic;">Type de widget non supporté: ${displayConfig.type}</p>`;
+            }
+            
+            containerElement.appendChild(widgetContainer);
+            return widgetContainer;
+        } catch (error) {
+            console.error(`❌ Erreur lors de la création du widget ${displayConfig.type}:`, error);
+            const errorDiv = document.createElement('div');
+            errorDiv.innerHTML = `<p style="color: red;">Erreur lors de la création du widget: ${error.message}</p>`;
+            containerElement.appendChild(errorDiv);
+            return errorDiv;
         }
     }
 }

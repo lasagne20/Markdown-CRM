@@ -63,7 +63,7 @@ export interface TableTotalConfig {
 
 // Base interface for all display items
 interface BaseDisplayItem {
-    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table' | 'number';
+    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table' | 'number' | 'map';
 }
 
 // Property display item
@@ -140,6 +140,52 @@ export interface NumberDisplayItem extends BaseDisplayItem {
     max?: number | string | MaxCalculationConfig; // Maximum value: number, property name (e.g., "budget" or "items[0].total"), or calculation config
 }
 
+// Map display item (interactive map with markers)
+export interface MapDisplayItem extends BaseDisplayItem {
+    type: 'map';
+    title?: string;
+    className?: string;
+    
+    // Data source with filtering (like tables and numbers)
+    source: TableSourceConfig;
+    
+    // Configuration des coordonnées
+    coordinates: {
+        latitude?: string;      // nom de la propriété latitude
+        longitude?: string;     // nom de la propriété longitude  
+        address?: string;       // nom de la propriété adresse (alternative, supports {fileName} placeholder)
+    };
+    
+    // Configuration du marqueur
+    marker?: {
+        properties?: (string | { property: string; label?: string })[]; // liste des propriétés à afficher (string ou objet avec label)
+        colorProperty?: string; // propriété pour la couleur
+    };
+    
+    // Configuration de la map
+    center?: [number, number];
+    zoom?: number;
+    height?: string;
+    width?: string;
+    
+    // Contour du lieu courant
+    boundary?: {
+        enabled: boolean;           // afficher le contour du lieu
+        property?: string;          // propriété contenant les coordonnées (par défaut: utilise data/geo.json)
+        fillColor?: string;         // couleur de remplissage
+        fillOpacity?: number;       // opacité du remplissage (0-1)
+        color?: string;             // couleur du contour
+        weight?: number;            // épaisseur du contour
+        opacity?: number;           // opacité du contour (0-1)
+        dashArray?: string;         // style de trait (ex: "5, 10" pour pointillé)
+    };
+    
+    // Géocodage
+    geocoding?: {
+        enabled: boolean;       // activer le géocodage automatique pour les adresses
+    };
+}
+
 // Configuration for calculating max value dynamically
 export interface MaxCalculationConfig {
     source: TableSourceConfig; // Source for max calculation (can be different from main source)
@@ -155,7 +201,8 @@ export type DisplayItem =
     | TabsDisplayItem 
     | FoldDisplayItem 
     | TableDisplayItem
-    | NumberDisplayItem;
+    | NumberDisplayItem
+    | MapDisplayItem;
 
 export interface DisplayConfig {
     items?: DisplayItem[]; // Legacy format
