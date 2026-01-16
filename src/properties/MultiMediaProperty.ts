@@ -79,7 +79,7 @@ export class MultiMediaProperty extends MultiFileProperty {
             if (!values){values = []}
             values.push(`[[${newFile.path}|${newFile.name}]]`);
             await update(values);
-            await this.reloadObjects(values, update)
+            await this.reloadObjects(values, update, container)
         }
     }
 

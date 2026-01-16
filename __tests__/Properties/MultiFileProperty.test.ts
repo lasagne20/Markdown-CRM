@@ -374,7 +374,7 @@ describe('MultiFileProperty', () => {
 
             await multiFileProperty.addProperty(values, mockUpdate, container);
 
-            expect(multiFileProperty.reloadObjects).toHaveBeenCalledWith(values, mockUpdate);
+            expect(multiFileProperty.reloadObjects).toHaveBeenCalledWith(values, mockUpdate, container);
         });
     });
 
