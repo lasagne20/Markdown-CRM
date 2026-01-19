@@ -132,7 +132,7 @@ export class DynamicTable {
         this.table.innerHTML = '';
         
         // Apply default sort based on configuration
-        this.applyDefaultSort();
+        await this.applyDefaultSort();
         
         // Create header
         const thead = document.createElement('thead');
@@ -1129,47 +1129,8 @@ export class DynamicTable {
             this.tableData.currentSort.ascending = true;
         }
         
-        // Sort files - collect values asynchronously
-        const col = this.config.columns![columnIndex];
-        const propName = col.propertyName || col.name;
-        
-        // Collect values for all files
-        const fileValues: Array<{ file: Classe, value: string }> = [];
-        
-        for (const file of this.tableData.files) {
-            let value: string;
-            
-            // Special handling for _fileName
-            if (propName === '_fileName') {
-                const fileObj = file.getFile ? file.getFile() : null;
-                if (fileObj && fileObj.getName && typeof fileObj.getName === 'function') {
-                    value = fileObj.getName(false); // false = without .md
-                } else if (fileObj && (fileObj as any).name) {
-                    value = (fileObj as any).name;
-                } else if (fileObj && (fileObj as any).basename) {
-                    value = (fileObj as any).basename;
-                } else {
-                    value = '';
-                }
-                // Remove .md extension if still present
-                value = value.replace(/\.md$/i, '');
-            } else {
-                // Use getNestedPropertyValue for actual properties (supports dot notation)
-                const propValue = await this.getNestedPropertyValue(file, propName);
-                value = String(propValue || '');
-            }
-            
-            fileValues.push({ file, value });
-        }
-        
-        // Sort by collected values
-        fileValues.sort((a, b) => {
-            const comparison = a.value.localeCompare(b.value);
-            return this.tableData.currentSort.ascending ? comparison : -comparison;
-        });
-        
-        // Update files array with sorted order
-        this.tableData.files = fileValues.map(fv => fv.file);
+        // Apply the sort to files
+        await this.applySortToFiles(columnIndex);
         
         // Re-render body and update headers instead of rebuilding everything
         await this.renderTableBody();
@@ -1248,7 +1209,7 @@ export class DynamicTable {
     /**
      * Apply default sort from column configuration
      */
-    private applyDefaultSort(): void {
+    private async applyDefaultSort(): Promise<void> {
         if (!this.config.columns) return;
         
         // Find the last column with sort specification (it takes priority)
@@ -1268,6 +1229,55 @@ export class DynamicTable {
                 column: defaultSortColumn,
                 ascending: defaultSortDirection
             };
+            
+            // Actually sort the files
+            await this.applySortToFiles(defaultSortColumn);
         }
+    }
+    
+    /**
+     * Apply sort to files array without toggling direction
+     */
+    private async applySortToFiles(columnIndex: number): Promise<void> {
+        const col = this.config.columns![columnIndex];
+        const propName = col.propertyName || col.name;
+        
+        // Collect values for all files
+        const fileValues: Array<{ file: Classe, value: string }> = [];
+        
+        for (const file of this.tableData.files) {
+            let value: string;
+            
+            // Special handling for _fileName
+            if (propName === '_fileName') {
+                const fileObj = file.getFile ? file.getFile() : null;
+                if (fileObj && fileObj.getName && typeof fileObj.getName === 'function') {
+                    value = fileObj.getName(false); // false = without .md
+                } else if (fileObj && (fileObj as any).name) {
+                    value = (fileObj as any).name;
+                } else if (fileObj && (fileObj as any).basename) {
+                    value = (fileObj as any).basename;
+                } else {
+                    value = '';
+                }
+                // Remove .md extension if still present
+                value = value.replace(/\.md$/i, '');
+            } else {
+                // Use getNestedPropertyValue for actual properties (supports dot notation)
+                const propValue = await this.getNestedPropertyValue(file, propName);
+                value = String(propValue || '');
+            }
+            
+            fileValues.push({ file, value });
+        }
+        
+        // Sort by collected values
+        fileValues.sort((a, b) => {
+            const comparison = a.value.localeCompare(b.value);
+            return this.tableData.currentSort.ascending ? comparison : -comparison;
+        });
+        
+        // Update files array with sorted order
+        this.tableData.files = fileValues.map(fv => fv.file);
     }
 }

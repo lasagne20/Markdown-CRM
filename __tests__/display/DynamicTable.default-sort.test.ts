@@ -246,4 +246,163 @@ describe('DynamicTable - Default Sort Validation', () => {
         console.log(`✅ User example configuration: Date column (index 2) sorted ascending by default`);
         console.log(`✅ This validates that the last 'sort' specification takes precedence`);
     });
+
+    test('should actually sort files by date in ascending order on initialization', async () => {
+        console.log('🧪 Testing that files are actually sorted, not just configuration...');
+
+        // Configuration avec tri par date ascendant
+        const config = {
+            columns: [
+                {
+                    name: "Fichier",
+                    propertyName: "_fileName"
+                },
+                {
+                    name: "Etat",
+                    propertyName: "etat"
+                },
+                {
+                    name: "Date",
+                    propertyName: "date",
+                    sort: "asc" as const
+                }
+            ]
+        };
+
+        const table = new DynamicTable(mockFiles, config, vault);
+
+        // Attendre que la table soit construite (buildTableStructure est async)
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const sortedFiles = (table as any).tableData.files as DefaultSortTestClass[];
+
+        // Les fichiers doivent être triés par date (2026-01-05, 2026-01-20, 2026-02-10, 2026-03-15, 2026-04-01)
+        const expectedOrder = ['action-04', 'action-02', 'action-03', 'action-01', 'action-05'];
+        const actualOrder = sortedFiles.map(file => file.getName(false));
+
+        console.log('📅 Expected order (by date asc):', expectedOrder);
+        console.log('📁 Actual order:', actualOrder);
+
+        expect(actualOrder).toEqual(expectedOrder);
+        console.log('✅ Files are correctly sorted by date in ascending order');
+    });
+
+    test('should actually sort files by date in descending order on initialization', async () => {
+        console.log('🧪 Testing descending sort on initialization...');
+
+        // Configuration avec tri par date descendant
+        const config = {
+            columns: [
+                {
+                    name: "Fichier",
+                    propertyName: "_fileName"
+                },
+                {
+                    name: "Etat",
+                    propertyName: "etat"
+                },
+                {
+                    name: "Date",
+                    propertyName: "date",
+                    sort: "desc" as const
+                }
+            ]
+        };
+
+        const table = new DynamicTable(mockFiles, config, vault);
+
+        // Attendre que la table soit construite
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const sortedFiles = (table as any).tableData.files as DefaultSortTestClass[];
+
+        // Les fichiers doivent être triés par date en ordre décroissant (2026-04-01, 2026-03-15, 2026-02-10, 2026-01-20, 2026-01-05)
+        const expectedOrder = ['action-05', 'action-01', 'action-03', 'action-02', 'action-04'];
+        const actualOrder = sortedFiles.map(file => file.getName(false));
+
+        console.log('📅 Expected order (by date desc):', expectedOrder);
+        console.log('📁 Actual order:', actualOrder);
+
+        expect(actualOrder).toEqual(expectedOrder);
+        console.log('✅ Files are correctly sorted by date in descending order');
+    });
+
+    test('should sort files by filename when sort is applied to _fileName', async () => {
+        console.log('🧪 Testing sort by filename...');
+
+        // Configuration avec tri par nom de fichier descendant
+        const config = {
+            columns: [
+                {
+                    name: "Fichier",
+                    propertyName: "_fileName",
+                    sort: "desc" as const
+                },
+                {
+                    name: "Etat",
+                    propertyName: "etat"
+                },
+                {
+                    name: "Date",
+                    propertyName: "date"
+                }
+            ]
+        };
+
+        const table = new DynamicTable(mockFiles, config, vault);
+
+        // Attendre que la table soit construite
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const sortedFiles = (table as any).tableData.files as DefaultSortTestClass[];
+
+        // Les fichiers doivent être triés par nom en ordre décroissant
+        const expectedOrder = ['action-05', 'action-04', 'action-03', 'action-02', 'action-01'];
+        const actualOrder = sortedFiles.map(file => file.getName(false));
+
+        console.log('📁 Expected order (by filename desc):', expectedOrder);
+        console.log('📁 Actual order:', actualOrder);
+
+        expect(actualOrder).toEqual(expectedOrder);
+        console.log('✅ Files are correctly sorted by filename in descending order');
+    });
+
+    test('should maintain original order when no sort is specified', async () => {
+        console.log('🧪 Testing that files maintain original order with no sort...');
+
+        // Configuration sans tri
+        const config = {
+            columns: [
+                {
+                    name: "Fichier",
+                    propertyName: "_fileName"
+                },
+                {
+                    name: "Etat",
+                    propertyName: "etat"
+                },
+                {
+                    name: "Date",
+                    propertyName: "date"
+                }
+            ]
+        };
+
+        const table = new DynamicTable(mockFiles, config, vault);
+
+        // Attendre que la table soit construite
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const sortedFiles = (table as any).tableData.files as DefaultSortTestClass[];
+
+        // Les fichiers doivent rester dans l'ordre original
+        const expectedOrder = ['action-01', 'action-02', 'action-03', 'action-04', 'action-05'];
+        const actualOrder = sortedFiles.map(file => file.getName(false));
+
+        console.log('📁 Expected order (original):', expectedOrder);
+        console.log('📁 Actual order:', actualOrder);
+
+        expect(actualOrder).toEqual(expectedOrder);
+        console.log('✅ Files maintain original order when no sort is specified');
+    });
 });

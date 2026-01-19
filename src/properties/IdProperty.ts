@@ -58,7 +58,7 @@ export class IdProperty extends Property {
         // If no value exists, generate a new UUID and save it
         if (!value || value === '') {
             value = this.generateUUID();
-            await classe.updateMetadata(this.name, value);
+            await classe.updatePropertyValue(this.name, value);
         }
         
         return value;

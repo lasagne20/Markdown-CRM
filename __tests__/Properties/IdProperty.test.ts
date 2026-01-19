@@ -83,14 +83,14 @@ describe('IdProperty', () => {
             // Mock classe with no value
             const mockClasse = {
                 getPropertyValue: jest.fn().mockResolvedValue(undefined),
-                updateMetadata: jest.fn().mockResolvedValue(undefined)
+                updatePropertyValue: jest.fn().mockResolvedValue(undefined)
             };
 
             const value = await idProp.read(mockClasse);
 
             expect(value).toBeTruthy();
             expect(value).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-            expect(mockClasse.updateMetadata).toHaveBeenCalledWith('id', value);
+            expect(mockClasse.updatePropertyValue).toHaveBeenCalledWith('id', value);
         });
 
         test('should return existing UUID if already set', async () => {
@@ -99,12 +99,12 @@ describe('IdProperty', () => {
             
             const mockClasse = {
                 getPropertyValue: jest.fn().mockResolvedValue(existingUuid),
-                updateMetadata: jest.fn()
+                updatePropertyValue: jest.fn()
             };
             
             const value = await idProp.read(mockClasse);
             expect(value).toBe(existingUuid);
-            expect(mockClasse.updateMetadata).not.toHaveBeenCalled();
+            expect(mockClasse.updatePropertyValue).not.toHaveBeenCalled();
         });
 
         test('should generate new UUID if value is empty string', async () => {
@@ -112,14 +112,14 @@ describe('IdProperty', () => {
             
             const mockClasse = {
                 getPropertyValue: jest.fn().mockResolvedValue(''),
-                updateMetadata: jest.fn().mockResolvedValue(undefined)
+                updatePropertyValue: jest.fn().mockResolvedValue(undefined)
             };
             
             const value = await idProp.read(mockClasse);
             expect(value).toBeTruthy();
             expect(value).not.toBe('');
             expect(value).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-            expect(mockClasse.updateMetadata).toHaveBeenCalledWith('id', value);
+            expect(mockClasse.updatePropertyValue).toHaveBeenCalledWith('id', value);
         });
 
         test('should maintain same UUID across multiple reads', async () => {
@@ -128,7 +128,7 @@ describe('IdProperty', () => {
             
             const mockClasse = {
                 getPropertyValue: jest.fn(async () => storedValue),
-                updateMetadata: jest.fn(async (name: string, value: string) => {
+                updatePropertyValue: jest.fn(async (name: string, value: string) => {
                     storedValue = value;
                 })
             };
