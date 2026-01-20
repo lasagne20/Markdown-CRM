@@ -1,6 +1,7 @@
 import { Classe } from '../vault/Classe';
 import { Vault } from '../vault/Vault';
 import { TableSourceConfig, TableColumnConfig, TableTotalConfig } from '../Config/interfaces';
+import { PropertyNavigator } from '../utils/PropertyNavigator';
 
 /**
  * Table configuration interface
@@ -354,8 +355,30 @@ export class DynamicTable {
                         
                         td.appendChild(link);
                     } else {
-                        // Handle nested properties or regular properties
-                        if (propName.includes('.')) {
+                        // Check if this is an array index pattern (e.g., animations[0].date)
+                        const arrayIndexPattern = /^(\w+)\[(\d+)\]\.(\w+)$/;
+                        const arrayIndexMatch = propName.match(arrayIndexPattern);
+                        
+                        if (arrayIndexMatch) {
+                            // Use PropertyNavigator to handle array index patterns
+                            const propertyNavigator = new PropertyNavigator(
+                                this.vault,
+                                file,
+                                file.properties,
+                                async (propertyName: string, newValue: any) => {
+                                    await file.updatePropertyValue(propertyName, newValue);
+                                }
+                            );
+                            
+                            const displayElement = await propertyNavigator.getPropertyDisplayForPath(propName);
+                            if (displayElement) {
+                                td.appendChild(displayElement);
+                            } else {
+                                // Fallback to text value
+                                const value = await this.getNestedPropertyValue(file, propName);
+                                td.textContent = value || '-';
+                            }
+                        } else if (propName.includes('.')) {
                             // Use nested property display for properties with dot notation
                             const displayElement = await this.getNestedPropertyDisplay(file, propName);
                             td.appendChild(displayElement);
@@ -641,6 +664,38 @@ export class DynamicTable {
      * Falls back to regular getPropertyValue for simple properties
      */
     private async getNestedPropertyValue(file: Classe, propertyPath: string): Promise<any> {
+        // Check for array index pattern (e.g., animations[0].date)
+        const arrayIndexPattern = /^(\w+)\[(\d+)\]\.(\w+)$/;
+        const arrayIndexMatch = propertyPath.match(arrayIndexPattern);
+        
+        if (arrayIndexMatch) {
+            const [, arrayPropertyName, indexStr, subPropertyName] = arrayIndexMatch;
+            const index = parseInt(indexStr, 10);
+            
+            // Get the array value
+            const arrayValue = await file.getPropertyValue(arrayPropertyName);
+            
+            if (!Array.isArray(arrayValue)) {
+                console.warn(`Property ${arrayPropertyName} is not an array`);
+                return undefined;
+            }
+            
+            if (index < 0 || index >= arrayValue.length) {
+                console.warn(`Index ${index} out of bounds for ${arrayPropertyName}`);
+                return undefined;
+            }
+            
+            // Get the item at the specified index
+            const item = arrayValue[index];
+            
+            if (!item || typeof item !== 'object') {
+                return undefined;
+            }
+            
+            // Return the sub-property value
+            return item[subPropertyName];
+        }
+        
         // If no dots, use regular getPropertyValue
         if (!propertyPath.includes('.')) {
             return await file.getPropertyValue(propertyPath);
