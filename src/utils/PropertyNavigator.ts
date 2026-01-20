@@ -1,5 +1,6 @@
 import { Vault } from '../vault/Vault';
 import { Classe } from '../vault/Classe';
+import { Property } from '../properties/Property';
 
 /**
  * Utility class for navigating through complex property paths
@@ -12,10 +13,14 @@ import { Classe } from '../vault/Classe';
 export class PropertyNavigator {
     private vault: Vault;
     private context?: any;
+    private properties?: { [key: string]: Property };
+    private updateCallback?: (propertyName: string, value: any) => Promise<void>;
 
-    constructor(vault: Vault, context?: any) {
+    constructor(vault: Vault, context?: any, properties?: { [key: string]: Property }, updateCallback?: (propertyName: string, value: any) => Promise<void>) {
         this.vault = vault;
         this.context = context;
+        this.properties = properties;
+        this.updateCallback = updateCallback;
     }
 
     /**
@@ -282,5 +287,170 @@ export class PropertyNavigator {
         
         // For other complex expressions, fall back to basic navigation
         return await this.getNestedProperty(obj, propName);
+    }
+
+    /**
+     * Get property display for a complex path (e.g., animations[0].date)
+     * Returns the actual property display widget if available
+     */
+    async getPropertyDisplayForPath(path: string, title?: string): Promise<HTMLElement | null> {
+        if (!this.properties) {
+            console.warn('PropertyNavigator: properties not provided, cannot get property display');
+            return null;
+        }
+
+        // Parse pattern: propertyName[index].subProperty or propertyName.subProperty
+        const arrayMatch = path.match(/^(\w+)\[(\d+)\]\.(\w+)$/);
+        const objectMatch = path.match(/^(\w+)\.(\w+)$/);
+        
+        if (arrayMatch) {
+            const [, propertyName, indexStr, subPropertyName] = arrayMatch;
+            const index = parseInt(indexStr, 10);
+            
+            console.log(`🔍 Getting display for ${path}: property=${propertyName}, index=${index}, subProperty=${subPropertyName}`);
+            
+            // Get the ObjectProperty
+            const objectProperty = this.properties[propertyName];
+            if (!objectProperty || objectProperty.type !== 'object') {
+                console.warn(`❌ Property ${propertyName} not found or not an object property`);
+                return null;
+            }
+            
+            // Get the sub-property definition
+            const subProperty = (objectProperty as any).properties?.[subPropertyName];
+            if (!subProperty) {
+                console.warn(`❌ Sub-property ${subPropertyName} not found in ${propertyName}`);
+                return null;
+            }
+            
+            console.log(`✅ Found sub-property ${subPropertyName}, type: ${subProperty.type}`);
+            
+            // Get the array value
+            let arrayValue: any[];
+            if (this.context.getPropertyValue) {
+                arrayValue = await this.context.getPropertyValue(propertyName);
+            } else {
+                arrayValue = this.context[propertyName];
+            }
+            
+            console.log(`📊 Array value for ${propertyName}:`, arrayValue);
+            
+            if (!Array.isArray(arrayValue)) {
+                console.warn(`❌ ${propertyName} is not an array:`, arrayValue);
+                return null;
+            }
+            
+            if (index < 0 || index >= arrayValue.length) {
+                console.warn(`❌ Index ${index} out of bounds for ${propertyName} (length: ${arrayValue.length})`);
+                return null;
+            }
+            
+            // Get the value for this specific index
+            const itemValue = arrayValue[index];
+            const value = itemValue?.[subPropertyName];
+            
+            console.log(`📦 Value at ${propertyName}[${index}].${subPropertyName}:`, value);
+            
+            // Create update callback
+            const updateFn = async (newValue: any) => {
+                if (!Array.isArray(arrayValue)) return;
+                
+                console.log(`💾 Updating ${propertyName}[${index}].${subPropertyName} to:`, newValue);
+                arrayValue[index][subPropertyName] = newValue;
+                
+                if (this.updateCallback) {
+                    await this.updateCallback(propertyName, arrayValue);
+                } else if (this.context.updatePropertyValue) {
+                    await this.context.updatePropertyValue(propertyName, arrayValue);
+                }
+            };
+            
+            // Use the sub-property's fillDisplay method to get the actual property widget
+            const display = subProperty.fillDisplay(value, updateFn);
+            console.log(`🎨 Created display for ${subPropertyName}:`, display);
+            
+            // Wrap with title if provided
+            if (title) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'metadata-property';
+                
+                const titleElement = document.createElement('div');
+                titleElement.className = 'metadata-property-key';
+                titleElement.textContent = title;
+                wrapper.appendChild(titleElement);
+                
+                const valueWrapper = document.createElement('div');
+                valueWrapper.className = 'metadata-property-value';
+                valueWrapper.appendChild(display);
+                wrapper.appendChild(valueWrapper);
+                
+                return wrapper;
+            }
+            
+            return display;
+        }
+        
+        if (objectMatch) {
+            const [, propertyName, subPropertyName] = objectMatch;
+            
+            // Similar logic for nested object properties (non-array)
+            const property = this.properties[propertyName];
+            if (!property || property.type !== 'object') {
+                return null;
+            }
+            
+            const subProperty = (property as any).properties?.[subPropertyName];
+            if (!subProperty) {
+                return null;
+            }
+            
+            // Get the object value
+            let objectValue: any;
+            if (this.context.getPropertyValue) {
+                objectValue = await this.context.getPropertyValue(propertyName);
+            } else {
+                objectValue = this.context[propertyName];
+            }
+            
+            if (!objectValue || typeof objectValue !== 'object') {
+                return null;
+            }
+            
+            const value = objectValue[subPropertyName];
+            
+            // Create update callback
+            const updateFn = async (newValue: any) => {
+                objectValue[subPropertyName] = newValue;
+                
+                if (this.updateCallback) {
+                    await this.updateCallback(propertyName, objectValue);
+                } else if (this.context.updatePropertyValue) {
+                    await this.context.updatePropertyValue(propertyName, objectValue);
+                }
+            };
+            
+            const display = subProperty.fillDisplay(value, updateFn);
+            
+            if (title) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'metadata-property';
+                
+                const titleElement = document.createElement('div');
+                titleElement.className = 'metadata-property-key';
+                titleElement.textContent = title;
+                wrapper.appendChild(titleElement);
+                
+                const valueWrapper = document.createElement('div');
+                valueWrapper.className = 'metadata-property-value';
+                valueWrapper.appendChild(display);
+                wrapper.appendChild(valueWrapper);
+                
+                return wrapper;
+            }
+            
+            return display;
+        }
+        
+        return null;
     }
 }

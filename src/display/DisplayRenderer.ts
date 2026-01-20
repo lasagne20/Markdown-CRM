@@ -30,7 +30,7 @@ export class DisplayRenderer {
         this.properties = properties;
         this.context = context;
         this.updateCallback = updateCallback;
-        this.propertyNavigator = new PropertyNavigator(vault, context);
+        this.propertyNavigator = new PropertyNavigator(vault, context, properties, updateCallback);
     }
 
     async renderDisplayItems(container: HTMLElement, items: DisplayItem[]): Promise<void> {
@@ -173,23 +173,33 @@ export class DisplayRenderer {
 
     /**
      * Render a formula property - displays a complex property path directly (e.g., animations[0].date)
+     * Returns the actual property display widget when possible
      */
     private async renderFormulaProperty(item: any): Promise<HTMLElement | null> {
-        const container = document.createElement('div');
-        container.className = 'metadata-property';
-        
-        // Add title if provided
-        if (item.title) {
-            const titleElement = document.createElement('div');
-            titleElement.className = 'metadata-property-key';
-            titleElement.textContent = item.title;
-            container.appendChild(titleElement);
-        }
-        
-        const valueContainer = document.createElement('div');
-        valueContainer.className = 'metadata-property-value';
-        
         try {
+            // Try to get the property display if it's an ObjectProperty sub-property
+            const propertyDisplay = await this.propertyNavigator.getPropertyDisplayForPath(item.name, item.title);
+            if (propertyDisplay) {
+                return propertyDisplay;
+            }
+            
+            // Fallback: still try to render with simple text
+            console.warn(`Could not get property display for ${item.name}, falling back to text`);
+            
+            const container = document.createElement('div');
+            container.className = 'metadata-property';
+            
+            // Add title if provided
+            if (item.title) {
+                const titleElement = document.createElement('div');
+                titleElement.className = 'metadata-property-key';
+                titleElement.textContent = item.title;
+                container.appendChild(titleElement);
+            }
+            
+            const valueContainer = document.createElement('div');
+            valueContainer.className = 'metadata-property-value';
+            
             // Use existing PropertyNavigator instance
             const value = await this.propertyNavigator.getNestedProperty(this.context, item.name);
             
@@ -201,13 +211,16 @@ export class DisplayRenderer {
             } else {
                 valueContainer.textContent = String(value);
             }
+            
+            container.appendChild(valueContainer);
+            return container;
         } catch (error) {
             console.error(`Error getting formula property ${item.name}:`, error);
-            valueContainer.textContent = '-';
+            const errorContainer = document.createElement('div');
+            errorContainer.className = 'metadata-property';
+            errorContainer.textContent = '-';
+            return errorContainer;
         }
-        
-        container.appendChild(valueContainer);
-        return container;
     }
 
     private renderButton(item: any): HTMLElement {
