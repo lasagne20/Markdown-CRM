@@ -104,7 +104,7 @@ export class DisplayRenderer {
         }
     }
 
-    private async renderProperty(item: any): Promise<HTMLElement | null> {
+    public async renderProperty(item: any): Promise<HTMLElement | null> {
         // Handle complex property paths (with dots or brackets) directly
         if (item.name.includes('.') || item.name.includes('[')) {
             return await this.renderFormulaProperty(item);

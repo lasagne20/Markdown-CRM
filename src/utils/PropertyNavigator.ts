@@ -393,16 +393,111 @@ export class PropertyNavigator {
         if (objectMatch) {
             const [, propertyName, subPropertyName] = objectMatch;
             
-            // Similar logic for nested object properties (non-array)
+            console.log(`🔍 Getting display for ${path}: property=${propertyName}, subProperty=${subPropertyName}`);
+            
+            // Get the first property
             const property = this.properties[propertyName];
-            if (!property || property.type !== 'object') {
+            if (!property) {
+                console.warn(`❌ Property ${propertyName} not found`);
+                return null;
+            }
+            
+            console.log(`📋 Property ${propertyName} type: ${property.type}`);
+            
+            // Check if this is a FileProperty (link to another class)
+            if (property.type === 'file') {
+                console.log(`🔗 ${propertyName} is a FileProperty, resolving linked class...`);
+                
+                // Get the file link value
+                let fileLink: string;
+                if (this.context.getPropertyValue) {
+                    fileLink = await this.context.getPropertyValue(propertyName);
+                } else {
+                    fileLink = this.context[propertyName];
+                }
+                
+                console.log(`📎 File link value:`, fileLink);
+                
+                if (!fileLink) {
+                    console.warn(`❌ No file link value for ${propertyName}`);
+                    return null;
+                }
+                
+                // Resolve the linked class
+                let linkedClasse;
+                try {
+                    linkedClasse = await this.vault.getFromLink(fileLink);
+                } catch (error) {
+                    console.warn(`❌ Error loading linked class from ${fileLink}:`, error);
+                    return null;
+                }
+                
+                if (!linkedClasse) {
+                    console.warn(`❌ Could not resolve linked class from ${fileLink}`);
+                    return null;
+                }
+                
+                console.log(`✅ Resolved linked class:`, linkedClasse.getName());
+                
+                // Get the property from the linked class
+                const linkedProperty = linkedClasse.getProperty(subPropertyName);
+                if (!linkedProperty) {
+                    console.warn(`❌ Property ${subPropertyName} not found in linked class`);
+                    return null;
+                }
+                
+                console.log(`✅ Found property ${subPropertyName} in linked class, type: ${linkedProperty.type}`);
+                
+                // Get the value from the linked class
+                const value = await linkedClasse.getPropertyValue(subPropertyName);
+                
+                console.log(`📦 Value of ${subPropertyName} in linked class:`, value);
+                
+                // Create update callback for the linked class
+                const updateFn = async (newValue: any) => {
+                    if (linkedClasse.updatePropertyValue) {
+                        await linkedClasse.updatePropertyValue(subPropertyName, newValue);
+                    }
+                };
+                
+                // Get the display from the linked property
+                const display = linkedProperty.fillDisplay(value, updateFn);
+                console.log(`🎨 Created display for ${subPropertyName} from linked class`);
+                
+                // Wrap with title if provided
+                if (title) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'metadata-property';
+                    
+                    const titleElement = document.createElement('div');
+                    titleElement.className = 'metadata-property-key';
+                    titleElement.textContent = title;
+                    wrapper.appendChild(titleElement);
+                    
+                    const valueWrapper = document.createElement('div');
+                    valueWrapper.className = 'metadata-property-value';
+                    valueWrapper.appendChild(display);
+                    wrapper.appendChild(valueWrapper);
+                    
+                    return wrapper;
+                }
+                
+                return display;
+            }
+            
+            // Handle ObjectProperty (original logic)
+            if (property.type !== 'object') {
+                console.warn(`❌ Property ${propertyName} is neither object nor file type`);
                 return null;
             }
             
             const subProperty = (property as any).properties?.[subPropertyName];
             if (!subProperty) {
+                console.warn(`❌ Sub-property ${subPropertyName} not found in ${propertyName}`);
                 return null;
             }
+            
+            console.log(`✅ Found sub-property ${subPropertyName} in object, type: ${subProperty.type}`);
             
             // Get the object value
             let objectValue: any;
@@ -413,10 +508,13 @@ export class PropertyNavigator {
             }
             
             if (!objectValue || typeof objectValue !== 'object') {
+                console.warn(`❌ ${propertyName} is not an object:`, objectValue);
                 return null;
             }
             
             const value = objectValue[subPropertyName];
+            
+            console.log(`📦 Value at ${propertyName}.${subPropertyName}:`, value);
             
             // Create update callback
             const updateFn = async (newValue: any) => {
@@ -430,6 +528,7 @@ export class PropertyNavigator {
             };
             
             const display = subProperty.fillDisplay(value, updateFn);
+            console.log(`🎨 Created display for ${subPropertyName}`);
             
             if (title) {
                 const wrapper = document.createElement('div');

@@ -364,7 +364,7 @@ export class DynamicTable {
                             const propertyNavigator = new PropertyNavigator(
                                 this.vault,
                                 file,
-                                file.properties,
+                                file.getAllProperties(),
                                 async (propertyName: string, newValue: any) => {
                                     await file.updatePropertyValue(propertyName, newValue);
                                 }

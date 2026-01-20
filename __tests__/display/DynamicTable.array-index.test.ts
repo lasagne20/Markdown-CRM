@@ -28,16 +28,16 @@ describe('DynamicTable - Array Index Support', () => {
         it('should display DateProperty for animations[0].date column', async () => {
             // Create ObjectProperty with sub-properties
             const animationsSubProperties = {
-                date: new DateProperty('date', vault, [], { title: 'Date' }),
-                titre: new TextProperty('titre', vault, { title: 'Titre' }),
-                tarif: new NumberProperty('tarif', vault, { title: 'Tarif', format: '0,0' })
+                date: new DateProperty('date', vault, []),
+                titre: new TextProperty('titre', vault),
+                tarif: new NumberProperty('tarif', vault, '0,0')
             };
 
             const animationsProperty = new ObjectProperty('animations', vault, animationsSubProperties, { multiple: true });
 
             // Create mock file with animations data
             const mockFile = new Classe(vault);
-            mockFile.properties = { animations: animationsProperty };
+            mockFile.addProperty(animationsProperty);
             mockFile.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return [
@@ -114,14 +114,14 @@ describe('DynamicTable - Array Index Support', () => {
 
         it('should display different array indices in different columns', async () => {
             const animationsSubProperties = {
-                date: new DateProperty('date', vault, [], { title: 'Date' }),
-                titre: new TextProperty('titre', vault, { title: 'Titre' })
+                date: new DateProperty('date', vault, []),
+                titre: new TextProperty('titre', vault)
             };
 
             const animationsProperty = new ObjectProperty('animations', vault, animationsSubProperties, { multiple: true });
 
             const mockFile = new Classe(vault);
-            mockFile.properties = { animations: animationsProperty };
+            mockFile.addProperty(animationsProperty);
             mockFile.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return [
@@ -171,13 +171,13 @@ describe('DynamicTable - Array Index Support', () => {
 
         it('should handle out of bounds index gracefully', async () => {
             const animationsSubProperties = {
-                date: new DateProperty('date', vault, [], { title: 'Date' })
+                date: new DateProperty('date', vault, [])
             };
 
             const animationsProperty = new ObjectProperty('animations', vault, animationsSubProperties, { multiple: true });
 
             const mockFile = new Classe(vault);
-            mockFile.properties = { animations: animationsProperty };
+            mockFile.addProperty(animationsProperty);
             mockFile.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return [
@@ -225,13 +225,13 @@ describe('DynamicTable - Array Index Support', () => {
 
         it('should handle empty array gracefully', async () => {
             const animationsSubProperties = {
-                date: new DateProperty('date', vault, [], { title: 'Date' })
+                date: new DateProperty('date', vault, [])
             };
 
             const animationsProperty = new ObjectProperty('animations', vault, animationsSubProperties, { multiple: true });
 
             const mockFile = new Classe(vault);
-            mockFile.properties = { animations: animationsProperty };
+            mockFile.addProperty(animationsProperty);
             mockFile.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return []; // Empty array
@@ -275,13 +275,13 @@ describe('DynamicTable - Array Index Support', () => {
     describe('Sorting with array index columns', () => {
         it('should sort by array index property values', async () => {
             const animationsSubProperties = {
-                date: new DateProperty('date', vault, [], { title: 'Date' })
+                date: new DateProperty('date', vault, [])
             };
 
             const animationsProperty = new ObjectProperty('animations', vault, animationsSubProperties, { multiple: true });
 
             const file1 = new Classe(vault);
-            file1.properties = { animations: animationsProperty };
+            file1.addProperty(animationsProperty);
             file1.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return [{ date: '2025-01-15' }];
@@ -297,7 +297,7 @@ describe('DynamicTable - Array Index Support', () => {
             file1.updatePropertyValue = jest.fn().mockResolvedValue(undefined);
 
             const file2 = new Classe(vault);
-            file2.properties = { animations: animationsProperty };
+            file2.addProperty(animationsProperty);
             file2.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return [{ date: '2025-03-20' }];
@@ -313,7 +313,7 @@ describe('DynamicTable - Array Index Support', () => {
             file2.updatePropertyValue = jest.fn().mockResolvedValue(undefined);
 
             const file3 = new Classe(vault);
-            file3.properties = { animations: animationsProperty };
+            file3.addProperty(animationsProperty);
             file3.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return [{ date: '2025-02-10' }];
@@ -330,7 +330,7 @@ describe('DynamicTable - Array Index Support', () => {
 
             const config = {
                 columns: [
-                    { name: 'Date', propertyName: 'animations[0].date', sort: true }
+                    { name: 'Date', propertyName: 'animations[0].date', sort: 'asc' as const }
                 ]
             };
 
@@ -358,13 +358,13 @@ describe('DynamicTable - Array Index Support', () => {
     describe('Filtering with array index columns', () => {
         it('should filter by array index property values', async () => {
             const animationsSubProperties = {
-                titre: new TextProperty('titre', vault, { title: 'Titre' })
+                titre: new TextProperty('titre', vault)
             };
 
             const animationsProperty = new ObjectProperty('animations', vault, animationsSubProperties, { multiple: true });
 
             const file1 = new Classe(vault);
-            file1.properties = { animations: animationsProperty };
+            file1.addProperty(animationsProperty);
             file1.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return [{ titre: 'Formation TypeScript' }];
@@ -380,7 +380,7 @@ describe('DynamicTable - Array Index Support', () => {
             file1.updatePropertyValue = jest.fn().mockResolvedValue(undefined);
 
             const file2 = new Classe(vault);
-            file2.properties = { animations: animationsProperty };
+            file2.addProperty(animationsProperty);
             file2.getPropertyValue = jest.fn().mockImplementation(async (prop: string) => {
                 if (prop === 'animations') {
                     return [{ titre: 'Atelier React' }];
@@ -415,4 +415,5 @@ describe('DynamicTable - Array Index Support', () => {
         });
     });
 });
+
 

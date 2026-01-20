@@ -23,15 +23,15 @@ describe('PropertyNavigator - getPropertyDisplayForPath', () => {
 
         // Create sub-properties for animations (using proper constructor signatures)
         const animationsSubProperties = {
-            date: new DateProperty('date', vault, [], { title: 'Date' }),
-            titre: new TextProperty('titre', vault, { title: 'Titre' }),
-            tarif: new NumberProperty('tarif', vault, { title: 'Tarif', format: '0,0' })
+            date: new DateProperty('date', vault, []),
+            titre: new TextProperty('titre', vault),
+            tarif: new NumberProperty('tarif', vault, '0,0')
         };
 
         // Create sub-properties for details
         const detailsSubProperties = {
-            montant: new NumberProperty('montant', vault, { title: 'Montant', format: '0,0.00' }),
-            description: new TextProperty('description', vault, { title: 'Description' })
+            montant: new NumberProperty('montant', vault, '0,0.00'),
+            description: new TextProperty('description', vault)
         };
 
         // Create ObjectProperty instances with proper constructor signature
@@ -199,7 +199,7 @@ describe('PropertyNavigator - getPropertyDisplayForPath', () => {
         });
 
         it('should return null when property is not an ObjectProperty', async () => {
-            properties.simple = new TextProperty('simple', vault, { title: 'Simple' });
+            properties.simple = new TextProperty('simple', vault);
             
             const display = await navigator.getPropertyDisplayForPath('simple[0].date');
 
