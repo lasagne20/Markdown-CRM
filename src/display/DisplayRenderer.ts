@@ -420,7 +420,6 @@ export class DisplayRenderer {
             instances = instances.filter((instance: Classe) => {
                 const instanceClassName = (instance as any).name;
                 const matches = instanceClassName === source.class;
-                console.log(`  - ${instance.getName()} (${instanceClassName}) matches ${source.class}:`, matches);
                 return matches;
             });
         }

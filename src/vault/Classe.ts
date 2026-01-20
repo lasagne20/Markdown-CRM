@@ -321,29 +321,21 @@ export class Classe {
     
  /**
      * Find all children of this file recursively
-     * Supports two modes:
-     * 1. If file has children property populated: use it directly (new approach)
-     * 2. Otherwise: scan filesystem for files in dedicated folder (fallback for compatibility)
+     * Always scans filesystem to ensure fresh data (avoids Obsidian API caching issues)
+     * 
+     * Checks two criteria for child files:
+     * 1. Files in dedicated folder (same name as parent file)
+     * 2. Files with parent property pointing to this file
      */
-    protected async findChildren(folder?: IFile | IFolder): Promise<Classe[]> {
+    protected async findChildren(): Promise<Classe[]> {
         if (!this.file) {
             return [];
         }
 
         const children: Classe[] = [];
         
-        // Mode 1: Use file.children if available (folder-file structure)
-        const childrenToProcess = folder?.children || this.file.children;
-        
-        if (childrenToProcess && childrenToProcess.length > 0) {
-            console.log(`🔍 Mode 1: Processing ${childrenToProcess.length} items`);
-            await this.processChildrenRecursive(childrenToProcess, children);
-            console.log(`✅ Mode 1: Found ${children.length} children`);
-            return children;
-        }
-        
-        // Mode 2: Fallback - scan filesystem (for backward compatibility with existing code)
-        console.log(`🔍 Mode 2: Fallback filesystem scan`);
+        // Filesystem scan for fresh data
+        console.log(`🔍 Filesystem scan for children`);
         const allFiles = await this.vault.listFiles();
         const thisFileBaseName = this.file.getName(false);
         const thisFilePath = this.file.getPath();
