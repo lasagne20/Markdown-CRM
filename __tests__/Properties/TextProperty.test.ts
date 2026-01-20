@@ -164,8 +164,8 @@ describe('TextProperty', () => {
             
             expect(link.tagName).toBe('DIV');
             expect(link.classList.contains('field-textlink')).toBe(true);
-            expect(link.innerHTML).toContain('<strong><a href="#">alias</a></strong>');
-            expect(link.innerHTML).toContain('<strong><a href="#">another link</a></strong>');
+            expect(link.innerHTML).toContain('<strong><a href="#" data-path="internal link">alias</a></strong>');
+            expect(link.innerHTML).toContain('<strong><a href="#" data-path="another link">another link</a></strong>');
         });
 
         it('should handle content without links', () => {

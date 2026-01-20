@@ -41,7 +41,7 @@ export class TextProperty extends Property {
     link.innerHTML = stringValue
       ? stringValue.replace(/\[\[(.*?)(?:\|(.*?))?\]\]/g, (_match: string, path: string, alias: string) => {
         const display = alias || path;
-        return `<strong><a href="#">${display}</a></strong>`;
+        return `<strong><a href="#" data-path="${path}">${display}</a></strong>`;
       })
       : "";
     link.classList.add("field-textlink");
@@ -54,7 +54,7 @@ export class TextProperty extends Property {
     link.querySelectorAll("a").forEach(anchor => {
       anchor.onclick = async (event) => {
         event.preventDefault();
-        const target = (event.target as HTMLElement).textContent;
+        const target = anchor.getAttribute('data-path') || (event.target as HTMLElement).textContent;
         if (target) {
           const classe = await this.vault.getFromLink(target);
           if (classe) {
