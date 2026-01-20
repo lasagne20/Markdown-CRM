@@ -105,6 +105,11 @@ export class DisplayRenderer {
     }
 
     private async renderProperty(item: any): Promise<HTMLElement | null> {
+        // Handle complex property paths (with dots or brackets) directly
+        if (item.name.includes('.') || item.name.includes('[')) {
+            return await this.renderFormulaProperty(item);
+        }
+        
         const property = this.properties[item.name];
         if (!property) {
             console.warn(`Property not found: ${item.name}`);
@@ -164,6 +169,45 @@ export class DisplayRenderer {
         }
         
         return result;
+    }
+
+    /**
+     * Render a formula property - displays a complex property path directly (e.g., animations[0].date)
+     */
+    private async renderFormulaProperty(item: any): Promise<HTMLElement | null> {
+        const container = document.createElement('div');
+        container.className = 'metadata-property';
+        
+        // Add title if provided
+        if (item.title) {
+            const titleElement = document.createElement('div');
+            titleElement.className = 'metadata-property-key';
+            titleElement.textContent = item.title;
+            container.appendChild(titleElement);
+        }
+        
+        const valueContainer = document.createElement('div');
+        valueContainer.className = 'metadata-property-value';
+        
+        try {
+            // Use existing PropertyNavigator instance
+            const value = await this.propertyNavigator.getNestedProperty(this.context, item.name);
+            
+            // Format the value
+            if (value === null || value === undefined) {
+                valueContainer.textContent = '-';
+            } else if (typeof value === 'object') {
+                valueContainer.textContent = JSON.stringify(value);
+            } else {
+                valueContainer.textContent = String(value);
+            }
+        } catch (error) {
+            console.error(`Error getting formula property ${item.name}:`, error);
+            valueContainer.textContent = '-';
+        }
+        
+        container.appendChild(valueContainer);
+        return container;
     }
 
     private renderButton(item: any): HTMLElement {
