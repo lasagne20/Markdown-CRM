@@ -407,13 +407,38 @@ export class PropertyNavigator {
             // Check if this is a FileProperty (link to another class)
             if (property.type === 'file') {
                 console.log(`🔗 ${propertyName} is a FileProperty, resolving linked class...`);
+                console.log(`🔍 Context type:`, typeof this.context);
+                console.log(`🔍 Context is array:`, Array.isArray(this.context));
+                console.log(`🔍 Context value:`, this.context);
                 
-                // Get the file link value
+                // Get the file link value from context
+                // Guard against null/undefined context
+                if (!this.context) {
+                    console.warn(`⚠️ Context is null or undefined, cannot access property ${propertyName}`);
+                    return null;
+                }
+
                 let fileLink: string;
-                if (this.context.getPropertyValue) {
-                    fileLink = await this.context.getPropertyValue(propertyName);
-                } else {
+                
+                // If context is an array, use the first element
+                if (Array.isArray(this.context) && this.context.length > 0 && this.context[0]) {
+                    fileLink = this.context[0][propertyName];
+                    console.log(`📦 Extracted from array[0]:`, fileLink);
+                }
+                // If context is a plain object (e.g., from ObjectProperty), access directly
+                else if (typeof this.context === 'object' && this.context !== null && !this.context.getPropertyValue) {
                     fileLink = this.context[propertyName];
+                    console.log(`📦 Extracted from plain object:`, fileLink);
+                } 
+                // If context is a Classe instance, use getPropertyValue
+                else if (this.context.getPropertyValue) {
+                    fileLink = await this.context.getPropertyValue(propertyName);
+                    console.log(`📦 Extracted from Classe:`, fileLink);
+                } 
+                // Fallback to direct access
+                else {
+                    fileLink = this.context[propertyName];
+                    console.log(`📦 Extracted via fallback:`, fileLink);
                 }
                 
                 console.log(`📎 File link value:`, fileLink);
