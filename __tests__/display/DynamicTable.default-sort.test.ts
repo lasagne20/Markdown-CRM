@@ -77,7 +77,9 @@ describe('DynamicTable - Default Sort Validation', () => {
             new DefaultSortTestClass(vault, 'action-02', '2026-01-20', 'Payé', 'Audit sécurité'),
             new DefaultSortTestClass(vault, 'action-03', '2026-02-10', 'Date validée', 'Mise à jour site'),
             new DefaultSortTestClass(vault, 'action-04', '2026-01-05', 'Réalisé', 'Analyse besoins'),
-            new DefaultSortTestClass(vault, 'action-05', '2026-04-01', 'Facturé', 'Développement app')
+            new DefaultSortTestClass(vault, 'action-05', '2026-04-01', 'Facturé', 'Développement app'),
+            new DefaultSortTestClass(vault, 'action-06', '', 'Devis signé', 'Sans date 1'),
+            new DefaultSortTestClass(vault, 'action-07', '', 'Payé', 'Sans date 2')
         ];
     });
 
@@ -276,15 +278,15 @@ describe('DynamicTable - Default Sort Validation', () => {
 
         const sortedFiles = (table as any).tableData.files as DefaultSortTestClass[];
 
-        // Les fichiers doivent être triés par date (2026-01-05, 2026-01-20, 2026-02-10, 2026-03-15, 2026-04-01)
-        const expectedOrder = ['action-04', 'action-02', 'action-03', 'action-01', 'action-05'];
+        // Les fichiers doivent être triés par date (2026-01-05, 2026-01-20, 2026-02-10, 2026-03-15, 2026-04-01), puis les sans date
+        const expectedOrder = ['action-04', 'action-02', 'action-03', 'action-01', 'action-05', 'action-06', 'action-07'];
         const actualOrder = sortedFiles.map(file => file.getName(false));
 
         console.log('📅 Expected order (by date asc):', expectedOrder);
         console.log('📁 Actual order:', actualOrder);
 
         expect(actualOrder).toEqual(expectedOrder);
-        console.log('✅ Files are correctly sorted by date in ascending order');
+        console.log('✅ Files are correctly sorted by date in ascending order with empty dates at the end');
     });
 
     test('should actually sort files by date in descending order on initialization', async () => {
@@ -316,15 +318,15 @@ describe('DynamicTable - Default Sort Validation', () => {
 
         const sortedFiles = (table as any).tableData.files as DefaultSortTestClass[];
 
-        // Les fichiers doivent être triés par date en ordre décroissant (2026-04-01, 2026-03-15, 2026-02-10, 2026-01-20, 2026-01-05)
-        const expectedOrder = ['action-05', 'action-01', 'action-03', 'action-02', 'action-04'];
+        // Les fichiers doivent être triés par date en ordre décroissant (2026-04-01, 2026-03-15, 2026-02-10, 2026-01-20, 2026-01-05), puis les sans date
+        const expectedOrder = ['action-05', 'action-01', 'action-03', 'action-02', 'action-04', 'action-06', 'action-07'];
         const actualOrder = sortedFiles.map(file => file.getName(false));
 
         console.log('📅 Expected order (by date desc):', expectedOrder);
         console.log('📁 Actual order:', actualOrder);
 
         expect(actualOrder).toEqual(expectedOrder);
-        console.log('✅ Files are correctly sorted by date in descending order');
+        console.log('✅ Files are correctly sorted by date in descending order with empty dates at the end');
     });
 
     test('should sort files by filename when sort is applied to _fileName', async () => {
@@ -356,8 +358,8 @@ describe('DynamicTable - Default Sort Validation', () => {
 
         const sortedFiles = (table as any).tableData.files as DefaultSortTestClass[];
 
-        // Les fichiers doivent être triés par nom en ordre décroissant
-        const expectedOrder = ['action-05', 'action-04', 'action-03', 'action-02', 'action-01'];
+        // Les fichiers doivent être triés par nom en ordre décroissant (les sans date n'affectent pas le tri par nom)
+        const expectedOrder = ['action-07', 'action-06', 'action-05', 'action-04', 'action-03', 'action-02', 'action-01'];
         const actualOrder = sortedFiles.map(file => file.getName(false));
 
         console.log('📁 Expected order (by filename desc):', expectedOrder);
@@ -396,7 +398,7 @@ describe('DynamicTable - Default Sort Validation', () => {
         const sortedFiles = (table as any).tableData.files as DefaultSortTestClass[];
 
         // Les fichiers doivent rester dans l'ordre original
-        const expectedOrder = ['action-01', 'action-02', 'action-03', 'action-04', 'action-05'];
+        const expectedOrder = ['action-01', 'action-02', 'action-03', 'action-04', 'action-05', 'action-06', 'action-07'];
         const actualOrder = sortedFiles.map(file => file.getName(false));
 
         console.log('📁 Expected order (original):', expectedOrder);
@@ -404,5 +406,63 @@ describe('DynamicTable - Default Sort Validation', () => {
 
         expect(actualOrder).toEqual(expectedOrder);
         console.log('✅ Files maintain original order when no sort is specified');
+    });
+
+    test('should put empty values at the end regardless of sort direction', async () => {
+        console.log('🧪 Testing that empty dates are always at the end...');
+
+        // Test en ordre ascendant
+        const configAsc = {
+            columns: [
+                {
+                    name: "Fichier",
+                    propertyName: "_fileName"
+                },
+                {
+                    name: "Date",
+                    propertyName: "date",
+                    sort: "asc" as const
+                }
+            ]
+        };
+
+        const tableAsc = new DynamicTable(mockFiles, configAsc, vault);
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const sortedFilesAsc = (tableAsc as any).tableData.files as DefaultSortTestClass[];
+        const actualOrderAsc = sortedFilesAsc.map(file => file.getName(false));
+
+        // En ascendant : dates croissantes puis vides
+        const expectedOrderAsc = ['action-04', 'action-02', 'action-03', 'action-01', 'action-05', 'action-06', 'action-07'];
+        expect(actualOrderAsc).toEqual(expectedOrderAsc);
+        console.log('✅ Ascending: empty dates at end:', actualOrderAsc);
+
+        // Test en ordre descendant
+        const configDesc = {
+            columns: [
+                {
+                    name: "Fichier",
+                    propertyName: "_fileName"
+                },
+                {
+                    name: "Date",
+                    propertyName: "date",
+                    sort: "desc" as const
+                }
+            ]
+        };
+
+        const tableDesc = new DynamicTable(mockFiles, configDesc, vault);
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const sortedFilesDesc = (tableDesc as any).tableData.files as DefaultSortTestClass[];
+        const actualOrderDesc = sortedFilesDesc.map(file => file.getName(false));
+
+        // En descendant : dates décroissantes puis vides
+        const expectedOrderDesc = ['action-05', 'action-01', 'action-03', 'action-02', 'action-04', 'action-06', 'action-07'];
+        expect(actualOrderDesc).toEqual(expectedOrderDesc);
+        console.log('✅ Descending: empty dates at end:', actualOrderDesc);
+
+        console.log('✅ Empty values are always placed at the end regardless of sort direction');
     });
 });

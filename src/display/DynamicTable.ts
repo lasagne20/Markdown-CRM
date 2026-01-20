@@ -1271,8 +1271,19 @@ export class DynamicTable {
             fileValues.push({ file, value });
         }
         
-        // Sort by collected values
+        // Sort by collected values, with empty values always at the end
         fileValues.sort((a, b) => {
+            const aEmpty = !a.value || a.value.trim() === '';
+            const bEmpty = !b.value || b.value.trim() === '';
+            
+            // Both empty: maintain relative order
+            if (aEmpty && bEmpty) return 0;
+            
+            // One empty: empty always goes to the end
+            if (aEmpty) return 1;
+            if (bEmpty) return -1;
+            
+            // Both have values: normal comparison
             const comparison = a.value.localeCompare(b.value);
             return this.tableData.currentSort.ascending ? comparison : -comparison;
         });

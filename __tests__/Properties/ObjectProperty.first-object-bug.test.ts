@@ -57,13 +57,14 @@ describe('ObjectProperty - First Object Bug', () => {
         };
 
         // Setup mocks
+        const mockUpdateMetadata = jest.fn().mockResolvedValue(undefined);
         mockVault = {
             getFromLink: jest.fn(),
             getFiles: jest.fn(),
             app: {
                 setIcon: jest.fn(),
                 getMetadata: jest.fn().mockResolvedValue({ ...originalMetadata }),
-                updateMetadata: jest.fn().mockResolvedValue(undefined)
+                updateMetadata: mockUpdateMetadata
             }
         } as any;
 
@@ -113,7 +114,7 @@ describe('ObjectProperty - First Object Bug', () => {
         await objectProperty.addProperty([], updateFunction, container);
 
         // Get the last call to app.updateMetadata
-        const updateCalls = mockVault.app.updateMetadata.mock.calls;
+        const updateCalls = (mockVault.app.updateMetadata as jest.Mock).mock.calls;
         expect(updateCalls.length).toBeGreaterThan(0);
         
         const lastCall = updateCalls[updateCalls.length - 1];
@@ -205,7 +206,7 @@ describe('ObjectProperty - First Object Bug', () => {
         await objectProperty.addProperty(undefined, updateCallback, container);
         
         // Verify that app.updateMetadata was called with merged metadata
-        const calls = mockVault.app.updateMetadata.mock.calls;
+        const calls = (mockVault.app.updateMetadata as jest.Mock).mock.calls;
         expect(calls.length).toBeGreaterThan(0);
         
         const finalCall = calls[calls.length - 1];
@@ -246,7 +247,7 @@ describe('ObjectProperty - First Object Bug', () => {
         expect(mockClasse.updatePropertyValue).toHaveBeenCalled();
         
         // Verify metadata was preserved
-        const calls = mockVault.app.updateMetadata.mock.calls;
+        const calls = (mockVault.app.updateMetadata as jest.Mock).mock.calls;
         if (calls.length > 0) {
             const lastCall = calls[calls.length - 1];
             const [, finalMetadata] = lastCall;

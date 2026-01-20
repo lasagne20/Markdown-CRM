@@ -7,6 +7,7 @@ import { DynamicTable } from './DynamicTable';
 import { NumberDisplay } from './NumberDisplay';
 import { DynamicMap } from './DynamicMap';
 import { PropertyNavigator } from '../utils/PropertyNavigator';
+import { ConditionManager } from '../Config/ConditionManager';
 
 /**
  * Utility class for rendering display configurations
@@ -34,11 +35,40 @@ export class DisplayRenderer {
 
     async renderDisplayItems(container: HTMLElement, items: DisplayItem[]): Promise<void> {
         for (const item of items) {
+            // Évaluer les conditions avant de rendre l'item
+            if (item.conditions && item.conditions.length > 0) {
+                const conditionsMet = await this.evaluateConditions(item.conditions);
+                if (!conditionsMet) {
+                    continue; // Skip cet item si les conditions ne sont pas remplies
+                }
+            }
+            
             const element = await this.renderDisplayItem(item);
             if (element) {
                 container.appendChild(element);
             }
         }
+    }
+
+    /**
+     * Évalue les conditions pour déterminer si un item doit être affiché
+     */
+    private async evaluateConditions(conditions: any[]): Promise<boolean> {
+        const conditionManager = new ConditionManager(this.vault);
+        
+        // Si le context est une instance de Classe, l'utiliser directement
+        if (this.context && typeof this.context.getProperty === 'function') {
+            return await conditionManager.evaluateConditions(conditions, this.context);
+        }
+        
+        // Sinon, créer un objet mock pour l'évaluation
+        const mockInstance = {
+            getProperty: (name: string) => ({
+                read: async () => this.context[name]
+            })
+        };
+        
+        return await conditionManager.evaluateConditions(conditions, mockInstance as any);
     }
 
     private async renderDisplayItem(item: DisplayItem): Promise<HTMLElement | null> {

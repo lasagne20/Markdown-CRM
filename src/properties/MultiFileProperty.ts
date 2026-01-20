@@ -175,7 +175,14 @@ export class MultiFileProperty extends ObjectProperty {
             });
             
             console.log('✅ Mise à jour avec:', values);
+            
+            // FIX: Appeler update ET attendre qu'il se termine avant de reloadObjects
+            // Cela garantit que les valeurs sont persistées avant le refresh
             await update(values);
+            
+            // FIX: S'assurer que le container passé est bien celui que nous voulons rafraîchir
+            // En passant explicitement le container, on évite le problème de querySelector
+            // qui pourrait trouver le mauvais container s'il y en a plusieurs avec la même classe
             await this.reloadObjects(values, update, container);
         }
     }
@@ -196,17 +203,26 @@ export class MultiFileProperty extends ObjectProperty {
             
         if (container) {
             console.log('🔄 MultiFileProperty: Rechargement de l\'interface avec values:', values);
+            console.log('🔄 Container utilisé:', specificContainer ? 'specificContainer (passed)' : 'querySelector');
             
             // Garder l'en-tête, supprimer uniquement les lignes d'objets
             const objectRows = container.querySelectorAll('.metadata-multiFiles-row-inline');
+            console.log('🔄 Nombre de lignes à supprimer:', objectRows.length);
             objectRows.forEach(row => row.remove());
             
-            // Recréer les lignes d'objets
-            this.createObjects(values, update, container);
+            // FIX: S'assurer que values est un tableau avant de créer les objets
+            // Cela évite les erreurs si values est undefined, null, ou une string
+            const arrayValues = Array.isArray(values) ? values : (values ? [values] : []);
             
-            console.log('✅ MultiFileProperty: Interface rechargée');
+            // Recréer les lignes d'objets avec les valeurs mises à jour
+            this.createObjects(arrayValues, update, container);
+            
+            console.log('✅ MultiFileProperty: Interface rechargée avec', arrayValues.length, 'éléments');
         } else {
             console.error('❌ MultiFileProperty: Container non trouvé pour reloadObjects');
+            console.error('   Property name:', this.name);
+            console.error('   specificContainer:', specificContainer);
+            console.error('   querySelector result:', document.querySelector(".metadata-multiFiles-container-" + this.name.toLowerCase()));
         }
     }
 

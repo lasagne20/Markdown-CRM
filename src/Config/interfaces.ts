@@ -64,6 +64,7 @@ export interface TableTotalConfig {
 // Base interface for all display items
 interface BaseDisplayItem {
     type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table' | 'number' | 'map';
+    conditions?: Condition[]; // Conditions that must all be true for this item to be displayed
 }
 
 // Property display item
