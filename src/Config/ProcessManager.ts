@@ -288,6 +288,11 @@ export class ProcessManager {
                 }
             }
             
+            // Trigger display refresh only if this is the current file
+            const currentFile = this.vault.app.getCurrentFile();
+            if (currentFile && currentFile.path === filePath) {
+                this.vault.app.needDisplayRefresh();
+            }
         } catch (error) {
             console.error(`❌ Error updating class:`, error);
             throw error;

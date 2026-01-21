@@ -29,7 +29,8 @@ describe('ProcessManager', () => {
                     element.setAttribute('data-icon', icon);
                 }),
                 needDisplayRefresh: jest.fn(),
-                open: jest.fn()
+                open: jest.fn(),
+                getCurrentFile: jest.fn().mockReturnValue({ path: 'test/path.md' })
             },
             files: {},
             getClasseFromName: jest.fn(),

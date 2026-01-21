@@ -63,7 +63,7 @@ describe('PropertyNavigator - Context Types', () => {
                 arrayContext,
                 properties,
                 async (propertyName: string, newValue: any) => {
-                    arrayContext[0][propertyName] = newValue;
+                    (arrayContext[0] as any)[propertyName] = newValue;
                 }
             );
 
@@ -154,7 +154,7 @@ describe('PropertyNavigator - Context Types', () => {
                 objectContext,
                 properties,
                 async (propertyName: string, newValue: any) => {
-                    objectContext[propertyName] = newValue;
+                    (objectContext as any)[propertyName] = newValue;
                 }
             );
 

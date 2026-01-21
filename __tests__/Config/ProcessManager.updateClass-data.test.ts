@@ -65,6 +65,7 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                 element.setAttribute('data-icon', icon);
             }),
             sendNotice: jest.fn(),
+            getCurrentFile: jest.fn(),
             createDiv: jest.fn((className?: string) => {
                 const div = document.createElement('div');
                 if (className) div.className = className;
@@ -143,33 +144,31 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
             getPath: jest.fn(() => 'Lieux/TestLocation/TestLocation.md')
         };
 
-        mockFileInstance = {
-            getPath: jest.fn(() => 'Lieux/TestLocation/TestLocation.md'),
-            getFile: jest.fn(() => mockFile),
-            basename: 'TestLocation',
-            file: mockFile,
-            getClassePropertyValue: jest.fn().mockResolvedValue('Lieu'),
-            updateMetadata: jest.fn(async (key: string, value: any) => {
-                // Get current metadata
-                const currentMeta = await mockApp.getMetadata(mockFile);
-                // Update it
-                const updated = { ...currentMeta, [key]: value };
-                // Call mockApp.updateMetadata so it's tracked
-                await mockApp.updateMetadata(mockFile, updated);
-            }),
-            getMetadata: jest.fn().mockResolvedValue({
-                Classe: 'Lieu',
-                nom: 'TestLocation',
-                type: 'Commune'
-            })
-        };
-
         // Create a real Vault instance for integration testing
         vault = new Vault(mockApp, {
             templateFolder: 'templates',
             personalName: 'TestUser',
             configPath: testConfigPath
         });
+
+        // Create a real File instance with the mock
+        mockFileInstance = new File(vault, mockFile as any);
+        
+        // Override methods we need to mock
+        mockFileInstance.getClassePropertyValue = jest.fn().mockResolvedValue('Lieu');
+        mockFileInstance.updateMetadata = jest.fn(async (key: string, value: any) => {
+            const currentMeta = await mockApp.getMetadata(mockFile);
+            const updated = { ...currentMeta, [key]: value };
+            await mockApp.updateMetadata(mockFile, updated);
+        });
+        mockFileInstance.getMetadata = jest.fn().mockResolvedValue({
+            Classe: 'Lieu',
+            nom: 'TestLocation',
+            type: 'Commune'
+        });
+
+        // Configure getCurrentFile to return the current file being tested
+        (mockApp.getCurrentFile as jest.Mock).mockReturnValue(mockFile);
 
         processManager = vault.getProcessManager();
         factory = vault.getDynamicClassFactory()!;

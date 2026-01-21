@@ -113,5 +113,6 @@ export interface IApp {
 
     sendNotice(message: string, timeout?: number): void;
     needDisplayRefresh(): void;
+    getCurrentFile(): IFile | null;
 
 }
