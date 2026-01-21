@@ -288,8 +288,6 @@ export class ProcessManager {
                 }
             }
             
-            // Trigger display refresh since the class has changed
-            this.vault.app.needDisplayRefresh();
         } catch (error) {
             console.error(`❌ Error updating class:`, error);
             throw error;
