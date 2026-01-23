@@ -805,9 +805,70 @@ export class ConditionManager {
 
     /**
      * Get property value from instance
+     * Supports nested paths like "suivie.action" for ObjectProperty arrays
      */
     private async getPropertyValue(instance: Classe, propertyName: string): Promise<any> {
         try {
+            // Check if this is a nested property path (e.g., "suivie.action")
+            if (propertyName.includes('.')) {
+                const parts = propertyName.split('.');
+                const basePropName = parts[0];
+                const nestedPath = parts.slice(1).join('.');
+                
+                const baseProperty = instance.getProperty(basePropName);
+                if (!baseProperty) {
+                    console.warn(`Property ${basePropName} not found on instance`);
+                    return null;
+                }
+
+                // Read the base property value
+                const baseValue = await baseProperty.read(instance);
+                
+                if (!baseValue) {
+                    return null;
+                }
+
+                // If base value is an array (ObjectProperty list), extract nested property from all items
+                if (Array.isArray(baseValue)) {
+                    const nestedValues: any[] = [];
+                    for (const item of baseValue) {
+                        if (item && typeof item === 'object') {
+                            // Navigate through the nested path
+                            let value = item;
+                            for (const part of parts.slice(1)) {
+                                if (value && typeof value === 'object' && part in value) {
+                                    value = value[part];
+                                } else {
+                                    value = null;
+                                    break;
+                                }
+                            }
+                            if (value !== null && value !== undefined) {
+                                nestedValues.push(value);
+                            }
+                        }
+                    }
+                    // Return array of nested values
+                    return nestedValues.length > 0 ? nestedValues : null;
+                }
+
+                // If base value is a single object, navigate to nested property
+                if (typeof baseValue === 'object') {
+                    let value = baseValue;
+                    for (const part of parts.slice(1)) {
+                        if (value && typeof value === 'object' && part in value) {
+                            value = value[part];
+                        } else {
+                            return null;
+                        }
+                    }
+                    return value;
+                }
+
+                return null;
+            }
+
+            // Simple property access (no dots)
             const property = instance.getProperty(propertyName);
             if (!property) {
                 console.warn(`Property ${propertyName} not found on instance`);
