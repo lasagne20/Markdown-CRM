@@ -132,6 +132,28 @@ export interface UndirectLinkCondition {
 }
 
 /**
+ * Related class condition - Filter instances based on related class instances that match conditions
+ * Example: Find persons who appear in actions in a specific location
+ * 
+ * - `linkDirection: 'incoming'` checks if the related class has properties pointing to this instance
+ *   Example: Person filtered by Actions that reference them (Action.participants → Person)
+ * 
+ * - `linkDirection: 'outgoing'` checks if this instance has properties pointing to the related class
+ *   Example: Person filtered by their own Actions (Person.projects → Action)
+ * 
+ * - `matchMode: 'any'` (default) returns true if at least one related instance matches
+ * - `matchMode: 'all'` returns true only if all related instances match
+ */
+export interface RelatedClassCondition {
+    conditionType: 'relatedClass';
+    relatedClass: string; // Name of the related class to check (e.g., 'Action')
+    linkDirection: 'incoming' | 'outgoing'; // Direction of the relationship
+    linkProperty?: string; // Optional: specific property to check (if omitted, checks all file/multifile properties)
+    matchMode?: 'any' | 'all'; // Default: 'any'
+    conditions: PropertyCondition[]; // Conditions to apply on related instances
+}
+
+/**
  * Property condition - Standard condition on instance property (default)
  */
 export type PropertyCondition = 
@@ -154,7 +176,8 @@ export type PropertyCondition =
 export type Condition = 
     | PropertyCondition
     | DirectLinkCondition
-    | UndirectLinkCondition;
+    | UndirectLinkCondition
+    | RelatedClassCondition;
 
 /**
  * ConditionManager handles evaluation of conditions against classe instances
@@ -179,6 +202,12 @@ export class ConditionManager {
         // Check if this is an UndirectLinkCondition
         if ('conditionType' in condition && condition.conditionType === 'undirectLink') {
             const result = await this.evaluateUndirectLinkCondition(condition, instance, currentDocument);
+            return (condition as any).not ? !result : result;
+        }
+
+        // Check if this is a RelatedClassCondition
+        if ('conditionType' in condition && condition.conditionType === 'relatedClass') {
+            const result = await this.evaluateRelatedClassCondition(condition, instance, currentDocument);
             return (condition as any).not ? !result : result;
         }
 
@@ -405,6 +434,20 @@ export class ConditionManager {
                 if (this.hasLinkToDocument(propertyValue, currentFileName, currentFilePath)) {
                     return true;
                 }
+            } else if (property.type === 'object') {
+                // Check nested properties inside ObjectProperty
+                const objectProp = property as any;
+                if (objectProp.properties) {
+                    for (const [nestedPropName, nestedProperty] of Object.entries(objectProp.properties)) {
+                        const nested = nestedProperty as any;
+                        if (nested.type === 'file' || nested.type === 'multiFile') {
+                            const nestedValue = await nested.read(instance);
+                            if (this.hasLinkToDocument(nestedValue, currentFileName, currentFilePath)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -459,6 +502,22 @@ export class ConditionManager {
                             hasReference = true;
                             break;
                         }
+                    } else if (property.type === 'object') {
+                        // Check nested properties inside ObjectProperty
+                        const objectProp = property as any;
+                        if (objectProp.properties) {
+                            for (const [nestedPropName, nestedProperty] of Object.entries(objectProp.properties)) {
+                                const nested = nestedProperty as any;
+                                if (nested.type === 'file' || nested.type === 'multiFile') {
+                                    const nestedValue = await nested.read(file);
+                                    if (this.hasLinkToDocument(nestedValue, instanceFileName, instanceFilePath)) {
+                                        hasReference = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (hasReference) break;
                     }
                 }
             }
@@ -487,6 +546,170 @@ export class ConditionManager {
         }
 
         return false; // No referencing files match the filter condition
+    }
+
+    /**
+     * Evaluate a RelatedClassCondition
+     * Filters instances based on related class instances that match conditions
+     * @param condition The related class condition
+     * @param instance The current instance to check
+     * @param currentDocument The current document context (for nested conditions)
+     */
+    private async evaluateRelatedClassCondition(condition: RelatedClassCondition, instance: Classe, currentDocument?: Classe): Promise<boolean> {
+        const instanceFileName = instance.getName();
+        const instanceFilePath = instance.getPath() || '';
+        const matchMode = condition.matchMode || 'any';
+
+        // Find related instances that link to/from this instance
+        const linkedInstances: Classe[] = [];
+
+        if (condition.linkDirection === 'incoming') {
+            // Incoming: Related class has properties pointing TO this instance
+            // Example: Action.participants → Person
+            
+            // Get all instances of the related class
+            if (!this.vault) {
+                console.warn('RelatedClassCondition requires vault to be provided to ConditionManager');
+                return false;
+            }
+            const relatedInstances = await this.vault.getClassInstances(condition.relatedClass);
+            
+            if (!relatedInstances || relatedInstances.length === 0) {
+                return false; // No instances of the related class exist
+            }
+
+            for (const relatedInstance of relatedInstances) {
+                let hasLink = false;
+
+                if (condition.linkProperty) {
+                    // Check specific property
+                    const property = relatedInstance.getProperty(condition.linkProperty);
+                    if (property && (property.type === 'file' || property.type === 'multiFile')) {
+                        const propertyValue = await property.read(relatedInstance);
+                        if (this.hasLinkToDocument(propertyValue, instanceFileName, instanceFilePath)) {
+                            hasLink = true;
+                        }
+                    }
+                } else {
+                    // Check all file/multifile properties
+                    const properties = relatedInstance.getAllProperties();
+                    for (const [propName, property] of Object.entries(properties)) {
+                        const prop = property as any;
+                        if (prop.type === 'file' || prop.type === 'multiFile') {
+                            const propertyValue = await prop.read(relatedInstance);
+                            if (this.hasLinkToDocument(propertyValue, instanceFileName, instanceFilePath)) {
+                                hasLink = true;
+                                break;
+                            }
+                        } else if (prop.type === 'object') {
+                            // Check nested properties inside ObjectProperty
+                            if (prop.properties) {
+                                for (const [nestedPropName, nestedProperty] of Object.entries(prop.properties)) {
+                                    const nested = nestedProperty as any;
+                                    if (nested.type === 'file' || nested.type === 'multiFile') {
+                                        const nestedValue = await nested.read(relatedInstance);
+                                        if (this.hasLinkToDocument(nestedValue, instanceFileName, instanceFilePath)) {
+                                            hasLink = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (hasLink) break;
+                        }
+                    }
+                }
+
+                if (hasLink) {
+                    linkedInstances.push(relatedInstance);
+                }
+            }
+        } else {
+            // Outgoing: This instance has properties pointing TO related class
+            // Example: Person.projects → Action
+            let propertiesToCheck: { [key: string]: any } = {};
+
+            if (condition.linkProperty) {
+                // Check specific property
+                const property = instance.getProperty(condition.linkProperty);
+                if (property && (property.type === 'file' || property.type === 'multiFile')) {
+                    propertiesToCheck[condition.linkProperty] = property;
+                }
+            } else {
+                // Check all file/multifile properties
+                const allProperties = instance.getAllProperties();
+                for (const [propName, property] of Object.entries(allProperties)) {
+                    if (property.type === 'file' || property.type === 'multiFile') {
+                        propertiesToCheck[propName] = property;
+                    } else if (property.type === 'object') {
+                        // Check nested properties inside ObjectProperty
+                        const objectProp = property as any;
+                        if (objectProp.properties) {
+                            for (const [nestedPropName, nestedProperty] of Object.entries(objectProp.properties)) {
+                                const nested = nestedProperty as any;
+                                if (nested.type === 'file' || nested.type === 'multiFile') {
+                                    propertiesToCheck[`${propName}.${nestedPropName}`] = nested;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Resolve links from instance's properties
+            for (const [propName, property] of Object.entries(propertiesToCheck)) {
+                const propertyValue = await property.read(instance);
+                const links = Array.isArray(propertyValue) ? propertyValue : [propertyValue];
+
+                for (const link of links) {
+                    if (!link) continue;
+
+                    // Resolve link to related instance
+                    const linkedFile = await this.vault.getFromLink(link);
+                    if (linkedFile && linkedFile.getClassName() === condition.relatedClass) {
+                        linkedInstances.push(linkedFile);
+                    }
+                }
+            }
+        }
+
+        // If no linked instances found
+        if (linkedInstances.length === 0) {
+            return false;
+        }
+
+        // If no conditions specified, return true (at least one instance is linked)
+        if (!condition.conditions || condition.conditions.length === 0) {
+            return true;
+        }
+
+        // Evaluate conditions on linked instances
+        const matchingInstances: Classe[] = [];
+        
+        for (const linkedInstance of linkedInstances) {
+            let allConditionsMet = true;
+
+            for (const nestedCondition of condition.conditions) {
+                const conditionResult = await this.evaluateCondition(nestedCondition, linkedInstance, currentDocument);
+                if (!conditionResult) {
+                    allConditionsMet = false;
+                    break;
+                }
+            }
+
+            if (allConditionsMet) {
+                matchingInstances.push(linkedInstance);
+            }
+        }
+
+        // Apply match mode
+        if (matchMode === 'all') {
+            // All linked instances must match conditions
+            return linkedInstances.length > 0 && matchingInstances.length === linkedInstances.length;
+        } else {
+            // At least one linked instance matches conditions (default)
+            return matchingInstances.length > 0;
+        }
     }
 
     /**

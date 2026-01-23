@@ -99,6 +99,29 @@ export class Vault {
     }
 
     /**
+     * Get all instances of a specific class from the vault
+     * @param className The name of the class to get instances for
+     * @returns Array of Classe instances of the specified class
+     */
+    async getClassInstances(className: string): Promise<Classe[]> {
+        const instances: Classe[] = [];
+        
+        // List all files with a class property
+        const allFiles = await this.listFiles();
+        
+        for (const file of allFiles) {
+            // Get or create the Classe instance
+            const instance = await this.getFromFile(file);
+            
+            if (instance && instance.getClassName() === className) {
+                instances.push(instance);
+            }
+        }
+        
+        return instances;
+    }
+
+    /**
      * Get extended classes including classes that inherit from the specified ones.
      * @param baseClasses Base class names to expand
      * @returns Array of class names including base classes and their children

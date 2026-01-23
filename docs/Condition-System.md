@@ -40,6 +40,42 @@ Special condition that checks if an instance has a direct link to the current do
   - `linkProperty` (optional): Specific property to check for the link
   - If not specified, checks all `FileProperty` and `MultiFileProperty` instances
 
+### RelatedClass Condition
+
+Special condition that filters instances based on related class instances that match conditions:
+
+- **relatedClass**: Filters instances based on their relationships with instances of another class
+  - `relatedClass` (required): Name of the related class to check (e.g., 'Action')
+  - `linkDirection` (required): Direction of the relationship
+    - `incoming`: Related class has properties pointing TO this instance (e.g., Action.participants → Person)
+    - `outgoing`: This instance has properties pointing TO related class (e.g., Person.projects → Action)
+  - `linkProperty` (optional): Specific property to check (if omitted, checks all file/multifile properties)
+  - `matchMode` (optional): Match requirement mode (default: 'any')
+    - `any`: At least one related instance must match the conditions
+    - `all`: All related instances must match the conditions
+  - `conditions` (required): Array of conditions to apply on related instances
+  
+**Example**: Find persons who appear in actions in a specific location:
+```yaml
+properties:
+  persons_in_actions:
+    type: MultiFileProperty
+    title: Persons in Local Actions
+    icon: 👥
+    classes:
+      - Person
+    conditions:
+      - conditionType: relatedClass
+        relatedClass: Action
+        linkDirection: incoming  # Actions that reference this person
+        linkProperty: participants  # Optional: only check this property
+        matchMode: any  # At least one action must match
+        conditions:
+          - property: location
+            type: equals
+            value: $current  # Actions in current location
+```
+
 ## YAML Configuration
 
 ### Basic Property Conditions
@@ -122,6 +158,76 @@ properties:
         value: Active
       # Must have a link to current document
       - conditionType: directLink
+```
+
+### RelatedClass Condition Examples
+
+#### Example 1: Incoming Links (Find by Referencing Class)
+
+Filter persons who appear in actions in the current location:
+
+```yaml
+properties:
+  local_participants:
+    type: MultiFileProperty
+    title: Participants in Local Actions
+    icon: 👥
+    classes:
+      - Person
+    conditions:
+      - conditionType: relatedClass
+        relatedClass: Action
+        linkDirection: incoming  # Actions reference these persons
+        conditions:
+          - property: location
+            type: equals
+            value: $current  # Current location
+```
+
+#### Example 2: Outgoing Links (Find by Referenced Class)
+
+Filter persons who have projects in a specific status:
+
+```yaml
+properties:
+  persons_with_active_projects:
+    type: MultiFileProperty
+    title: Persons with Active Projects
+    icon: 👤
+    classes:
+      - Person
+    conditions:
+      - conditionType: relatedClass
+        relatedClass: Action
+        linkDirection: outgoing  # Person references actions
+        linkProperty: projects  # Only check this property
+        conditions:
+          - property: status
+            type: equals
+            value: Active
+```
+
+#### Example 3: All Must Match
+
+Filter communes where ALL actions meet criteria:
+
+```yaml
+properties:
+  fully_compliant_communes:
+    type: MultiFileProperty
+    title: Fully Compliant Communes
+    icon: 🏘️
+    classes:
+      - Commune
+    conditions:
+      - conditionType: relatedClass
+        relatedClass: Action
+        linkDirection: incoming
+        matchMode: all  # ALL actions must match
+        conditions:
+          - property: compliance
+            type: equals
+            value: Complete
 ```
 
 ## Usage Examples
@@ -279,6 +385,41 @@ const validationFunction = conditionManager.createValidationFunction(
 );
 ```
 
+### RelatedClass Conditions
+
+```typescript
+import { RelatedClassCondition } from './Config/ConditionManager';
+
+const conditions: Condition[] = [
+    {
+        conditionType: 'relatedClass',
+        relatedClass: 'Action',
+        linkDirection: 'incoming',  // or 'outgoing'
+        linkProperty: 'participants',  // optional
+        matchMode: 'any',  // or 'all', optional (default: 'any')
+        conditions: [
+            {
+                property: 'location',
+                type: 'equals',
+                value: '$current'  // Use current document
+            },
+            {
+                property: 'status',
+                type: 'equals',
+                value: 'Active'
+            }
+        ]
+    }
+];
+
+// Requires vault to be provided to ConditionManager
+const conditionManager = new ConditionManager(vault);
+const validationFunction = conditionManager.createValidationFunction(
+    conditions,
+    currentDocument
+);
+```
+
 ### Parsing YAML Conditions
 
 ```typescript
@@ -317,12 +458,39 @@ const parsedConditions = ConditionManager.parseConditions(yamlConditions);
 
 2. If `linkProperty` is not specified:
    - Checks ALL `FileProperty` and `MultiFileProperty` instances
+   - Checks nested properties inside `ObjectProperty` types
    - Returns `true` if ANY property contains a link to the current document
 
 3. Current document injection:
    - `currentDocument` is injected at runtime when calling `createValidationFunction()`
    - Allows conditions to be defined statically in YAML
    - Document context is provided when the validation function is actually used
+
+### RelatedClass Behavior
+
+1. **Link Direction**:
+   - `incoming`: Finds instances of the related class that have properties pointing to the current instance
+     - Example: Find all Actions where `participants` includes this Person
+   - `outgoing`: Finds instances of the related class that the current instance's properties point to
+     - Example: Find all Actions referenced in this Person's `projects` property
+
+2. **Link Property Discovery**:
+   - If `linkProperty` is specified: Only checks that specific property
+   - If not specified: Checks all `FileProperty`, `MultiFileProperty`, and nested properties in `ObjectProperty`
+   
+3. **Match Mode**:
+   - `any` (default): Returns true if at least one related instance matches all conditions
+   - `all`: Returns true only if ALL related instances match all conditions
+   
+4. **Condition Evaluation**:
+   - Nested conditions are evaluated on the related instances (not the source instance)
+   - Supports all condition types including `$current` value references
+   - Requires vault access to discover class instances
+
+5. **Performance**:
+   - Uses `vault.getClassInstances()` to find all instances of the related class
+   - Checks each instance for links in the specified direction
+   - Evaluates conditions only on instances that have valid links
 
 ## Best Practices
 
