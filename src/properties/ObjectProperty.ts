@@ -386,13 +386,9 @@ export class ObjectProperty extends Property{
         table.appendChild(headerRow);
 
         if (values && values.length) {
-            // Si appendFirst est true, inverser l'ordre d'affichage (newest first)
-            const displayValues = this.appendFirst ? [...values].reverse() : values;
-            
-            // Créer les lignes d'objet
-            displayValues.forEach((objects: any, displayIndex: number) => {
-                // Calculer l'index réel dans le tableau values
-                const index = this.appendFirst ? values.length - 1 - displayIndex : displayIndex;
+            // Afficher les éléments dans l'ordre du tableau
+            // Avec appendFirst: true, les nouveaux éléments sont déjà au début
+            values.forEach((objects: any, index: number) => {
                 const row = document.createElement("tr");
                 Object.values(this.properties).forEach(property => {
                     const td = document.createElement("td");
@@ -643,12 +639,9 @@ export class ObjectProperty extends Property{
       createObjects(values: any, update : (value: any) => Promise<void>,  container: HTMLDivElement) {
           if (!values){return}
           
-          // Si appendFirst est true, inverser l'ordre d'affichage (newest first)
-          const displayValues = this.appendFirst ? [...values].reverse() : values;
-          
-          displayValues.forEach((objects: any, displayIndex: number) => {
-              // Calculer l'index réel dans le tableau values
-              const index = this.appendFirst ? values.length - 1 - displayIndex : displayIndex;
+          // Afficher les éléments dans l'ordre du tableau
+          // Avec appendFirst: true, les nouveaux éléments sont déjà au début
+          values.forEach((objects: any, index: number) => {
               // Vérifier que l'objet est valide (pas une string "[object Object]")
               if (typeof objects !== 'object' || objects === null) {
                   console.warn(`Invalid object at index ${index}:`, objects);

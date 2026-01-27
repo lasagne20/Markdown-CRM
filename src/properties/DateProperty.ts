@@ -15,7 +15,7 @@ export class DateProperty extends Property {
     private quickSelectIcons: string[];
     public override type : string = "date";
 
-    constructor(name: string, vault: Vault, quickSelectIcons: string[], args : {icon?: string, static?: boolean, aliases?: string[], tooltip?: string} = {}) {
+    constructor(name: string, vault: Vault, quickSelectIcons: string[] = [], args : {icon?: string, static?: boolean, aliases?: string[], tooltip?: string, default?: any} = {}) {
         super(name, vault, args);
         this.quickSelectIcons = quickSelectIcons
         
@@ -26,6 +26,17 @@ export class DateProperty extends Property {
 
     // Crée l'affichage du champ date
     override fillDisplay(value : any, update: (value: string) => Promise<void>, args? : {}) {
+        // Normalize special date values like "today", "tomorrow", "yesterday"
+        if (value && typeof value === 'string' && !value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            // If value is not in YYYY-MM-DD format, try to convert it
+            try {
+                value = this.formatDateForStorage(this.getDateForOption(value));
+            } catch (error) {
+                console.warn(`Invalid date value: ${value}`, error);
+                value = "";
+            }
+        }
+        
         const fieldContainer = document.createElement("div");
         fieldContainer.classList.add("metadata-field");
 
@@ -38,6 +49,7 @@ export class DateProperty extends Property {
 
         const contentRow = document.createElement("div");
         contentRow.style.display = "flex";
+        contentRow.style.flexDirection = "row";
         contentRow.style.alignItems = "center";
         contentRow.style.gap = "4px";
 

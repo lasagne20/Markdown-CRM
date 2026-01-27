@@ -56,8 +56,8 @@ describe('ObjectProperty appendFirst functionality', () => {
         console.log('✅ Default order validated: Item 1 → Item 2 → Item 3');
     });
 
-    it('should display objects in reverse order when appendFirst is true (newest first)', () => {
-        console.log('🧪 Testing reverse order (appendFirst: true)...');
+    it('should display objects in normal order when appendFirst is true (with new items added at beginning)', () => {
+        console.log('🧪 Testing normal order display with appendFirst: true...');
 
         const properties = {
             nom: new TextProperty('nom', mockVault),
@@ -85,18 +85,20 @@ describe('ObjectProperty appendFirst functionality', () => {
         const rows = container.querySelectorAll('.metadata-object-row');
         expect(rows.length).toBe(3);
 
-        // Vérifier l'ordre inversé : Item 3, Item 2, Item 1
+        // Vérifier l'ordre normal : Item 1, Item 2, Item 3
+        // appendFirst: true signifie que les nouveaux items sont ajoutés au début du tableau,
+        // mais l'affichage montre le tableau dans l'ordre (pas d'inversion)
         const firstRowText = rows[0].textContent;
         const lastRowText = rows[2].textContent;
 
-        expect(firstRowText).toContain('Item 3');
-        expect(lastRowText).toContain('Item 1');
+        expect(firstRowText).toContain('Item 1');
+        expect(lastRowText).toContain('Item 3');
 
-        console.log('✅ Reverse order validated: Item 3 → Item 2 → Item 1');
+        console.log('✅ Normal order validated with appendFirst: true: Item 1 → Item 2 → Item 3');
     });
 
-    it('should display table rows in reverse order when appendFirst is true', () => {
-        console.log('🧪 Testing table mode with reverse order (appendFirst: true)...');
+    it('should display table rows in normal order when appendFirst is true', () => {
+        console.log('🧪 Testing table mode with normal order (appendFirst: true)...');
 
         const properties = {
             nom: new TextProperty('nom', mockVault),
@@ -129,14 +131,14 @@ describe('ObjectProperty appendFirst functionality', () => {
         // 4 rows: 1 header + 3 data rows
         expect(rows.length).toBe(4);
 
-        // Vérifier l'ordre inversé dans le tableau (en ignorant la ligne d'en-tête)
+        // Vérifier l'ordre normal dans le tableau (en ignorant la ligne d'en-tête)
         const firstDataRowText = rows[1].textContent;
         const lastDataRowText = rows[3].textContent;
 
-        expect(firstDataRowText).toContain('Item 3');
-        expect(lastDataRowText).toContain('Item 1');
+        expect(firstDataRowText).toContain('Item 1');
+        expect(lastDataRowText).toContain('Item 3');
 
-        console.log('✅ Table reverse order validated: Item 3 → Item 2 → Item 1');
+        console.log('✅ Table normal order validated with appendFirst: true: Item 1 → Item 2 → Item 3');
     });
 
     it('should display table rows in original order when appendFirst is false', () => {
@@ -209,17 +211,17 @@ describe('ObjectProperty appendFirst functionality', () => {
 
         const rows = container.querySelectorAll('.metadata-object-row');
         
-        // Le premier row affiché devrait être Item 3 (index 2 dans le tableau original)
+        // Le premier row affiché devrait être Item 1 (index 0 dans le tableau)
         const firstRow = rows[0] as HTMLElement;
-        expect(firstRow.textContent).toContain('Item 3');
+        expect(firstRow.textContent).toContain('Item 1');
         
         // Vérifier que le dataset.index est bien défini si allowMove est true
         if (objectProp.allowMove) {
-            // L'index affiché devrait correspondre à l'index réel (2 pour Item 3)
-            expect(firstRow.dataset.index).toBe('2');
+            // L'index affiché devrait correspondre à l'index réel (0 pour Item 1)
+            expect(firstRow.dataset.index).toBe('0');
         }
 
-        console.log('✅ Indices preserved correctly with reverse display');
+        console.log('✅ Indices preserved correctly with normal display');
     });
 
     it('should work with empty array', () => {
