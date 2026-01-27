@@ -138,19 +138,21 @@ export class DisplayRenderer {
         // For Classe context, use getDisplay with configuration from item
         let result: HTMLElement | null;
         if (this.context.getProperties) {
-            // Cast args to any to support ObjectProperty's extended parameters (display, displayContainer)
+            // Cast args to any to support ObjectProperty's extended parameters (display, displayContainer, appendFirst)
             const args: any = {
                 title: item.title, 
                 staticMode: item.static,
                 display: item.display,
-                displayContainer: item.displayContainer
+                displayContainer: item.displayContainer,
+                appendFirst: item.appendFirst
             };
             result = await property.getDisplay(this.context, args);
         } else {
             // For ObjectProperty context, use fillDisplay directly
-            // Apply display and displayContainer temporarily for fillDisplay
+            // Apply display, displayContainer and appendFirst temporarily for fillDisplay
             const originalDisplay = (property as any).display;
             const originalDisplayContainer = (property as any).displayContainer;
+            const originalAppendFirst = (property as any).appendFirst;
             
             try {
                 if (item.display !== undefined) {
@@ -159,12 +161,16 @@ export class DisplayRenderer {
                 if (item.displayContainer !== undefined) {
                     (property as any).displayContainer = item.displayContainer;
                 }
+                if (item.appendFirst !== undefined) {
+                    (property as any).appendFirst = item.appendFirst;
+                }
                 
                 result = property.fillDisplay(value, updateFn);
             } finally {
                 // Don't restore - keep modifications for async rendering
                 // (property as any).display = originalDisplay;
                 // (property as any).displayContainer = originalDisplayContainer;
+                // (property as any).appendFirst = originalAppendFirst;
             }
         }
         

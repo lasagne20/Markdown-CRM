@@ -74,6 +74,7 @@ export interface PropertyDisplayItem extends BaseDisplayItem {
     title?: string; // Custom display title
     static?: boolean;
     display?: string; // Display mode for ObjectProperty: "object", "table", or "list"
+    appendFirst?: boolean; // Pour ObjectProperty - afficher les items dans l'ordre inverse (newest first)
 }
 
 // Button display item
