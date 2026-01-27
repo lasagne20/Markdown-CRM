@@ -229,6 +229,7 @@ export interface PopulateConfig {
     property: string; // Name of the property to populate
     title: string; // Title/prompt to show to the user
     required?: boolean; // If true, user cannot skip this field
+    fallback?: PopulateConfig; // Alternative populate config if this one is not filled
 }
 
 export interface ProcessConfig {
@@ -251,6 +252,7 @@ export interface ClassConfig {
         property: string;
         folder?: string;
     }>;
+    folder?: string; // Subfolder in vault for this class
     subClassesProperty?: {
         name: string;
         subClasses: SubClassConfig[];

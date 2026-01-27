@@ -88,20 +88,54 @@ export class PopulateManager {
                 continue;
             }
 
-            const value = await this.populateProperty(classConfig, populateConfig);
+            const result = await this.populatePropertyWithFallback(classConfig, populateConfig);
 
             // Handle required fields
-            if (value === null && populateConfig.required) {
+            if (result === null && populateConfig.required) {
                 return null; // Signal cancellation - caller will handle notice
             }
 
             // Store value if not null
-            if (value !== null) {
-                populatedValues[populateConfig.property] = value;
+            if (result !== null) {
+                populatedValues[result.property] = result.value;
             }
         }
 
         return populatedValues;
+    }
+
+    /**
+     * Populate a property with fallback support.
+     * If the user cancels or doesn't provide a value, tries the fallback config if available.
+     * @param classConfig The class configuration
+     * @param populateConfig The populate configuration (may include fallback)
+     * @returns Object with property name and value, or null if cancelled and no fallback succeeds
+     */
+    private async populatePropertyWithFallback(
+        classConfig: ClassConfig,
+        populateConfig: PopulateConfig
+    ): Promise<{ property: string; value: any } | null> {
+        let currentConfig = populateConfig;
+        
+        while (currentConfig) {
+            const value = await this.populateProperty(classConfig, currentConfig);
+            
+            // If we got a value, return it with the property name
+            if (value !== null && value !== undefined && value !== '') {
+                return { property: currentConfig.property, value };
+            }
+            
+            // If no value and there's a fallback, try it
+            if (currentConfig.fallback) {
+                console.log(`🔄 No value for "${currentConfig.property}", trying fallback: "${currentConfig.fallback.property}"`);
+                currentConfig = currentConfig.fallback;
+            } else {
+                // No more fallbacks, return null
+                return null;
+            }
+        }
+        
+        return null;
     }
 
     /**

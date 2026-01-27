@@ -91,10 +91,11 @@ export class DateProperty extends Property {
         return link;
     }
 
-    // Formate la date pour l'affichage : "26 février 2025"
+    // Formate la date pour l'affichage : "Lundi 26 février 2025"
     formatDateForDisplay(date: string): string {
         const parsedDate = new Date(date);
         return parsedDate.toLocaleDateString("fr-FR", { 
+            weekday: "long",
             day: "numeric", 
             month: "long", 
             year: "numeric" 

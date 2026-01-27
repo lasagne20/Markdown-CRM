@@ -344,9 +344,45 @@ export class Vault {
             // No need to continue
             return classe?.file;
         }
+        
+        // Determine the folder path for the new file
+        let folderPath = "";
+        
+        // Check if there's a parent provided
+        if (args.parent) {
+            // If parent exists, the file will be moved to the proper folder by onCreate/updateParentFolder
+            // So we don't set a folder path here
+            folderPath = "";
+        } else {
+            // No parent - check if the class has a folder configuration
+            try {
+                const factory = this.getDynamicClassFactory();
+                if (factory) {
+                    const classConfig = await factory.getClassConfig(classeType.name);
+                    if (classConfig?.folder) {
+                        folderPath = classConfig.folder;
+                        console.log(`📁 Using class folder: ${folderPath}`);
+                        
+                        // Ensure the folder exists
+                        const folder = await this.app.getFile(folderPath);
+                        if (!folder) {
+                            console.log(`📁 Creating folder: ${folderPath}`);
+                            await this.app.createFolder(folderPath);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn(`Could not load folder config for ${classeType.name}:`, error);
+            }
+        }
+        
         let templatePath = this.settings.templateFolder + "/" + classeType.name + ".md";
         const templateFile = await this.app.getFile(templatePath);
-        const newFilePath = name.includes(".md") ? name : `${name}.md`;
+        
+        // Build the file path with folder if specified
+        const fileName = name.includes(".md") ? name : `${name}.md`;
+        const newFilePath = folderPath ? `${folderPath}/${fileName}` : fileName;
+        
         const classePropertyName = this.app.getSettings().classePropertyName || "Classe";
         let templateContent = `---\n${classePropertyName}: ` + classeType.name + "\n---\n";
 
