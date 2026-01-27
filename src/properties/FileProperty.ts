@@ -22,6 +22,48 @@ export class FileProperty extends LinkProperty{
       return this.classes
     }
 
+    /**
+     * Validate a single file link using vault's functionality
+     * @param vault The vault instance to use for validation
+     * @param fileLink The file link to validate
+     * @returns Updated link if valid, null if unchanged, undefined if broken link
+     */
+    static async validateSingleFileLink(vault: Vault, fileLink: any): Promise<any> {
+        if (!fileLink || typeof fileLink !== 'string') {
+            return undefined; // Invalid input should be kept as-is
+        }
+
+        try {
+            // Use vault's existing getFromLink method
+            const foundClasse = await vault.getFromLink(fileLink, false);
+            if (foundClasse && foundClasse.getFile()) {
+                const foundPath = foundClasse.getFile()?.getPath();
+                if (foundPath) {
+                    const foundBaseName = foundPath.split('/').pop()?.replace('.md', '') || fileLink;
+                    const updatedValue = `[[${foundBaseName}]]`;
+                    
+                    // Only return if value actually changed
+                    return fileLink !== updatedValue ? updatedValue : null;
+                }
+            }
+
+            // File not found - return undefined to indicate broken link
+            console.warn(`⚠️ File not found for link: ${fileLink}`);
+            return undefined; // Special value to indicate "broken link, keep as-is"
+        } catch (error) {
+            console.error(`Error validating file link ${fileLink}:`, error);
+            return undefined;
+        }
+    }
+
+    /**
+     * Validate file link for this FileProperty
+     */
+    override async validateFileLinks(currentValue: any): Promise<any> {
+        // Handle single file value
+        return FileProperty.validateSingleFileLink(this.vault, currentValue);
+    }
+
     override getPretty(value: string) {
       return this.vault.readLinkFile(value)
     }

@@ -26,6 +26,43 @@ export class MultiFileProperty extends ObjectProperty {
         this.property.title = ""; // Pas de titre pour les éléments individuels
     }
 
+    /**
+     * Validate file links for this MultiFileProperty using FileProperty's logic
+     */
+    override async validateFileLinks(currentValue: any): Promise<any> {
+        if (!currentValue) return null;
+
+        let valuesToProcess = [];
+        let formatChanged = false;
+        
+        // Handle both arrays and single values
+        if (Array.isArray(currentValue)) {
+            valuesToProcess = currentValue;
+        } else {
+            valuesToProcess = [currentValue];
+            formatChanged = true; // Single value converted to array
+        }
+
+        const validatedFiles = [];
+        let hasChanges = formatChanged; // Start with format change status
+
+        for (const fileLink of valuesToProcess) {
+            // Use FileProperty's centralized validation logic
+            const result = await FileProperty.validateSingleFileLink(this.vault, fileLink);
+            
+            if (!result) {
+                validatedFiles.push(fileLink);
+            } else {
+                // File exists but link was updated
+                validatedFiles.push(result);
+                hasChanges = true;
+            }
+        }
+
+        // Return updated value only if there were changes
+        return hasChanges ? validatedFiles : null;
+    }
+
     override getClasses(): string[] {
         return this.classes;
     }

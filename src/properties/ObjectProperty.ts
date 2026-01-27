@@ -39,6 +39,55 @@ export class ObjectProperty extends Property{
         Object.assign(this, args);
     }
 
+    /**
+     * Validate file links within ObjectProperty arrays using centralized logic
+     */
+    override async validateFileLinks(currentValue: any): Promise<any> {
+        if (!currentValue || !Array.isArray(currentValue)) {
+            return null;
+        }
+
+        const updatedObjectArray = [];
+        let hasChanges = false;
+
+        for (const objectItem of currentValue) {
+            if (!objectItem || typeof objectItem !== 'object') {
+                updatedObjectArray.push(objectItem);
+                continue;
+            }
+
+            const updatedObject = { ...objectItem };
+            let objectChanged = false;
+
+            // Validate file properties within this object using their own validateFileLinks methods
+            for (const [subPropName, subProperty] of Object.entries(this.properties)) {
+                const subProp = subProperty as any;
+                if (subProp.type === 'file' || subProp.type === 'multiFile') {
+                    const subCurrentValue = objectItem[subPropName];
+                    if (!subCurrentValue) continue;
+
+                    // Delegate to the sub-property's own validation method
+                    const subValidatedValue = await subProp.validateFileLinks(subCurrentValue);
+                    
+                    if (subValidatedValue !== null && subValidatedValue !== undefined) {
+                        // Update valid property
+                        updatedObject[subPropName] = subValidatedValue;
+                        objectChanged = true;
+                        console.log(`📝 Updated object property '${this.name}.${subPropName}' from:`, subCurrentValue, 'to:', subValidatedValue);
+                    }
+                    // Note: Keep properties with broken links (when subValidatedValue === undefined)
+                }
+            }
+
+            if (objectChanged) {
+                hasChanges = true;
+            }
+            updatedObjectArray.push(updatedObject);
+        }
+
+        return hasChanges ? updatedObjectArray : null;
+    }
+
     getClasses(): string[]{
         for (let prop of Object.values(this.properties)){
             if (prop instanceof FileProperty || prop instanceof ObjectProperty || prop.type == "multiFile"){

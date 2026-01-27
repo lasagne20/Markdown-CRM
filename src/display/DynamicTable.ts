@@ -767,26 +767,30 @@ export class DynamicTable {
                 } else {
                     return item[targetProperty];
                 }
-            }).filter(value => value !== undefined && value !== null);
+            });
 
-            // If no valid values, return undefined
-            if (targetValues.length === 0) {
+            // Filter out undefined and null values, but keep empty strings
+            // Empty strings are valid values that should be returned
+            const validValues = targetValues.filter(value => value !== undefined && value !== null);
+
+            // If no valid values after filtering null/undefined, return undefined
+            if (validValues.length === 0) {
                 return undefined;
             }
 
             // For numeric values, return the sum
             // For other values, return the first one or concatenate strings
-            const firstValue = targetValues[0];
+            const firstValue = validValues[0];
             if (typeof firstValue === 'number') {
-                return targetValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
-            } else if (targetValues.length === 1) {
+                return validValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
+            } else if (validValues.length === 1) {
                 return firstValue;
             } else {
                 // Multiple non-numeric values - return array or concatenated string
                 if (typeof firstValue === 'string') {
-                    return targetValues.join(', ');
+                    return validValues.join(', ');
                 }
-                return targetValues;
+                return validValues;
             }
         }
 

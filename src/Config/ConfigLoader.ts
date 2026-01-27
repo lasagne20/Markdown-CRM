@@ -41,11 +41,9 @@ export class ConfigLoader {
      * Load a class configuration from YAML file
      */
     async loadClassConfig(className: string, isLoadingParent: boolean = false): Promise<ClassConfig> {
-        console.log(`🔍 Chargement de la config pour ${className}, cache:`, this.loadedConfigs.has(className));
-        
+
         if (this.loadedConfigs.has(className)) {
             const cached = this.loadedConfigs.get(className)!;
-            console.log(`📦 Config depuis cache pour ${className}, populate:`, cached.populate);
             return cached;
         }
 

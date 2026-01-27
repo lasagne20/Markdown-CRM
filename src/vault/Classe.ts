@@ -532,7 +532,11 @@ export class Classe {
                 const oldValue = oldMetadata[currentParentProperty.name];
                 const newValue = currentMetadata[currentParentProperty.name];
                 
-                if (oldValue === newValue) {
+                // Use deep comparison for complex objects (arrays, objects)
+                // JSON.stringify comparison handles nested objects and arrays properly
+                const valuesUnchanged = JSON.stringify(oldValue) === JSON.stringify(newValue);
+                
+                if (valuesUnchanged) {
                     // No change, skip update
                     console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged, skipping folder update`);
                     return;
@@ -700,6 +704,9 @@ export class Classe {
         console.log(`🔄 onUpdate called for ${this.file?.getPath()}`);
         await this.updateParentFolder();
 
+        // Validate and update file properties
+        await this.validateAndUpdateFileProperties();
+
         // Run onUpdate processes
         await this.runProcesses('onUpdate');
     }
@@ -708,6 +715,37 @@ export class Classe {
         // Run onDelete processes
         await this.runProcesses('onDelete');
         // Override in subclasses for additional pre-deletion logic
+    }
+
+    /**
+     * Validate and update all file properties by delegating to each property's validateFileLinks method
+     */
+    protected async validateAndUpdateFileProperties(): Promise<void> {
+        if (!this.file) return;
+
+        const metadata = await this.getMetadata();
+        let hasChanges = false;
+        const updates: Record<string, any> = { ...metadata };
+
+        for (const property of this.properties) {
+            const currentValue = metadata[property.name];
+            if (!currentValue) continue;
+
+            // Delegate validation to the property itself
+            const validatedValue = await property.validateFileLinks(currentValue);
+            
+            if (validatedValue !== null && validatedValue !== undefined) {
+                // Update property with validated value
+                updates[property.name] = validatedValue;
+                hasChanges = true;
+                console.log(`📝 Updated property '${property.name}' from:`, currentValue, 'to:', validatedValue);
+            }
+            // Note: Keep properties with broken links (when validatedValue === undefined)
+        }
+
+        if (hasChanges) {
+            await this.vault.app.updateMetadata(this.file.getFile(), updates);
+        }
     }
 
     /**

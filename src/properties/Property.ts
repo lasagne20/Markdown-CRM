@@ -26,6 +26,17 @@ export class Property {
     public type : string = "text";
 
     /**
+     * Validate and update file links within this property's value
+     * Override in properties that contain file references
+     * @param currentValue Current property value from metadata
+     * @returns Updated value with validated file links, or null if no changes
+     */
+    async validateFileLinks(currentValue: any): Promise<any> {
+        // Base implementation - no file validation needed
+        return null;
+    }
+
+    /**
      * Property constructor.
      * Initializes a property with its name, vault, and configuration options.
      * 
