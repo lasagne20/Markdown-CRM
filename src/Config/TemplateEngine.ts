@@ -162,8 +162,8 @@ export class TemplateEngine {
                 const property = instance.getProperty(placeholder);
                 if (property && typeof property.getPretty === 'function') {
                     // Skip getPretty for date properties to preserve raw format (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)
-                    const isDateProperty = property.constructor.name === 'DateProperty' || 
-                                          property.constructor.name === 'RangeDateProperty';
+                    // Use property.type instead of constructor.name for reliable detection
+                    const isDateProperty = property.type === 'date' || property.type === 'dateRange';
                     
                     if (!isDateProperty) {
                         // Use getPretty for non-date properties
@@ -177,8 +177,16 @@ export class TemplateEngine {
                         }
                     } else {
                         // For date properties, use raw value to preserve YYYY-MM-DD format
-                        value = metadata[placeholder];
-                        console.log(`  📅 {${placeholder}} = "${value}" (date property - raw format)`);
+                        // For dateRange, extract only the start date from the range
+                        const rawValue = metadata[placeholder];
+                        if (property.type === 'dateRange' && typeof rawValue === 'string') {
+                            const { RangeDateProperty } = require('../properties/RangeDateProperty');
+                            value = RangeDateProperty.extractStartDateFromRange(rawValue);
+                            console.log(`  📅 {${placeholder}} = "${value}" (dateRange - extracted start date from "${rawValue}")`);
+                        } else {
+                            value = rawValue;
+                            console.log(`  📅 {${placeholder}} = "${value}" (date property - raw format)`);
+                        }
                     }
                 } else {
                     // Fallback to metadata value
