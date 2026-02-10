@@ -110,6 +110,7 @@ export class TextProperty extends Property {
 
     dropdown = document.createElement("div");
     dropdown.classList.add("autocomplete-dropdown");
+    dropdown.style.position = "absolute";
 
     const cursorPosition = textarea.selectionStart || 0;
     const textBeforeCursor = textarea.value.substring(0, cursorPosition);
@@ -167,10 +168,6 @@ export class TextProperty extends Property {
     });
 
     textarea.parentElement?.appendChild(dropdown);
-    // Adjust the parent's style to position the dropdown correctly
-    const parent = textarea.parentElement as HTMLElement;
-    parent.style.position = "flex";
-    parent.style.flexDirection = "column";
 
     let selectedIndex = -1;
 

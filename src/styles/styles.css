@@ -1043,11 +1043,6 @@ If your plugin does not need CSS, delete this file.
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: 8px;
-    padding: 10px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 6px;
-    background-color: var(--background-secondary);
 }
 
 /* Style for autocomplete dropdown */
@@ -1102,14 +1097,15 @@ If your plugin does not need CSS, delete this file.
     width: 100%;
     padding: 10px;
     font-size: 16px;
-    color: var(--text-accent);
+    color: var(--text-normal);
     background-color: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 6px;
     word-wrap: break-word;
     white-space: pre-wrap;
-    cursor: pointer;
     overflow-wrap: break-word;
+    max-height: 150px;
+    overflow-y: auto;
 }
 
 
