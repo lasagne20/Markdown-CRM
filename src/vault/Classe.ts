@@ -154,13 +154,17 @@ export class Classe {
     }
     
     async updatePropertyValue(propertyName: string, value: any): Promise<void> {
-        // Get old metadata and parent property before update
-        const metadata = await this.getMetadata() || {};
+        // Get old metadata and parent property before update.
+        // Deep-copy immediately so mutations below don't corrupt the "old" snapshot
+        // that updateMetadata() will read back via this.getMetadata().
+        const rawMetadata = await this.getMetadata() || {};
+        const metadata = JSON.parse(JSON.stringify(rawMetadata));
+
         // Deep copy the old value to preserve it for comparison
         // Handle undefined/null values that can't be JSON stringified
-        const oldValue = metadata[propertyName] !== undefined && metadata[propertyName] !== null
-            ? JSON.parse(JSON.stringify(metadata[propertyName]))
-            : metadata[propertyName];
+        const oldValue = rawMetadata[propertyName] !== undefined && rawMetadata[propertyName] !== null
+            ? JSON.parse(JSON.stringify(rawMetadata[propertyName]))
+            : rawMetadata[propertyName];
         
         metadata[propertyName] = value;
         await this.updateMetadata(metadata);
