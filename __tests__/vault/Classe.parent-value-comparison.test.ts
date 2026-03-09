@@ -22,8 +22,8 @@ class TestableClasse extends Classe {
         return await this.getParentProperty();
     }
 
-    public async testUpdateParentFolder(oldMetadata?: Record<string, any>, oldParentProperty?: any) {
-        return await this.updateParentFolder(oldMetadata, oldParentProperty);
+    public async testUpdateParentFolder(oldMetadata?: Record<string, any>, oldParentProperty?: any, newMetadata?: Record<string, any>) {
+        return await this.updateParentFolder(oldMetadata, oldParentProperty, newMetadata);
     }
 
     // Add property method for testing
@@ -99,6 +99,85 @@ const mockVault = {
     createClasse: jest.fn(),
     listFiles: jest.fn().mockResolvedValue([])
 } as unknown as Vault;
+
+describe('Classe - REGRESSION: stale cache causes parent folder not to move', () => {
+    // Bug: when the user changes the institution inside postes (ObjectProperty),
+    // updateParentFolder reads the "new" metadata via this.getMetadata() — but the
+    // Obsidian metadata cache hasn't refreshed yet, so it still returns the OLD value.
+    // oldValue === newValue → "unchanged" → file doesn't move.
+    //
+    // Fix: updateMetadata() passes its `metadata` argument as the new metadata to
+    // updateParentFolder instead of re-reading from cache.
+
+    let classe: TestableClasse;
+    let postesProperty: ObjectProperty;
+    let parentFileOld: MockFile;
+    let parentFileNew: MockFile;
+    let childFile: MockFile;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        parentFileOld = new MockFile('InstA.md', '/vault/institutions/InstA.md', 'InstA', 'md', { path: '/vault/institutions' });
+        parentFileNew = new MockFile('InstB.md', '/vault/institutions/InstB.md', 'InstB', 'md', { path: '/vault/institutions' });
+        childFile    = new MockFile('Martin.md', '/vault/institutionsA/Pers/Martin.md', 'Martin', 'md', { path: '/vault/institutionsA/Pers' });
+
+        classe = new TestableClasse(mockVault);
+        classe.setFile(new File(mockVault, childFile as any));
+
+        const institutionProperty = new FileProperty('institution', mockVault, ['Institution'], {});
+        const posteProperty = new TextProperty('poste', mockVault, {});
+
+        postesProperty = new ObjectProperty('postes', mockVault, {
+            institution: institutionProperty,
+            poste: posteProperty
+        }, {});
+        classe.addProperty(postesProperty);
+
+        // institution changed to InstB → getParentFile returns new parent
+        jest.spyOn(institutionProperty, 'getParentFile').mockResolvedValue(new File(mockVault, parentFileNew as any));
+
+        mockApp.getFile.mockReturnValue(null);
+        mockApp.getAbstractFileByPath.mockReturnValue(parentFileNew);
+    });
+
+    it('REGRESSION: file should move when institution inside postes changes (stale cache bug)', async () => {
+        const oldPostes = [{ institution: '[[InstA.md|InstA]]', poste: 'Dev' }];
+        const newPostes = [{ institution: '[[InstB.md|InstB]]', poste: 'Dev' }];
+
+        const oldMetadata = { classe: 'Personne', postes: oldPostes };
+        const newMetadata = { classe: 'Personne', postes: newPostes };
+
+        // Simulate stale cache: getMetadata() still returns OLD values even after write
+        mockApp.getMetadata.mockResolvedValue(oldMetadata);
+
+        const currentParentProperty = await classe.testGetParentProperty();
+
+        // The fix passes newMetadata explicitly so the cache is never read
+        await classe.testUpdateParentFolder(oldMetadata, currentParentProperty, newMetadata);
+
+        // ✅ move must have been called — file has to go to new parent folder
+        expect(mockApp.move).toHaveBeenCalled();
+    });
+
+    it('should NOT move when postes genuinely unchanged (stale cache scenario)', async () => {
+        const samePostes = [{ institution: '[[InstA.md|InstA]]', poste: 'Dev' }];
+        const oldMetadata = { classe: 'Personne', postes: samePostes };
+
+        // getMetadata returns same value (correct: no change)
+        mockApp.getMetadata.mockResolvedValue(oldMetadata);
+
+        const currentParentProperty = await classe.testGetParentProperty();
+
+        const consoleSpy = jest.spyOn(console, 'log');
+        // Pass same metadata as new → should skip
+        await classe.testUpdateParentFolder(oldMetadata, currentParentProperty, { ...oldMetadata });
+
+        const skipped = consoleSpy.mock.calls.find(c => c[0]?.includes('unchanged, skipping'));
+        expect(skipped).toBeDefined();
+        expect(mockApp.move).not.toHaveBeenCalled();
+    });
+});
 
 describe('Classe Parent Value Comparison Bug', () => {
     let classe: TestableClasse;

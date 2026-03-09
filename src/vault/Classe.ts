@@ -150,7 +150,7 @@ export class Classe {
         await this.vault.app.updateMetadata(this.file, metadata);
         
         // Let updateParentFolder decide if it needs to do anything
-        await this.updateParentFolder(oldMetadata, oldParentProperty);
+        await this.updateParentFolder(oldMetadata, oldParentProperty, metadata);
     }
     
     async updatePropertyValue(propertyName: string, value: any): Promise<void> {
@@ -512,7 +512,7 @@ export class Classe {
      * - Move this (child) file into parent's folder
      * - Recursively move all children of this file to the parent's folder
      */
-    protected async updateParentFolder(oldMetadata?: Record<string, any>, oldParentProperty?: Property): Promise<void> {
+    protected async updateParentFolder(oldMetadata?: Record<string, any>, oldParentProperty?: Property, newMetadata?: Record<string, any>): Promise<void> {
         if (!this.file) {
             return;
         }
@@ -527,9 +527,11 @@ export class Classe {
             }
             // Case 2: Same parent property, check if value changed
             else if (currentParentProperty) {
-                const currentMetadata = await this.getMetadata();
+                // Use the explicitly-passed newMetadata when available (avoids stale cache reads).
+                // Fallback to this.getMetadata() only when called without the new metadata argument.
+                const resolvedNewMetadata = newMetadata ?? await this.getMetadata();
                 const oldValue = oldMetadata[currentParentProperty.name];
-                const newValue = currentMetadata[currentParentProperty.name];
+                const newValue = resolvedNewMetadata[currentParentProperty.name];
                 
                 // Use deep comparison for complex objects (arrays, objects)
                 // JSON.stringify comparison handles nested objects and arrays properly
