@@ -84,6 +84,8 @@ describe('ObjectProperty', () => {
 
         mockFile = {
             updateMetadata: jest.fn(),
+            updatePropertyValue: jest.fn().mockResolvedValue(undefined),
+            getVault: jest.fn().mockReturnValue(mockVault),
             vault: mockVault,
             read: jest.fn()
         } as any;

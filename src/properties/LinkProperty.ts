@@ -24,18 +24,32 @@ export class LinkProperty extends Property{
 
 
     override validate(url: string) {
-      // Ajoute le préfixe "http://" si l'URL ne commence pas par http:// ou https://
+      // Guard against null/undefined (e.g. empty YAML field like "portable:")
+      if (url == null || typeof url !== 'string') return '';
+
       let fixedUrl = url.trim();
-  
-      // Si le lien ne commence pas par http:// ou https://, ajoute "http://"
+      if (!fixedUrl) return '';
+
+      // Add http:// prefix if no protocol present
       if (!/^https?:\/\//i.test(fixedUrl)) {
-          fixedUrl = "http://" + fixedUrl;
+          fixedUrl = 'http://' + fixedUrl;
       }
-      const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9_-]+\.)+[a-zA-Z]{2,6}(\/[a-zA-Z0-9_-]+)*\/?$/;
-      if (!urlRegex.test(fixedUrl)) {
-          return "";
+
+      // Use the native URL parser — handles accents, ports, query strings,
+      // fragments, percent-encoded characters, international paths, etc.
+      try {
+          const parsed = new URL(fixedUrl);
+          // Hostname must have at least one non-empty label on each side of a dot,
+          // e.g. reject '.com' (['', 'com']) or 'test.' (['test', ''])
+          const isLocalhost = parsed.hostname === 'localhost';
+          const labels = parsed.hostname.split('.');
+          if (!isLocalhost && (labels.length < 2 || labels.some(l => l.length === 0))) {
+              return '';
+          }
+          return fixedUrl;
+      } catch {
+          return '';
       }
-      return fixedUrl;
     }
 
 

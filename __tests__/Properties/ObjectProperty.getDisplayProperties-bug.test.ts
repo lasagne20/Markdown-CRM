@@ -20,6 +20,7 @@ describe('ObjectProperty - BUG REPRODUCTION: getDisplayProperties with file.upda
     let mockApp: any;
     let mockFile: File;
     let mockIFile: any;
+    let mockClasse: any; // ✅ Classe mock for fixed tests
 
     beforeEach(() => {
         document.body.innerHTML = '';
@@ -41,15 +42,21 @@ describe('ObjectProperty - BUG REPRODUCTION: getDisplayProperties with file.upda
             getName: jest.fn().mockReturnValue('target-file.md')
         };
 
-        // File wrapper
+        // File wrapper (kept for COMPARISON test)
         mockFile = new File(mockVault, mockIFile);
         
         // Mock File.updateMetadata pour simuler l'approche problématique qui écrase
         mockFile.updateMetadata = jest.fn().mockImplementation(async (key: string, value: any) => {
             // ❌ APPROCHE PROBLÉMATIQUE : On écrase tout en ne gardant que la nouvelle propriété
-            // C'est exactement ce qui cause le bug !
+            // C'est exactement ce qui causait le bug !
             await mockApp.updateMetadata(mockIFile, { [key]: value });
         });
+
+        // ✅ Classe mock — delegates via updatePropertyValue
+        mockClasse = {
+            updatePropertyValue: jest.fn().mockResolvedValue(undefined),
+            getVault: jest.fn().mockReturnValue(mockVault),
+        };
 
         // Mock des propriétés pour l'ObjectProperty
         const mockTextProperty = Object.create(Property.prototype);
@@ -94,17 +101,16 @@ describe('ObjectProperty - BUG REPRODUCTION: getDisplayProperties with file.upda
         );
     });
 
-    test('REPRODUCTION: getDisplayProperties should NOT directly use file.updateMetadata', async () => {
+    test('FIX CONFIRMED: getDisplayProperties uses classe.updatePropertyValue, not app.updateMetadata directly', async () => {
         /**
-         * ⚠️ PROBLÈME IDENTIFIÉ:
-         * Dans getDisplayProperties (ligne 91), la callback fait :
-         * `async (value) => await file.updateMetadata(this.name, value)`
+         * ✅ CORRECTION APPLIQUÉE:
+         * getDisplayProperties attend désormais un Classe (plus un File).
+         * La callback fait maintenant :
+         * `async (value) => await classe.updatePropertyValue(this.name, value)`
          * 
-         * Au lieu de passer par Classe.updatePropertyValue !
-         * Ceci peut écraser les autres propriétés du fichier.
+         * Ainsi toute la logique Classe.updateMetadata (dont updateParentFolder) est respectée.
          */
         
-        // 📄 ÉTAT INITIAL : Fichier avec données existantes + ObjectProperty
         const existingMetadata = {
             titre: 'Fichier Important',
             description: 'Description importante',
@@ -127,48 +133,26 @@ describe('ObjectProperty - BUG REPRODUCTION: getDisplayProperties with file.upda
             getPropertyValue: jest.fn().mockResolvedValue('mocked-value')
         } as any));
         
-        // 🎯 REPRODUCTION : Appel de getDisplayProperties
-        const displayProperties = await objectProperty.getDisplayProperties(mockFile, 'client', 'nom');
+        // ✅ Appel avec mockClasse (Classe-compatible)
+        const displayProperties = await objectProperty.getDisplayProperties(mockClasse, 'client', 'nom');
         
         expect(displayProperties).toHaveLength(2);
         
-        // 🔍 SIMULATION : L'utilisateur modifie une valeur dans l'interface
-        // Ceci va déclencher la callback problématique
+        // L'utilisateur modifie une valeur dans l'interface
         const firstDisplay = displayProperties[0].display;
-        
-        // firstDisplay EST l'input (retourné directement par fillDisplay)
         expect(firstDisplay.tagName).toBe('INPUT');
         
-        // 💥 TRIGGER DU BUG : Changer la valeur déclenche file.updateMetadata directement
         firstDisplay.value = 'Nouveau nom du projet';
         await firstDisplay.dispatchEvent(new Event('change'));
         
-        // 🕵️ VÉRIFICATION : Qu'est-ce qui a été appelé ?
+        // ✅ FIX: classe.updatePropertyValue est appelé
+        expect(mockClasse.updatePropertyValue).toHaveBeenCalledWith(
+            'projets',
+            expect.arrayContaining([expect.objectContaining({ nom: 'Nouveau nom du projet' })])
+        );
         
-        // file.updateMetadata devrait avoir été appelé via updateObject
-        expect(mockApp.updateMetadata).toHaveBeenCalled();
-        
-        // 🔍 INSPECTION : Le metadata final contient-il toutes les propriétés ?
-        const updateCall = mockApp.updateMetadata.mock.calls[0];
-        const updatedMetadata = updateCall[1];
-        
-        // ❌ LE BUG DÉMONTRÉ : Les propriétés sont écrasées !
-        // Avec l'approche directe de file.updateMetadata, on perd les autres propriétés
-        expect(updatedMetadata.titre).toBeUndefined(); // ❌ Écrasé !
-        expect(updatedMetadata.description).toBeUndefined(); // ❌ Écrasé !
-        expect(updatedMetadata.statut).toBeUndefined(); // ❌ Écrasé !
-        
-        // Seule la propriété projets est conservée
-        expect(updatedMetadata.projets).toBeDefined();
-        expect(updatedMetadata.projets[0].nom).toBe('Nouveau nom du projet');
-        
-        // La modification doit être présente
-        expect(updatedMetadata.projets).toEqual([
-            { client: 'client1.md', nom: 'Nouveau nom du projet' },
-            { client: 'client2.md', nom: 'Projet 2' }
-        ]);
-        
-        // Ce test peut échouer si file.updateMetadata écrase les autres propriétés !
+        // ✅ FIX: app.updateMetadata n'est PAS appelé directement
+        expect(mockApp.updateMetadata).not.toHaveBeenCalled();
     });
 
     test('COMPARISON: Direct file.updateMetadata vs proper metadata handling', async () => {
@@ -212,5 +196,101 @@ describe('ObjectProperty - BUG REPRODUCTION: getDisplayProperties with file.upda
         expect(correctMetadata.titre).toBe('Document'); // ✅ Préservé !
         expect(correctMetadata.description).toBe('Important'); // ✅ Préservé !
         expect(correctMetadata.projets[0].nom).toBe('Modifié - Correct');
+    });
+});
+
+describe('ObjectProperty - FIX: getDisplayProperties should use Classe.updatePropertyValue', () => {
+    let mockVault: jest.Mocked<Vault>;
+    let objectProperty: ObjectProperty;
+    let mockApp: any;
+    let mockClasse: any;
+
+    beforeEach(() => {
+        document.body.innerHTML = '';
+        jest.clearAllMocks();
+
+        mockApp = {
+            getMetadata: jest.fn(),
+            updateMetadata: jest.fn(),
+            setIcon: jest.fn()
+        };
+
+        mockVault = { app: mockApp, getFromLink: jest.fn() } as any;
+
+        // ✅ A Classe mock — has updatePropertyValue, NOT updateMetadata
+        mockClasse = {
+            updatePropertyValue: jest.fn().mockResolvedValue(undefined),
+            getVault: jest.fn().mockReturnValue(mockVault),
+            // Intentionally omit updateMetadata to prove it's never called
+        };
+
+        const mockTextProperty = Object.create(Property.prototype);
+        Object.assign(mockTextProperty, {
+            name: 'nom',
+            type: 'text',
+            getDefaultValue: jest.fn().mockReturnValue(''),
+            fillDisplay: jest.fn((value: any, updateCallback: any) => {
+                const input = document.createElement('input');
+                input.value = value || '';
+                input.addEventListener('change', async () => {
+                    await updateCallback(input.value);
+                });
+                return input;
+            })
+        });
+
+        const mockFileProperty = Object.create(Property.prototype);
+        Object.assign(mockFileProperty, {
+            name: 'client',
+            type: 'file',
+            getDefaultValue: jest.fn().mockReturnValue(''),
+            fillDisplay: jest.fn().mockReturnValue(document.createElement('input'))
+        });
+
+        objectProperty = new ObjectProperty('projets', mockVault, {
+            'client': mockFileProperty,
+            'nom': mockTextProperty
+        });
+
+        objectProperty.read = jest.fn().mockResolvedValue([
+            { client: '[[client1]]', nom: 'Projet 1' },
+        ]);
+
+        objectProperty.updateObject = jest.fn().mockImplementation(
+            async (values: any[], updateCallback: any, index: number, property: any, value: any) => {
+                values[index][property.name] = value;
+                await updateCallback(values);
+            }
+        );
+
+        mockVault.getFromLink.mockResolvedValue({ getName: () => 'client1' } as any);
+    });
+
+    test('should call classe.updatePropertyValue (not file.updateMetadata) when user edits a value', async () => {
+        // Regression: getDisplayProperties used to call file.updateMetadata(this.name, value)
+        // which bypasses Classe.updateMetadata() and its updateParentFolder() logic.
+        // After fix: it calls classe.updatePropertyValue(this.name, value) like every other property.
+
+        const displayProperties = await objectProperty.getDisplayProperties(
+            mockClasse,
+            'client',
+            'nom'
+        );
+
+        expect(displayProperties).toHaveLength(1);
+
+        // Simulate user editing the value
+        const input = displayProperties[0].display;
+        input.value = 'Projet Modifié';
+        await input.dispatchEvent(new Event('change'));
+
+        // ✅ Must go through Classe.updatePropertyValue
+        expect(mockClasse.updatePropertyValue).toHaveBeenCalledWith(
+            'projets',
+            expect.arrayContaining([expect.objectContaining({ nom: 'Projet Modifié' })])
+        );
+
+        // ❌ Must NOT call app.updateMetadata directly
+        expect(mockApp.updateMetadata).not.toHaveBeenCalled();
     });
 });

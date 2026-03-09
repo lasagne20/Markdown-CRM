@@ -1,4 +1,3 @@
-import { File } from '../vault/File';
 import { Classe } from '../vault/Classe';
 import { LinkProperty } from './LinkProperty';
 import { Vault } from '../vault/Vault';
@@ -20,17 +19,15 @@ export class FormulaProperty extends LinkProperty {
         return value;
     }
 
-    override async read(file: File | Classe) : Promise<any> {
-        // Get all properties from the file or classe
-        const allFileProperties = file.getAllProperties() || {};
+    override async read(classe: Classe) : Promise<any> {
+        // Get all properties from the classe
+        const allFileProperties = classe.getAllProperties() || {};
         // Convert properties to their actual values
         const allProperties: Record<string, any> = {};
         
         for (const [key, prop] of Object.entries(allFileProperties)) {
             if (key !== this.name) { // Exclude self to avoid circular reference
-                allProperties[key] = file instanceof File 
-                    ? await file.getMetadataValue(key)
-                    : await (file as Classe).getPropertyValue(key);
+                allProperties[key] = await classe.getPropertyValue(key);
             }
         }
         
@@ -41,9 +38,7 @@ export class FormulaProperty extends LinkProperty {
                 return acc;
             }, {} as Record<string, any>);
 
-            const getName = file instanceof File 
-                ? () => file.getName(false)
-                : () => (file as Classe).getName();
+            const getName = () => classe.getName();
 
             const formulaContent = 
                 `
@@ -53,19 +48,13 @@ export class FormulaProperty extends LinkProperty {
                     ${this.formula.includes("return") ? "" : "return "}${this.formula};
                 `;
 
-            const vault = file instanceof File ? file.vault : (file as Classe).getVault();
+            const vault = classe.getVault();
             const formulaFunction = new Function("vault", "file", formulaContent);
-            let value = formulaFunction(vault, file);
+            let value = formulaFunction(vault, classe);
             if (this.write) {
-                let currentValue = file instanceof File
-                    ? await file.getMetadataValue(this.name)
-                    : await (file as Classe).getPropertyValue(this.name);
+                let currentValue = await classe.getPropertyValue(this.name);
                 if (currentValue !== value){
-                    if (file instanceof File) {
-                        await file.updateMetadata(this.name, value);
-                    } else {
-                        await (file as Classe).updatePropertyValue(this.name, value);
-                    }
+                    await classe.updatePropertyValue(this.name, value);
                 } 
             }
             return value;

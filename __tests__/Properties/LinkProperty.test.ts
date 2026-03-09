@@ -121,10 +121,9 @@ describe('LinkProperty', () => {
                 'http://',
                 'https://',
                 'example',
-                'test.',
                 '.com',
                 'http://.',
-                'ftp://example.com', // Wrong protocol format
+                'ftp://example.com', // not http/https protocol
                 'example..com',
                 '   ',
                 ''
@@ -140,15 +139,47 @@ describe('LinkProperty', () => {
             expect(linkProperty.validate(' https://test.org ')).toBe('https://test.org');
         });
 
+        it('should return empty string for undefined (empty YAML field like "portable:")', () => {
+            // Regression test: when a field is empty in YAML, metadata returns undefined.
+            // validate() must not throw "Cannot read properties of undefined (reading 'trim')".
+            expect(() => linkProperty.validate(undefined as any)).not.toThrow();
+            expect(linkProperty.validate(undefined as any)).toBe('');
+        });
+
+        it('should return empty string for null value', () => {
+            expect(() => linkProperty.validate(null as any)).not.toThrow();
+            expect(linkProperty.validate(null as any)).toBe('');
+        });
+
         it('should handle case insensitive protocols', () => {
-            // The regex appears to be case-sensitive, so uppercase protocols are rejected
-            expect(linkProperty.validate('HTTP://example.com')).toBe('');
-            expect(linkProperty.validate('HTTPS://test.org')).toBe('');
-            expect(linkProperty.validate('Http://mixed.case')).toBe('');
-            
-            // But lowercase works
+            // Native URL parser is case-insensitive for protocols
+            expect(linkProperty.validate('HTTP://example.com')).toBe('HTTP://example.com');
+            expect(linkProperty.validate('HTTPS://test.org')).toBe('HTTPS://test.org');
             expect(linkProperty.validate('http://example.com')).toBe('http://example.com');
             expect(linkProperty.validate('https://test.org')).toBe('https://test.org');
+        });
+
+        it('should accept URLs with accented characters in the path', () => {
+            // Regression: the old hand-crafted regex rejected accents (é, è, à, etc.)
+            expect(linkProperty.validate('https://example.com/résumé')).toBe('https://example.com/résumé');
+            expect(linkProperty.validate('https://example.com/café')).toBe('https://example.com/café');
+            expect(linkProperty.validate('exemple.com/voilà')).toBe('http://exemple.com/voilà');
+        });
+
+        it('should accept LinkedIn and other URLs with complex paths', () => {
+            expect(linkProperty.validate('https://www.linkedin.com/in/jean-dupont')).toBe('https://www.linkedin.com/in/jean-dupont');
+            expect(linkProperty.validate('linkedin.com/in/jean-dupont')).toBe('http://linkedin.com/in/jean-dupont');
+            expect(linkProperty.validate('https://github.com/user/repo')).toBe('https://github.com/user/repo');
+        });
+
+        it('should accept URLs with query strings and fragments', () => {
+            expect(linkProperty.validate('https://example.com/search?q=test&page=1')).toBe('https://example.com/search?q=test&page=1');
+            expect(linkProperty.validate('https://docs.example.com/guide#section')).toBe('https://docs.example.com/guide#section');
+        });
+
+        it('should accept URLs with ports', () => {
+            expect(linkProperty.validate('https://localhost:3000')).toBe('https://localhost:3000');
+            expect(linkProperty.validate('http://example.com:8080/api')).toBe('http://example.com:8080/api');
         });
 
         it('should validate complex domain structures', () => {
@@ -433,6 +464,48 @@ describe('LinkProperty', () => {
             const complexUrl = 'https://example.com/path?query=value#fragment';
             const pretty = linkProperty.getPretty(complexUrl);
             expect(pretty).toBe('example.com/path');
+        });
+    });
+
+    describe('updateField - no longer stuck in edit mode', () => {
+        it('should hide input and show link even when validate() returns empty (invalid URL)', async () => {
+            // Regression: when validate() returned '' the else-branch ran without hiding the input,
+            // leaving the field stuck in edit mode.
+            const input = document.createElement('input');
+            input.classList.add('field-input');
+            input.value = 'not-a-valid-url';
+            input.style.display = 'block';
+
+            const link = document.createElement('div');
+            link.classList.add('field-link');
+            link.style.display = 'none';
+
+            const mockUpdate = jest.fn().mockResolvedValue(undefined);
+
+            await linkProperty.updateField(mockUpdate, input, link);
+
+            // Must always exit edit mode regardless of validation result
+            expect(input.style.display).toBe('none');
+            expect(link.style.display).toBe('block');
+            expect(mockUpdate).toHaveBeenCalledWith('not-a-valid-url');
+        });
+
+        it('should use validated value when URL is valid', async () => {
+            const input = document.createElement('input');
+            input.value = 'linkedin.com/in/test';
+            input.style.display = 'block';
+
+            const link = document.createElement('div');
+            link.style.display = 'none';
+
+            const mockUpdate = jest.fn().mockResolvedValue(undefined);
+
+            await linkProperty.updateField(mockUpdate, input, link);
+
+            expect(input.style.display).toBe('none');
+            expect(link.style.display).toBe('block');
+            // Validated value should have http:// prefix added
+            expect(mockUpdate).toHaveBeenCalledWith('http://linkedin.com/in/test');
         });
     });
 });

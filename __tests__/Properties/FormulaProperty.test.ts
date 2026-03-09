@@ -287,6 +287,44 @@ describe('FormulaProperty', () => {
                 expect(result).toBe(120);
                 expect(mockFile.updatePropertyValue).not.toHaveBeenCalled();
             });
+
+            test('should always use classe.getPropertyValue, never file.getMetadataValue', async () => {
+                // Regression: FormulaProperty.read() had an `instanceof File` branch
+                // that called file.getMetadataValue() instead of classe.getPropertyValue().
+                // Properties are always called on a Classe — the File path is dead code
+                // and should be removed.
+                const writeFormula = new FormulaProperty('result', mockVault, 'a + b', {
+                    icon: '', write: true
+                });
+
+                const getMetadataValueSpy = jest.fn();
+                // Add getMetadataValue to the mock to detect if the wrong path is taken
+                (mockFile as any).getMetadataValue = getMetadataValueSpy;
+
+                mockFile.getAllProperties.mockReturnValue({
+                    a: { name: 'a' } as any,
+                    b: { name: 'b' } as any,
+                    result: { name: 'result' } as any
+                });
+                mockFile.getPropertyValue.mockImplementation(async (key: string) => {
+                    if (key === 'a') return 3;
+                    if (key === 'b') return 4;
+                    if (key === 'result') return 0; // old value
+                    return null;
+                });
+
+                await writeFormula.read(mockFile);
+
+                // ✅ Must use classe.getPropertyValue (Classe path)
+                expect(mockFile.getPropertyValue).toHaveBeenCalledWith('a');
+                expect(mockFile.getPropertyValue).toHaveBeenCalledWith('b');
+
+                // ❌ Must NOT call getMetadataValue (File path — dead code)
+                expect(getMetadataValueSpy).not.toHaveBeenCalled();
+
+                // ✅ Must use classe.updatePropertyValue for write
+                expect(mockFile.updatePropertyValue).toHaveBeenCalledWith('result', 7);
+            });
         });
     });
 

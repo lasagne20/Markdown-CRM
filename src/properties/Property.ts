@@ -406,18 +406,18 @@ export class Property {
      * @param link - Link element to update and show
      */
     async updateField(update: (value: string) => Promise<void>, input: HTMLInputElement | HTMLTextAreaElement, link: HTMLElement) {
-        let value = this.validate(input.value);
-        if (value) {
-            await update(value);
-            input.style.display = "none";
-            link.textContent = value;
-            if ((link as HTMLAnchorElement).href){
-                (link as HTMLAnchorElement).href = this.getLink(value);
-            }
-            link.style.display = "block";
-        } else {
-            await update(input.value);
+        const validated = this.validate(input.value);
+        // Use the validated value when available, otherwise keep the raw input
+        // (avoids trapping the user in edit mode when validation returns '')
+        const toSave = validated !== '' ? validated : input.value;
+        await update(toSave);
+        // Always exit edit mode — never leave the input stuck open
+        input.style.display = "none";
+        link.textContent = this.getPretty(toSave) || toSave;
+        if ((link as HTMLAnchorElement).href) {
+            (link as HTMLAnchorElement).href = this.getLink(toSave);
         }
+        link.style.display = "block";
     }
 
     /**

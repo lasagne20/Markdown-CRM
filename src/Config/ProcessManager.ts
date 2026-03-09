@@ -255,11 +255,11 @@ export class ProcessManager {
         console.log(`🔄 Updating class from ${currentClass} to ${newClass}`);
 
         try {
-            // Update the Classe property in the file metadata
+            // Update the Classe property via the instance so updateParentFolder() runs
             const settings = this.vault.app.getSettings();
             const classePropertyName = settings.classePropertyName || 'Classe';
             
-            await file.updateMetadata(classePropertyName, newClass);
+            await instance.updatePropertyValue(classePropertyName, newClass);
             
             console.log(`✅ Class updated successfully to ${newClass}`);
             

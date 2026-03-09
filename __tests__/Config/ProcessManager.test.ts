@@ -229,7 +229,10 @@ describe('ProcessManager', () => {
 
             await processManager.runProcesses('Personne', mockInstance, 'onPropertyChange', 'relation');
 
-            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(mockFile, { 'Classe': 'Salarié' });
+            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(
+                expect.objectContaining({ path: 'test/path.md' }),
+                { 'Classe': 'Salarié' }
+            );
         });
 
         it('should skip process when trigger does not match', async () => {
@@ -346,7 +349,10 @@ describe('ProcessManager', () => {
 
             await processManager.runProcesses('Personne', mockInstance, 'onUpdate');
 
-            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(mockFile, { 'Classe': 'Salarié' });
+            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(
+                expect.objectContaining({ path: 'test/path.md' }),
+                { 'Classe': 'Salarié' }
+            );
         });
 
         it('should update display after UpdateClassAction', async () => {
@@ -409,7 +415,10 @@ describe('ProcessManager', () => {
             // Get display after class change
             const updatedDisplay = await mockInstance.getDisplay();
             expect(updatedDisplay.querySelector('.classe-header')?.textContent).toBe('Salarié');
-            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(mockFile, { 'Classe': 'Salarié' });
+            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(
+                expect.objectContaining({ path: 'test/path.md' }),
+                { 'Classe': 'Salarié' }
+            );
             expect(mockVault.app.needDisplayRefresh).toHaveBeenCalled();
         });
 
@@ -475,8 +484,11 @@ describe('ProcessManager', () => {
             // Execute the process that changes the class
             await processManager.runProcesses('Personne', mockInstance, 'onPropertyChange', 'relation');
 
-            // Verify metadata was updated
-            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(mockFile, { 'Classe': 'Salarié' });
+            // Verify metadata was updated (Classe.updatePropertyValue → Classe.updateMetadata → vault.app.updateMetadata)
+            expect(mockVault.app.updateMetadata).toHaveBeenCalledWith(
+                expect.objectContaining({ path: 'test/path.md' }),
+                { 'Classe': 'Salarié' }
+            );
 
             // Verify that the vault cache should be updated
             // The cached instance should now be of the new class type

@@ -93,7 +93,6 @@ export class Classe {
         } else {
             this.file = file;
         }
-        
 
     }
     

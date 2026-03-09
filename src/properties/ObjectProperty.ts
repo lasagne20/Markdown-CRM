@@ -1,5 +1,6 @@
 import { Property } from "./Property";
 import { File } from "../vault/File";
+import { Classe } from "../vault/Classe";
 import { FileProperty } from "./FileProperty";
 import { TextProperty } from "./TextProperty";
 import { MultiFileProperty } from "./MultiFileProperty";
@@ -125,10 +126,10 @@ export class ObjectProperty extends Property{
     }
 
 
-    async getDisplayProperties(file: File, propertyClasseName : string, propertyName : string, isStatic: boolean = true): Promise<{classe : any , display : any}[]> {
+    async getDisplayProperties(classe: Classe, propertyClasseName : string, propertyName : string, isStatic: boolean = true): Promise<{classe : any , display : any}[]> {
         let properties: {classe : any , display : any}[] = [];
-        this.vault = file.vault;
-        let values = await this.read(file);
+        this.vault = classe.getVault();
+        let values = await this.read(classe);
         if (!(propertyName in this.properties)){
             throw new Error("Property " + propertyName + " not found in ObjectProperty " + this.name);
         }
@@ -138,10 +139,10 @@ export class ObjectProperty extends Property{
             for (let [index, row] of values.entries()) {
                 property.static = isStatic;
                 let display = property.fillDisplay(row[property.name],
-                    async (value : any ) => await this.updateObject(values, async (value) => await file.updateMetadata(this.name, value), index, property, value));
+                    async (value : any ) => await this.updateObject(values, async (value) => await classe.updatePropertyValue(this.name, value), index, property, value));
                 
-                let classe = await this.vault.getFromLink(row[this.properties[propertyClasseName].name])
-                properties.push({classe: classe, display : display});
+                let linkedClasse = await this.vault.getFromLink(row[this.properties[propertyClasseName].name])
+                properties.push({classe: linkedClasse, display : display});
             }
         }
         return properties;

@@ -180,11 +180,10 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
             const LieuClass = await factory.getClass('Lieu');
             const lieuInstance = new LieuClass(vault, mockFileInstance);
 
-            // Mock the getProperty and updatePropertyValue methods
+            // Mock the getProperty method
             lieuInstance.getProperty = jest.fn((propName: string) => ({
                 read: jest.fn().mockResolvedValue('Commune')
             })) as any;
-            lieuInstance.updatePropertyValue = jest.fn().mockResolvedValue(undefined);
 
             // Spy on mockApp.updateMetadata (File.updateMetadata calls this internally)
             const updateMetadataSpy = jest.spyOn(mockApp, 'updateMetadata');
@@ -233,8 +232,6 @@ describe('ProcessManager - UpdateClassAction with Data Loading', () => {
                 }
                 return { read: jest.fn().mockResolvedValue(null) };
             }) as any;
-            
-            lieuInstance.updatePropertyValue = jest.fn().mockResolvedValue(undefined);
 
             // Execute the process (Lieu.yaml already has the process config)
             await processManager.runProcesses('Lieu', lieuInstance, 'onUpdate');
