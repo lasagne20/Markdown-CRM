@@ -190,21 +190,24 @@ describe('Classe - Rangement avec parents multiples postes/lieu (bug Maxilien De
         expect(goodMove).toBe(true);
     });
 
-    test('PLANTE (bug) : le menu "Rafraichir l\'objet" (classe.update()) doit ranger le fichier selon le parent', async () => {
+    test('PLANTE (bug) : postes inchangé mais fichier mal placé doit quand même être rangé', async () => {
         const person = buildPersonne();
 
-        // Fichier mal range : postes (CIEMCEO) rempli mais fichier dans MECENAT/Pers
-        // (importe/deplace manuellement, jamais passe par l'UI)
+        // Fichier mal range dans MECENAT/Pers alors que postes = CIEMCEO (inchange)
         metadataStore[personPath] = {
             classe: 'Personne',
             lieu: `[[MECENAT]]`,
             postes: [{ institution: `[[CIEMCEO Maintenance]]`, poste: 'Directeur' }],
         };
 
-        // Ce que fait le menu contextuel "Rafraichir l'objet" (main.ts du plugin)
-        await person.update();
+        // L'utilisateur modifie une AUTRE propriete (email) : postes reste inchangé
+        // C'est le chemin de la premiere ouverture (validation du frontmatter)
+        const currentMetadata = metadataStore[personPath];
+        const newMetadata = { ...currentMetadata, email: 'yannick@test.fr' };
+        await person.updatePropertyValue('email', 'yannick@test.fr');
 
-        // Le fichier doit avoir ete deplace vers CIEMCEO Maintenance/Pers
+        // postes n'a pas change, mais le fichier est au MAUVAIS endroit :
+        // le rangement doit quand meme se faire (verification de position)
         expect(mockApp.move).toHaveBeenCalled();
         const moveCalls = mockApp.move.mock.calls as any[];
         const targetPaths = moveCalls.map(c => c[1] as string);

@@ -161,8 +161,12 @@ describe('Classe - REGRESSION: stale cache causes parent folder not to move', ()
     });
 
     it('should NOT move when postes genuinely unchanged (stale cache scenario)', async () => {
-        const samePostes = [{ institution: '[[InstA.md|InstA]]', poste: 'Dev' }];
+        const samePostes = [{ institution: '[[InstB.md|InstB]]', poste: 'Dev' }];
         const oldMetadata = { classe: 'Personne', postes: samePostes };
+
+        // Child file already under the parent's dedicated folder (well placed)
+        childFile = new MockFile('Martin.md', '/vault/institutions/InstB/Pers/Martin.md', 'Martin', 'md', { path: '/vault/institutions/InstB/Pers' });
+        classe.setFile(new File(mockVault, childFile as any));
 
         // getMetadata returns same value (correct: no change)
         mockApp.getMetadata.mockResolvedValue(oldMetadata);
@@ -170,10 +174,12 @@ describe('Classe - REGRESSION: stale cache causes parent folder not to move', ()
         const currentParentProperty = await classe.testGetParentProperty();
 
         const consoleSpy = jest.spyOn(console, 'log');
-        // Pass same metadata as new → should skip
+        // Pass same metadata as new → should skip (file is already in place)
         await classe.testUpdateParentFolder(oldMetadata, currentParentProperty, { ...oldMetadata });
 
-        const skipped = consoleSpy.mock.calls.find(c => c[0]?.includes('unchanged, skipping'));
+        const skipped = consoleSpy.mock.calls.find(c =>
+            c[0]?.includes('unchanged') && c[0]?.includes('skipping folder update')
+        );
         expect(skipped).toBeDefined();
         expect(mockApp.move).not.toHaveBeenCalled();
     });
@@ -197,13 +203,13 @@ describe('Classe Parent Value Comparison Bug', () => {
             { path: '/vault/institutions' }
         );
 
-        // Create child file
+        // Create child file (already under the parent's dedicated folder: well placed)
         childFile = new MockFile(
             'dsgdfhdh.md',
-            '/vault/personnes/dsgdfhdh.md', 
+            '/vault/institutions/OCC/Pers/dsgdfhdh.md', 
             'dsgdfhdh',
             'md',
-            { path: '/vault/personnes' }
+            { path: '/vault/institutions/OCC/Pers' }
         );
 
         // Create test class instance
@@ -331,7 +337,7 @@ describe('Classe Parent Value Comparison Bug', () => {
 
             // Should log the "unchanged" message when values are truly the same
             const unchangedMessage = consoleSpy.mock.calls.find(call => 
-                call[0] && call[0].includes('unchanged, skipping folder update')
+                call[0] && call[0].includes('unchanged') && call[0].includes('skipping folder update')
             );
             expect(unchangedMessage).toBeDefined();
 

@@ -568,17 +568,39 @@ export class Classe {
                 // JSON.stringify comparison handles nested objects and arrays properly
                 const valuesUnchanged = JSON.stringify(oldValue) === JSON.stringify(newValue);
                 
-                if (valuesUnchanged) {
-                    // No change, skip update
-                    console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged, skipping folder update`);
-                    return;
-                }
-                
-                // Value changed, verify it's actually valid before moving.
+                // Resolve the parent file from the NEW value whenever possible.
                 // Store the result in resolvedParentFile so we can reuse it below
                 // instead of calling this.getParentFile() which may read a stale cache.
                 if ('getParentFile' in currentParentProperty && typeof (currentParentProperty as any).getParentFile === 'function') {
                     resolvedParentFile = await (currentParentProperty as any).getParentFile(newValue);
+                }
+                
+                if (valuesUnchanged) {
+                    if (!resolvedParentFile) {
+                        // Parent value cannot be resolved to a file: nothing to sort against
+                        console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged and unresolvable, skipping folder update`);
+                        return;
+                    }
+                    
+                    // Quick placement check WITHOUT the expensive findChildren scan:
+                    // skip only if the file already lives under the parent's dedicated folder.
+                    const parentFolderPath = resolvedParentFile.getFolderPath();
+                    const parentBaseName = resolvedParentFile.getName(false);
+                    const currentParentFolderName = parentFolderPath.substring(parentFolderPath.lastIndexOf("/") + 1);
+                    const parentDedicatedFolderPath = currentParentFolderName === parentBaseName
+                        ? parentFolderPath
+                        : `${parentFolderPath}/${parentBaseName}`;
+                    
+                    if (this.file && this.file.getFolderPath().startsWith(parentDedicatedFolderPath)) {
+                        console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged and file in place, skipping folder update`);
+                        return;
+                    }
+                    
+                    // Value unchanged but the file is misplaced (imported, moved manually,
+                    // or sorted under a previous parent): continue to the full folder
+                    // verification below, which only moves when needed.
+                    console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged but file misplaced, verifying folder placement`);
+                } else {
                     if (!resolvedParentFile) {
                         console.log(`⚠️ New parent value is empty/invalid, skipping folder update`);
                         return;
