@@ -40,8 +40,10 @@ export class NumberDisplay {
         context: Classe,
         getFilesForTable: (source: any, context?: Classe) => Promise<Classe[]>
     ): Promise<NumberDisplay> {
+        console.log(`[NumberDisplay] fromConfig: title="${item.title}", formula=${item.formula}, property=${item.propertyName}, display=${item.display}`);
         // Get files based on source
         const files = await getFilesForTable(item.source, context);
+        console.log(`[NumberDisplay] fromConfig: ${files.length} file(s) from source (class=${item.source?.class}, smartFilter=${item.source?.smartFilter})`);
         
         // Calculate or get max value first (needed for percent formula)
         let maxValue: number | undefined = undefined;
