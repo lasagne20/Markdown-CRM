@@ -150,7 +150,7 @@ describe('NumberDisplay with Sources', () => {
             // Check calculation: 10000 + 15000 + 8000 + 12000 = 45000
             const svg = result?.querySelector('svg');
             const text = svg?.querySelector('text');
-            expect(text?.textContent).toBe('45000€');
+            expect(text?.textContent).toBe('45 000€');
         });
 
         test('should render number display with count formula', async () => {
@@ -325,7 +325,7 @@ describe('NumberDisplay with Sources', () => {
             // Check calculation: (2500 + 3000 + 1500 + 4000) / 4 = 2750
             const svg = result?.querySelector('svg');
             const text = svg?.querySelector('text');
-            expect(text?.textContent).toBe('2750€');
+            expect(text?.textContent).toBe('2 750€');
         });
 
         test('should render number display with min/max formulas', async () => {
@@ -350,8 +350,8 @@ describe('NumberDisplay with Sources', () => {
             const minText = minResult?.querySelector('svg text')?.textContent;
             const maxText = maxResult?.querySelector('svg text')?.textContent;
             
-            expect(minText).toBe('8000');
-            expect(maxText).toBe('15000');
+            expect(minText).toBe('8 000');
+            expect(maxText).toBe('15 000');
         });
 
         test('should calculate progress with max value', async () => {

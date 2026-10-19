@@ -828,7 +828,6 @@ export class DisplayRenderer {
      * Render a number display item
      */
     private async renderNumber(item: NumberDisplayItem): Promise<HTMLElement | null> {
-        console.log(`[DisplayRenderer] renderNumber: title="${item.title}", formula=${item.formula}, property=${item.propertyName}`);
         try {
             // Use NumberDisplay.fromConfig to handle all calculation logic
             const numberDisplay = await NumberDisplay.fromConfig(

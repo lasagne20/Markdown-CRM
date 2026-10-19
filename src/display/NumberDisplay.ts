@@ -43,11 +43,8 @@ export class NumberDisplay {
         context: Classe,
         getFilesForTable: (source: any, context?: Classe) => Promise<Classe[]>
     ): Promise<NumberDisplay> {
-        console.log(`[NumberDisplay] fromConfig: title="${item.title}", formula=${item.formula}, property=${item.propertyName}, display=${item.display}`);
         // Get files based on source
         const files = await getFilesForTable(item.source, context);
-        console.log(`[NumberDisplay] fromConfig: ${files.length} file(s) from source (class=${item.source?.class}, smartFilter=${item.source?.smartFilter})`);
-        
         // Calculate or get max value first (needed for percent formula)
         let maxValue: number | undefined = undefined;
         if (item.max !== undefined) {
@@ -120,8 +117,6 @@ export class NumberDisplay {
         
         // Support multiple properties separated by commas (e.g., "financeurs.financeur.parent,clients.client.parent")
         const propertyNames = propertyName.split(',').map(p => p.trim());
-
-        console.log(`🧮 NumberDisplay.calculateValue: formula=${formula}, property=${propertyNames.join('|')}, files=${files.length}`);
 
         // Get all property values
         const values: any[] = [];
@@ -201,8 +196,6 @@ export class NumberDisplay {
             }
         }
         
-        console.log(`🧮 NumberDisplay: ${values.length} value(s) collected:`, values.slice(0, 10));
-
         // Apply formula
         switch (formula) {
             case 'count':
@@ -264,13 +257,15 @@ export class NumberDisplay {
 
     /**
      * Build the display text: prefix + formatted number + unit + suffix
+     * Thousands separator defaults to a space; set thousandsSeparator: "" to disable.
      */
     private getValueText(): string {
         const { value, unit, prefix, suffix, thousandsSeparator } = this.options;
+        const separator = thousandsSeparator ?? ' ';
         let numberText: string;
-        if (thousandsSeparator) {
+        if (separator) {
             const [intPart, decPart] = String(value).split('.');
-            numberText = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
+            numberText = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, separator);
             if (decPart !== undefined) {
                 numberText += `.${decPart}`;
             }

@@ -281,7 +281,7 @@ describe('NumberDisplay fill percentage calculation', () => {
 
             // For value=1000, max=1000000: fill = 1000/1000000 = 0.001
             const text = svg?.querySelector('text');
-            expect(text?.textContent).toBe('1000');
+            expect(text?.textContent).toBe('1 000');
         });
     });
 

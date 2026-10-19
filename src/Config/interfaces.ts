@@ -143,7 +143,7 @@ export interface NumberDisplayItem extends BaseDisplayItem {
     display?: 'ring' | 'plain' | 'bar'; // Visual variant: ring (default), plain (big number without circle), bar (horizontal progress bar)
     prefix?: string; // Text before the number (e.g. "≈ ")
     suffix?: string; // Text after the number and unit (e.g. " HT")
-    thousandsSeparator?: string; // Thousands separator (e.g. " " -> "1 234 567"); unset/empty = raw number
+    thousandsSeparator?: string; // Thousands separator, default: " " (space); set "" to disable
 }
 
 // Map display item (interactive map with markers)

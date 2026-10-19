@@ -28,10 +28,22 @@ describe('NumberDisplay - prefix, suffix et séparateur de milliers', () => {
             expect(valueEl?.textContent).toBe('1 234 567');
         });
 
-        test('PLANTE : sans thousandsSeparator le nombre reste brut', async () => {
+        test('PLANTE : sans thousandsSeparator, l\'espace est appliqué par défaut', () => {
             const display = new NumberDisplay({
                 value: 1234567,
                 display: 'plain'
+            });
+
+            const valueEl = display.container.querySelector('.crm-number-display-value');
+            // Défaut : séparateur espace
+            expect(valueEl?.textContent).toBe('1 234 567');
+        });
+
+        test('thousandsSeparator vide ("") désactive le formatage', () => {
+            const display = new NumberDisplay({
+                value: 1234567,
+                display: 'plain',
+                thousandsSeparator: ''
             });
 
             const valueEl = display.container.querySelector('.crm-number-display-value');
@@ -84,7 +96,7 @@ describe('NumberDisplay - prefix, suffix et séparateur de milliers', () => {
             });
 
             const valueEl = display.container.querySelector('.crm-number-display-value');
-            expect(valueEl?.textContent).toBe('≈ 1500€ HT');
+            expect(valueEl?.textContent).toBe('≈ 1 500€ HT');
         });
 
         test('prefix + séparateur + suffix ensemble', () => {
@@ -127,7 +139,6 @@ describe('NumberDisplay - prefix, suffix et séparateur de milliers', () => {
                 display: 'plain',
                 prefix: '≈ ',
                 suffix: ' actions',
-                thousandsSeparator: ' ',
                 title: "Nombre d'actions"
             };
 
@@ -135,8 +146,7 @@ describe('NumberDisplay - prefix, suffix et séparateur de milliers', () => {
 
             expect((display.options as any).prefix).toBe('≈ ');
             expect((display.options as any).suffix).toBe(' actions');
-            expect((display.options as any).thousandsSeparator).toBe(' ');
-            // files vide -> value = 0
+            // files vide -> value = 0, séparateur par défaut (espace) appliqué
             const valueEl = display.container.querySelector('.crm-number-display-value');
             expect(valueEl?.textContent).toBe('≈ 0 actions');
         });
