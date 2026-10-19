@@ -109,6 +109,10 @@ export class Classe {
         
         // Update metadata
         await this.updateAllPropertiesMetadata();
+
+        // Re-sort the file according to its parent (used by "Rafraichir l'objet"
+        // to fix files that were created/imported in the wrong folder)
+        await this.updateParentFolder();
     }
     
     async validate(): Promise<boolean> {
