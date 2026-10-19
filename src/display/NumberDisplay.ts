@@ -72,7 +72,12 @@ export class NumberDisplay {
             label: item.label,
             size: item.size,
             color: item.color,
-            max: item.formula == "percent" ? maxValue : undefined
+            // The ring fill: percent values are already 0-100, so the fill must
+            // stay in percentage mode (max 100). Passing the raw maxValue here
+            // (e.g. the partnership amount) would make the ring nearly empty.
+            // For other formulas, pass the resolved max so the fill is value/max
+            // instead of falling back to value/100.
+            max: item.formula === 'percent' ? 100 : maxValue
         });
     }
 
