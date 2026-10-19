@@ -25,6 +25,12 @@ npm update markdown-CRM --force && npm run build
 rm -rf node_modules/markdown-crm && npm install github:lasagne20/Markdown-CRM --force
 ```
 
+⚠️ Après toute modification CSS dans `src/styles/styles.css` (la lib), copier le fichier vers `styles.css` du plugin (le plugin charge sa propre copie) :
+
+```
+cp "C:\Users\leodu\Documents\1 - Pro\Markdown CRM\src\styles\styles.css" "C:\Users\leodu\Documents\1 - Pro\Test plugin obsidian\.obsidian\plugins\obsidian-CRM\styles.css"
+```
+
 Puis vérifier les correctifs dans `node_modules/markdown-crm` (grep sur un marqueur du dernier commit) et relancer `npm run build`.
 
 Détails complets : voir `.vibe/skills/start/SKILL.md`.
