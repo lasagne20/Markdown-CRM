@@ -939,9 +939,14 @@ export class ConditionManager {
     private toNumericValueSmart(instance: Classe, propertyName: string, value: any): number | null {
         try {
             const property = instance.getProperty(propertyName);
-            const isDateProperty = property && property.type === 'date';
+            const isDateProperty = property && (property.type === 'date' || property.type === 'dateRange');
             
             if (isDateProperty) {
+                // RangeDateProperty values are stored as "YYYY-MM-DD" or
+                // "YYYY-MM-DD to YYYY-MM-DD": compare on the START of the range.
+                if (property.type === 'dateRange' && typeof value === 'string' && value.includes(' to ')) {
+                    value = value.split(' to ')[0].trim();
+                }
                 // Date conversion logic
                 // Already a number (timestamp)
                 if (typeof value === 'number') {
