@@ -45,11 +45,7 @@ npm update markdown-CRM --force && npm run build
 rm -rf node_modules/markdown-crm && npm install github:lasagne20/Markdown-CRM --force
 ```
 
-⚠️ **Styles CSS** : le plugin charge son propre `styles.css`, qui est une **copie** de `src/styles/styles.css` de la lib. Après toute modification CSS dans la lib, copier le fichier :
-
-```
-cp "C:\Users\leodu\Documents\1 - Pro\Markdown CRM\src\styles\styles.css" "C:\Users\leodu\Documents\1 - Pro\Test plugin obsidian\.obsidian\plugins\obsidian-CRM\styles.css"
-```
+⚠️ **Styles CSS — IMPORTANT** : le `styles.css` du plugin **diverge** de celui de la lib (styles Obsidian customisés pour les onglets et tableaux). **NE JAMAIS copier le fichier entier** de la lib vers le plugin — ça casse le style des onglets et des tableaux (le plugin perd ses règles spécifiques). Après une modification CSS dans la lib, appliquer **uniquement les règles modifiées/ajoutées** dans les deux fichiers (éditer le styles.css du plugin avec le même bloc CSS).
 
 Puis vérifier que les derniers correctifs sont présents (grep sur un marqueur du dernier commit dans `node_modules/markdown-crm/src/...`) avant de builder :
 
