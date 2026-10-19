@@ -112,7 +112,9 @@ export class NumberDisplay {
         
         // Support multiple properties separated by commas (e.g., "financeurs.financeur.parent,clients.client.parent")
         const propertyNames = propertyName.split(',').map(p => p.trim());
-        
+
+        console.log(`🧮 NumberDisplay.calculateValue: formula=${formula}, property=${propertyNames.join('|')}, files=${files.length}`);
+
         // Get all property values
         const values: any[] = [];
         
@@ -191,6 +193,8 @@ export class NumberDisplay {
             }
         }
         
+        console.log(`🧮 NumberDisplay: ${values.length} value(s) collected:`, values.slice(0, 10));
+
         // Apply formula
         switch (formula) {
             case 'count':
