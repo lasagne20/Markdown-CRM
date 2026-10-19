@@ -13,6 +13,7 @@ interface NumberDisplayOptions {
     size?: number; // taille du rond en px (défaut: 64)
     color?: string; // couleur de remplissage (défaut: var(--interactive-accent))
     max?: number; // valeur maximale pour le calcul du niveau de remplissage (value/max = fill level)
+    display?: 'ring' | 'plain' | 'bar'; // variante visuelle: ring (défaut), plain (chiffre seul), bar (barre horizontale)
 }
 
 export class NumberDisplay {
@@ -68,7 +69,8 @@ export class NumberDisplay {
         
         return new NumberDisplay({
             value: value,
-            unit: item.unit,
+            // Default unit for percent formula
+            unit: item.unit ?? (item.formula === 'percent' ? '%' : undefined),
             label: item.label,
             size: item.size,
             color: item.color,
@@ -77,7 +79,8 @@ export class NumberDisplay {
             // (e.g. the partnership amount) would make the ring nearly empty.
             // For other formulas, pass the resolved max so the fill is value/max
             // instead of falling back to value/100.
-            max: item.formula === 'percent' ? 100 : maxValue
+            max: item.formula === 'percent' ? 100 : maxValue,
+            display: item.display
         });
     }
 
@@ -200,27 +203,87 @@ export class NumberDisplay {
         }
     }
 
+    /**
+     * Calculate the fill level (0-1) from value and max
+     */
+    private getFill(): number {
+        const { value, max } = this.options;
+        if (typeof max === "number" && max > 0) {
+            return Math.max(0, Math.min(1, value / max));
+        }
+        // Sinon, traiter value comme un pourcentage (0-100)
+        return Math.max(0, Math.min(100, value)) / 100;
+    }
+
+    /**
+     * Append the label below the display (shared by all variants)
+     */
+    private appendLabel(displaySize: number): void {
+        const { label } = this.options;
+        if (label) {
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'crm-number-display-label';
+            this.container.appendChild(labelDiv);
+            labelDiv.innerHTML = label;
+            labelDiv.setAttribute(
+                "style",
+                `text-align:center;font-size:${Math.min(displaySize * 0.2, 16)}px;color:var(--text-muted);margin-top:0.5em;`
+            );
+        }
+    }
+
     getDisplay() {
         const { value, unit, label, size, max } = this.options;
         const color = this.options.color || "var(--interactive-accent)";
         this.container.innerHTML = '';
 
+        const variant = this.options.display ?? 'ring';
+
+        // ---------- plain : big number, no circle ----------
+        if (variant === 'plain') {
+            this.container.classList.add('crm-number-display-plain');
+
+            const valueEl = document.createElement('div');
+            valueEl.className = 'crm-number-display-value';
+            valueEl.textContent = `${value}${unit ?? ""}`;
+            this.container.appendChild(valueEl);
+
+            this.appendLabel(size ?? 96);
+            return this.container;
+        }
+
+        // ---------- bar : horizontal progress bar ----------
+        if (variant === 'bar') {
+            this.container.classList.add('crm-number-display-bar');
+
+            const fill = this.getFill();
+
+            const valueEl = document.createElement('div');
+            valueEl.className = 'crm-number-display-value';
+            valueEl.textContent = `${value}${unit ?? ""}`;
+            this.container.appendChild(valueEl);
+
+            const track = document.createElement('div');
+            track.className = 'crm-number-display-bar-track';
+            const fillBar = document.createElement('div');
+            fillBar.className = 'crm-number-display-bar-fill';
+            fillBar.style.width = `${fill * 100}%`;
+            track.appendChild(fillBar);
+            this.container.appendChild(track);
+
+            this.appendLabel(size ?? 96);
+            return this.container;
+        }
+
+        // ---------- ring (default) ----------
         // Agrandir la taille par défaut si non spécifiée
         const displaySize = size ?? 96; // plus grand que 64
         const svgNS = "http://www.w3.org/2000/svg";
         const strokeWidth = 10; // plus épais
         const radius = (displaySize / 2) - (strokeWidth / 2) - 2;
         const circumference = 2 * Math.PI * radius;
-        
-        // Calculer le niveau de remplissage en fonction de max si défini
-        let fill: number;
-        if (typeof max === "number" && max > 0) {
-            fill = Math.max(0, Math.min(1, value / max));
-        } else {
-            // Sinon, traiter value comme un pourcentage (0-100)
-            fill = Math.max(0, Math.min(100, value)) / 100;
-        }
-        
+
+        const fill = this.getFill();
         const offset = circumference * (1 - fill);
 
         const svg = document.createElementNS(svgNS, "svg");
@@ -267,16 +330,7 @@ export class NumberDisplay {
         this.container.appendChild(svg);
 
         // Label en dessous
-        if (label) {
-            const labelDiv = document.createElement('div');
-            labelDiv.className = 'crm-number-display-label';
-            this.container.appendChild(labelDiv);
-            labelDiv.innerHTML = label;
-            labelDiv.setAttribute(
-                "style",
-                `text-align:center;font-size:${displaySize * 0.3}px;color:var(--text-muted);margin-top:0.5em;`
-            );
-        }
+        this.appendLabel(displaySize);
         return this.container;
     }
 }

@@ -135,11 +135,12 @@ export interface NumberDisplayItem extends BaseDisplayItem {
     propertyName?: string; // Property to calculate on (for sum, avg, min, max, percent)
     
     // Display options
-    unit?: string; // Unit to display (ex: %)
+    unit?: string; // Unit to display (ex: %) - defaults to '%' for percent formula
     label?: string; // Label below the circle
     size?: number; // Size in px (default: 96)
     color?: string; // Fill color (default: var(--interactive-accent))
     max?: number | string | MaxCalculationConfig; // Maximum value: number, property name (e.g., "budget" or "items[0].total"), or calculation config
+    display?: 'ring' | 'plain' | 'bar'; // Visual variant: ring (default), plain (big number without circle), bar (horizontal progress bar)
 }
 
 // Map display item (interactive map with markers)

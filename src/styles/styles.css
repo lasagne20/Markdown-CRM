@@ -1299,8 +1299,52 @@ If your plugin does not need CSS, delete this file.
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     margin: 1em 0;
+    /* Alignement homogène des number displays d'une même ligne */
+    min-width: 110px;
+    text-align: center;
 }
+
+/* Variante "plain" : gros chiffre sans cercle */
+.crm-number-display-plain .crm-number-display-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-normal);
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+/* Variante "bar" : barre de progression horizontale */
+.crm-number-display-bar {
+    width: 100%;
+    max-width: 160px;
+}
+
+.crm-number-display-bar .crm-number-display-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-normal);
+    line-height: 1.1;
+    margin-bottom: 6px;
+    white-space: nowrap;
+}
+
+.crm-number-display-bar-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--background-modifier-border);
+    overflow: hidden;
+}
+
+.crm-number-display-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--interactive-accent);
+    transition: width 0.5s;
+}
+
 
 .metadata-field.media-field{
     display: flex;
