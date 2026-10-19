@@ -204,27 +204,23 @@ export class PropertyNavigator {
 
         // Handle special 'parent' keyword
         if (nextPart === 'parent') {
-            // Handle direct Classe instance
-            if (currentValue instanceof Classe) {
+            // Helper function to get parent from a value
+            const getParentFromValue = async (value: any): Promise<any> => {
                 try {
-                    const parent = await currentValue.getParent?.();
-                    if (parent) {
-                        if (remainingParts.length > 0) {
-                            return await this.navigateNestedProperty(`[[${parent.getName()}]]`, remainingParts);
-                        }
-                        return `[[${parent.getName()}]]`;
+                    let classeToCheck: Classe | null = null;
+                    
+                    // Direct Classe instance
+                    if (value instanceof Classe) {
+                        classeToCheck = value;
                     }
-                } catch (error) {
-                    console.warn(`Error getting parent for Classe instance:`, error);
-                }
-                return undefined;
-            }
-            
-            if (typeof currentValue === 'string') {
-                try {
-                    const linkedClasse = await this.vault.getFromLink(currentValue);
-                    if (linkedClasse && typeof linkedClasse.getParent === 'function') {
-                        const parent = await linkedClasse.getParent();
+                    // String link
+                    else if (typeof value === 'string') {
+                        const linkedClasse = await this.vault.getFromLink(value);
+                        classeToCheck = linkedClasse || null;
+                    }
+                    
+                    if (classeToCheck) {
+                        const parent = await classeToCheck.getParent();
                         if (parent) {
                             if (remainingParts.length > 0) {
                                 return await this.navigateNestedProperty(`[[${parent.getName()}]]`, remainingParts);
@@ -232,58 +228,26 @@ export class PropertyNavigator {
                             return `[[${parent.getName()}]]`;
                         }
                     }
+                    return undefined;
                 } catch (error) {
-                    console.warn(`Error getting parent for ${currentValue}:`, error);
+                    console.warn(`Error getting parent for value:`, error);
+                    return undefined;
                 }
-                return undefined;
+            };
+            
+            // Handle single value
+            if (!Array.isArray(currentValue)) {
+                return await getParentFromValue(currentValue);
             }
             
-            if (Array.isArray(currentValue)) {
-                const parentValues = await Promise.all(
-                    currentValue.map(async (item) => {
-                        // Handle Classe instances in array
-                        if (item instanceof Classe) {
-                            try {
-                                const parent = await item.getParent?.();
-                                if (parent) {
-                                    if (remainingParts.length > 0) {
-                                        return await this.navigateNestedProperty(`[[${parent.getName()}]]`, remainingParts);
-                                    }
-                                    return `[[${parent.getName()}]]`;
-                                }
-                            } catch (error) {
-                                console.warn(`Error getting parent for Classe instance in array:`, error);
-                            }
-                            return undefined;
-                        }
-                        
-                        // Handle string links in array
-                        if (typeof item === 'string') {
-                            try {
-                                const linkedClasse = await this.vault.getFromLink(item);
-                                if (linkedClasse && typeof linkedClasse.getParent === 'function') {
-                                    const parent = await linkedClasse.getParent();
-                                    if (parent) {
-                                        if (remainingParts.length > 0) {
-                                            return await this.navigateNestedProperty(`[[${parent.getName()}]]`, remainingParts);
-                                        }
-                                        return `[[${parent.getName()}]]`;
-                                    }
-                                }
-                            } catch (error) {
-                                console.warn(`Error getting parent for ${item}:`, error);
-                            }
-                        }
-                        return undefined;
-                    })
-                );
-                const filteredParents = parentValues.filter(p => p !== undefined);
-                if (filteredParents.length === 0) return undefined;
-                if (filteredParents.length === 1) return filteredParents[0];
-                return filteredParents;
-            }
-            
-            return undefined;
+            // Handle array of values
+            const parentValues = await Promise.all(
+                currentValue.map(item => getParentFromValue(item))
+            );
+            const filteredParents = parentValues.filter(p => p !== undefined);
+            if (filteredParents.length === 0) return undefined;
+            if (filteredParents.length === 1) return filteredParents[0];
+            return filteredParents;
         }
 
         // Handle arrays

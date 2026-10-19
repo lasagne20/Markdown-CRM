@@ -321,6 +321,25 @@ export class Classe {
         
         return undefined;
     }
+
+    /**
+     * Get the parent Classe instance of this instance
+     * Returns the parent as a Classe instance, or undefined if no parent exists
+     */
+    async getParent(): Promise<Classe | undefined> {
+        const parentFile = await this.getParentFile();
+        if (!parentFile) {
+            return undefined;
+        }
+        
+        try {
+            const parentClasse = await this.vault.getFromFile(parentFile);
+            return parentClasse || undefined;
+        } catch (error) {
+            console.warn(`Error loading parent class from file:`, error);
+            return undefined;
+        }
+    }
     
  /**
      * Find all children of this file recursively

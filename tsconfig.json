@@ -33,10 +33,13 @@
     "removeComments": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
-      "Utils/*": ["./utils/*"],
-      "*": ["./*"]
+      "vault/*": ["src/vault/*"],
+      "properties/*": ["src/properties/*"],
+      "utils/*": ["src/utils/*"],
+      "display/*": ["src/display/*"],
+      "Config/*": ["src/Config/*"]
     }
   },
   "include": [
