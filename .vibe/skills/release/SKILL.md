@@ -73,69 +73,21 @@ Ne pas pousser sur le remote `serveur` (Synology) sans demande explicite.
 
 ⚠️ **Un tag seul est invisible pour BRAT** : la release GitHub avec ses assets est indispensable pour que BRAT propose la mise à jour.
 
-Pas de `gh` CLI sur cette machine. Utiliser l'API GitHub via Python avec le token du credential helper git. Créer un script temporaire `tmp_create_release.py` dans le dossier du plugin :
+Pas de `gh` CLI sur cette machine. Utiliser le script versionné du plugin :
 
-```python
-import json, os, re, sys, urllib.request
-
-if len(sys.argv) < 2:
-    sys.exit("Usage: python tmp_create_release.py <X.Y.Z>")
-version = sys.argv[1]
-token = os.environ['GH_TOKEN']
-repo = 'lasagne20/obsidian-CRM'
-
-# Extraire la section du changelog
-with open('CHANGELOG.md', encoding='utf-8') as f:
-    content = f.read()
-m = re.search(rf'(## \[{re.escape(version)}\].*?)(?=\n## \[)', content, re.DOTALL)
-body = m.group(1).strip() if m else version
-
-payload = {
-    'tag_name': f'v{version}',
-    'name': f'v{version}',
-    'body': body,
-    'draft': False,
-    'prerelease': False
-}
-
-req = urllib.request.Request(
-    f'https://api.github.com/repos/{repo}/releases',
-    data=json.dumps(payload).encode(),
-    headers={
-        'Authorization': f'token {token}',
-        'Accept': 'application/vnd.github+json',
-        'Content-Type': 'application/json'
-    },
-    method='POST'
-)
-with urllib.request.urlopen(req) as r:
-    release = json.loads(r.read())
-release_id = release['id']
-print(f"Release creee: {release['html_url']}")
-
-for fname in ['main.js', 'manifest.json', 'styles.css']:
-    with open(fname, 'rb') as f:
-        data = f.read()
-    req = urllib.request.Request(
-        f'https://uploads.github.com/repos/{repo}/releases/{release_id}/assets?name={fname}',
-        data=data,
-        headers={
-            'Authorization': f'token {token}',
-            'Content-Type': 'application/octet-stream'
-        },
-        method='POST'
-    )
-    with urllib.request.urlopen(req) as r:
-        asset = json.loads(r.read())
-    print(f"Asset uploade: {asset['name']} ({asset['size']} bytes)")
+```
+scripts/create_release.py
 ```
 
-Puis l'exécuter et le supprimer :
+(dans le repo obsidian-CRM, à côté de `version-bump.mjs`)
+
+Il extrait automatiquement la section `## [<X.Y.Z>]` du CHANGELOG.md comme description, crée la release et uploade les 3 assets (`main.js`, `manifest.json`, `styles.css`). Idempotent : si la release existe déjà, il complète seulement les assets manquants.
+
+Exécution depuis la racine du plugin :
 
 ```bash
 export GH_TOKEN=$(printf "protocol=https\nhost=github.com\n" | git credential fill 2>/dev/null | grep "^password=" | cut -d= -f2)
-python tmp_create_release.py <X.Y.Z>
-rm -f tmp_create_release.py
+python scripts/create_release.py <X.Y.Z>
 ```
 
 Note : l'extraction du token et l'appel API déclenchent la confirmation utilisateur du mécanisme d'approbation — c'est normal, relancer.
