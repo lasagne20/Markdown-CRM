@@ -502,12 +502,19 @@ export class DisplayRenderer {
         }
 
         // Apply hierarchical groups if specified
-        if (source.groups && source.groups.length > 0) {
+        // Normalize: YAML shorthand allows groups as a single object
+        // (groups:\n  conditions:) instead of a list; without this the
+        // filter is silently ignored (groups.length is undefined).
+        const rawGroups = Array.isArray(source.groups)
+            ? source.groups
+            : (source.groups && typeof source.groups === 'object' ? [source.groups] : undefined);
+
+        if (rawGroups && rawGroups.length > 0) {
 
             // Create a ConditionConfig with the groups
             const conditionConfig = {
                 operator: source.operator || 'AND',
-                groups: source.groups,
+                groups: rawGroups,
                 conditions: source.conditions || []
             };
             
