@@ -4,6 +4,7 @@
 import { NumberDisplayItem } from '../Config/interfaces';
 import { Vault } from '../vault/Vault';
 import { Classe } from '../vault/Classe';
+import { PropertyNavigator } from '../utils/PropertyNavigator';
 
 interface NumberDisplayOptions {
     value: number; // valeur à afficher (0-100)
@@ -58,12 +59,12 @@ export class NumberDisplay {
             } else {
                 // max is a MaxCalculationConfig - calculate it
                 const maxFiles = await getFilesForTable(item.max.source, context);
-                maxValue = await NumberDisplay.calculateValue(maxFiles, item.max.formula, item.max.propertyName, undefined, context);
+                maxValue = await NumberDisplay.calculateValue(maxFiles, item.max.formula, item.max.propertyName, undefined, context, vault);
             }
         }
         
         // Calculate value using formula (pass maxValue for percent formula)
-        const value = await NumberDisplay.calculateValue(files, item.formula, item.propertyName, maxValue, context);
+        const value = await NumberDisplay.calculateValue(files, item.formula, item.propertyName, maxValue, context, vault);
         
         return new NumberDisplay({
             value: value,
@@ -83,7 +84,8 @@ export class NumberDisplay {
         formula: string,
         propertyName?: string,
         maxValue?: number,
-        context?: Classe
+        context?: Classe,
+        vault?: Vault
     ): Promise<number> {
         // If count without propertyName, just count files
         if (formula === 'count' && !propertyName) {
@@ -109,10 +111,26 @@ export class NumberDisplay {
         for (const singlePropertyName of propertyNames) {
             for (const file of files) {
                 try {
-                    // Classe.getPropertyValue() handles all property navigation including filters
-                    // Pass context for $current support in filter expressions
-                    const value = await file.getPropertyValue(singlePropertyName, context);
-                    
+                    let value: any;
+                    if (formula === 'count' || formula === 'countDistinct') {
+                        // Collect mode: gather ALL values along the path (flattened
+                        // arrays, 'parent' keyword, multi-element arrays) instead of
+                        // the standard single-value navigation which discards
+                        // multi-element arrays. Filter expressions already return
+                        // arrays of values - keep the standard path for them.
+                        const fileVault = vault || (file as any).getVault?.();
+                        if (fileVault && !singlePropertyName.includes('.filter(')) {
+                            const navigator = new PropertyNavigator(fileVault, context);
+                            value = await navigator.collectNestedProperty(file, singlePropertyName);
+                        } else {
+                            value = await file.getPropertyValue(singlePropertyName, context);
+                        }
+                    } else {
+                        // Classe.getPropertyValue() handles all property navigation including filters
+                        // Pass context for $current support in filter expressions
+                        value = await file.getPropertyValue(singlePropertyName, context);
+                    }
+
                     // Handle arrays (from filter expressions like "partenariats.filter().montant")
                     if (Array.isArray(value)) {
                         for (const item of value) {

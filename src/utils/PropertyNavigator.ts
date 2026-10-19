@@ -167,6 +167,20 @@ export class PropertyNavigator {
             try {
                 const linkedClasse = await this.vault.getFromLink(currentValue);
                 if (linkedClasse) {
+                    // Handle the 'parent' keyword directly here: getNestedProperty would
+                    // read metadata['parent'] which does not exist. The keyword must be
+                    // resolved via the linked class's getParent() method.
+                    if (parts[0] === 'parent') {
+                        const parent = await (linkedClasse as any).getParent?.();
+                        if (!parent) {
+                            return undefined;
+                        }
+                        const parentLink = `[[${parent.getName()}]]`;
+                        if (parts.length > 1) {
+                            return await this.navigateNestedProperty(parentLink, parts.slice(1));
+                        }
+                        return parentLink;
+                    }
                     // Continue navigation with the linked class
                     const remainingPath = parts.join('.');
                     return await this.getNestedProperty(linkedClasse, remainingPath);
@@ -281,6 +295,106 @@ export class PropertyNavigator {
         }
 
         return undefined;
+    }
+
+    /**
+     * Collect ALL values along a property path, flattening arrays at every level.
+     *
+     * Unlike getNestedProperty, this never discards multi-element arrays (the
+     * standard navigation returns undefined for them by design). Used by
+     * NumberDisplay count/countDistinct formulas to gather every value, e.g.
+     * "financeurs.financeur.parent" must return the parent of EVERY financeur.
+     *
+     * @param obj - The object to navigate (Classe instance or plain object)
+     * @param path - The property path (dot notation, supports the 'parent' keyword)
+     * @returns A flat array of all collected values (empty array when nothing matches)
+     */
+    async collectNestedProperty(obj: any, path: string): Promise<any[]> {
+        const parts = path.split('.');
+
+        let firstValue;
+        if (obj && obj.getPropertyValue && typeof obj.getPropertyValue === 'function') {
+            firstValue = await obj.getPropertyValue(parts[0], this.context);
+        } else {
+            firstValue = obj?.[parts[0]];
+        }
+
+        return await this.collectNavigate(firstValue, parts.slice(1));
+    }
+
+    /**
+     * Recursive navigation that collects every value into a flat array.
+     */
+    private async collectNavigate(currentValue: any, parts: string[]): Promise<any[]> {
+        if (currentValue === null || currentValue === undefined) {
+            return [];
+        }
+
+        // Terminal case: collect the value(s) as-is
+        if (parts.length === 0) {
+            return Array.isArray(currentValue) ? currentValue.flat() : [currentValue];
+        }
+
+        // String link: resolve the linked class and continue collecting
+        if (typeof currentValue === 'string' && currentValue.match(/^\[\[.+\]\]$/)) {
+            try {
+                const linkedClasse = await this.vault.getFromLink(currentValue);
+                if (!linkedClasse) {
+                    return [];
+                }
+                const [nextPart, ...remainingParts] = parts;
+                if (nextPart === 'parent') {
+                    const parent = await (linkedClasse as any).getParent?.();
+                    if (!parent) {
+                        return [];
+                    }
+                    return await this.collectNavigate(`[[${parent.getName()}]]`, remainingParts);
+                }
+                let value;
+                if (linkedClasse.getPropertyValue && typeof linkedClasse.getPropertyValue === 'function') {
+                    value = await (linkedClasse as any).getPropertyValue(nextPart, this.context);
+                } else {
+                    value = (linkedClasse as any)[nextPart];
+                }
+                return await this.collectNavigate(value, remainingParts);
+            } catch (error) {
+                console.warn(`Error loading linked class from ${currentValue}:`, error);
+                return [];
+            }
+        }
+
+        // Classe instance (or object with getPropertyValue): read the property
+        if (currentValue instanceof Classe || (typeof currentValue === 'object' && currentValue.getPropertyValue && typeof currentValue.getPropertyValue === 'function')) {
+            const [nextPart, ...remainingParts] = parts;
+            if (nextPart === 'parent') {
+                const parent = await (currentValue as any).getParent?.();
+                if (!parent) {
+                    return [];
+                }
+                return await this.collectNavigate(`[[${parent.getName()}]]`, remainingParts);
+            }
+            const value = await (currentValue as any).getPropertyValue(nextPart, this.context);
+            return await this.collectNavigate(value, remainingParts);
+        }
+
+        // Array: collect from every element
+        if (Array.isArray(currentValue)) {
+            const results = await Promise.all(
+                currentValue.map(item => this.collectNavigate(item, parts))
+            );
+            return results.flat();
+        }
+
+        // Plain object: navigate into the property
+        if (typeof currentValue === 'object') {
+            const [nextPart, ...remainingParts] = parts;
+            if (nextPart in currentValue) {
+                return await this.collectNavigate(currentValue[nextPart], remainingParts);
+            }
+            return [];
+        }
+
+        return [];
     }
 
     /**
