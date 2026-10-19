@@ -1,0 +1,65 @@
+        // Handle special 'parent' keyword
+        if (nextPart === 'parent') {
+            // Resolve parent of current value
+            if (typeof currentValue === 'string') {
+                // Single link reference like "[[Institution1]]"
+                const linkedClasse = await this.vault.getFromLink(currentValue);
+                if (linkedClasse) {
+                    const parent = await linkedClasse.getParent();
+                    if (parent) {
+                        // Continue navigation with parent
+                        if (remainingParts.length > 0) {
+                            return await this.navigateNestedProperty(`[[${parent.getName()}]]`, remainingParts);
+                        }
+                        return `[[${parent.getName()}]]`;
+                    }
+                }
+                return undefined;
+            }
+            
+            if (Array.isArray(currentValue)) {
+                // Array of link references - map each to its parent
+                const parentValues = await Promise.all(
+                    currentValue.map(async (item) => {
+                        if (typeof item === 'string') {
+                            const linkedClasse = await this.vault.getFromLink(item);
+                            if (linkedClasse) {
+                                const parent = await linkedClasse.getParent();
+                                if (parent) {
+                                    if (remainingParts.length > 0) {
+                                        return await this.navigateNestedProperty(`[[${parent.getName()}]]`, remainingParts);
+                                    }
+                                    return `[[${parent.getName()}]]`;
+                                }
+                            }
+                        }
+                        return undefined;
+                    })
+                );
+                const filteredParents = parentValues.filter(p => p !== undefined);
+                
+                if (filteredParents.length === 0) {
+                    return undefined;
+                } else if (filteredParents.length === 1) {
+                    return filteredParents[0];
+                } else {
+                    // Multiple parents
+                    return filteredParents;
+                }
+            }
+            
+            // For Classe objects with getParent method
+            if (currentValue && typeof currentValue === 'object' && currentValue.getParent) {
+                const parent = await (currentValue as any).getParent();
+                if (parent) {
+                    if (remainingParts.length > 0) {
+                        return await this.navigateNestedProperty(parent, remainingParts);
+                    }
+                    return parent;
+                }
+            }
+            
+            return undefined;
+        }
+
+        

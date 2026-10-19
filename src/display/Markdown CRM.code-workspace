@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../Test plugin obsidian/Outils/Obsidian/Config"
+		}
+	],
+	"settings": {
+		"jest.outputConfig": {
+			"revealOutput": "off",
+			"revealWithFocus": "none"
+		},
+		"testing.automaticallyOpenPeekView": "never",
+		"testing.automaticallyOpenPeekViewDuringAutoRun": false,
+		"testing.defaultGutterClickAction": "run",
+		"typescript.preferences.includePackageJsonAutoImports": "off",
+		"typescript.disableAutomaticTypeAcquisition": true,
+		"testing.automaticallyOpenTestResults": "neverOpen"
+	}
+}

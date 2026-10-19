@@ -71,7 +71,7 @@ export class NumberDisplay {
             label: item.label,
             size: item.size,
             color: item.color,
-            max: maxValue
+            max: item.formula == "percent" ? maxValue : undefined
         });
     }
 
@@ -100,44 +100,50 @@ export class NumberDisplay {
             return 0; // Can't calculate without property for non-count formulas
         }
         
+        // Support multiple properties separated by commas (e.g., "financeurs.financeur.parent,clients.client.parent")
+        const propertyNames = propertyName.split(',').map(p => p.trim());
+        
         // Get all property values
         const values: any[] = [];
-        for (const file of files) {
-            try {
-                // Classe.getPropertyValue() handles all property navigation including filters
-                // Pass context for $current support in filter expressions
-                const value = await file.getPropertyValue(propertyName, context);
-                
-                // Handle arrays (from filter expressions like "partenariats.filter().montant")
-                if (Array.isArray(value)) {
-                    for (const item of value) {
+        
+        for (const singlePropertyName of propertyNames) {
+            for (const file of files) {
+                try {
+                    // Classe.getPropertyValue() handles all property navigation including filters
+                    // Pass context for $current support in filter expressions
+                    const value = await file.getPropertyValue(singlePropertyName, context);
+                    
+                    // Handle arrays (from filter expressions like "partenariats.filter().montant")
+                    if (Array.isArray(value)) {
+                        for (const item of value) {
+                            // For count/countDistinct, keep all types; for numeric formulas, convert to numbers
+                            if (formula === 'count' || formula === 'countDistinct') {
+                                if (item !== null && item !== undefined) {
+                                    values.push(item);
+                                }
+                            } else {
+                                const numValue = typeof item === 'number' ? item : parseFloat(item) || 0;
+                                if (!isNaN(numValue)) {
+                                    values.push(numValue);
+                                }
+                            }
+                        }
+                    } else {
                         // For count/countDistinct, keep all types; for numeric formulas, convert to numbers
                         if (formula === 'count' || formula === 'countDistinct') {
-                            if (item !== null && item !== undefined) {
-                                values.push(item);
+                            if (value !== null && value !== undefined) {
+                                values.push(value);
                             }
                         } else {
-                            const numValue = typeof item === 'number' ? item : parseFloat(item) || 0;
+                            const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
                             if (!isNaN(numValue)) {
                                 values.push(numValue);
                             }
                         }
                     }
-                } else {
-                    // For count/countDistinct, keep all types; for numeric formulas, convert to numbers
-                    if (formula === 'count' || formula === 'countDistinct') {
-                        if (value !== null && value !== undefined) {
-                            values.push(value);
-                        }
-                    } else {
-                        const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
-                        if (!isNaN(numValue)) {
-                            values.push(numValue);
-                        }
-                    }
+                } catch (error) {
+                    console.warn(`Error getting property ${singlePropertyName} from file:`, error);
                 }
-            } catch (error) {
-                console.warn(`Error getting property ${propertyName} from file:`, error);
             }
         }
         

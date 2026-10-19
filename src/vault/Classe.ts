@@ -520,6 +520,10 @@ export class Classe {
         if (!this.file) {
             return;
         }
+        // Holds the File already resolved from the NEW value during the validation block
+        // below. Reusing it at the bottom avoids a second getMetadata() call which may
+        // return a stale (pre-write) cache value and cause the file to move to the OLD parent.
+        let resolvedParentFile: File | undefined;
         // If called with old values, check if we actually need to update
         if (oldMetadata && oldParentProperty !== undefined) {
             const currentParentProperty = await this.getParentProperty();
@@ -547,10 +551,12 @@ export class Classe {
                     return;
                 }
                 
-                // Value changed, verify it's actually valid before moving
+                // Value changed, verify it's actually valid before moving.
+                // Store the result in resolvedParentFile so we can reuse it below
+                // instead of calling this.getParentFile() which may read a stale cache.
                 if ('getParentFile' in currentParentProperty && typeof (currentParentProperty as any).getParentFile === 'function') {
-                    const parentFile = await (currentParentProperty as any).getParentFile(newValue);
-                    if (!parentFile) {
+                    resolvedParentFile = await (currentParentProperty as any).getParentFile(newValue);
+                    if (!resolvedParentFile) {
                         console.log(`⚠️ New parent value is empty/invalid, skipping folder update`);
                         return;
                     }
@@ -562,7 +568,10 @@ export class Classe {
             }
         }
         
-        const parentFile = await this.getParentFile();
+        // Use the parent file already resolved from the new value if available.
+        // Falling back to this.getParentFile() handles callers that don't pass oldMetadata
+        // (e.g. onCreate / onUpdate) where no pre-validated value exists yet.
+        const parentFile = resolvedParentFile ?? await this.getParentFile();
         if (!parentFile) {
             // No parent configured or found
             return;
@@ -637,7 +646,6 @@ export class Classe {
         }
         
         if (currentChildFolder !== targetFolderPath) {
-            // Check if this file has a dedicated folder (folder with same name as file)
             const currentFolderName = currentChildFolder.substring(currentChildFolder.lastIndexOf("/") + 1);
             const fileHasDedicatedFolder = currentFolderName === childBaseName;
             

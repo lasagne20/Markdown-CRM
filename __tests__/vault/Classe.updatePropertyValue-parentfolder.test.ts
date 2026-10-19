@@ -58,13 +58,20 @@ describe('Classe.updatePropertyValue → parentFolder integration (stale-referen
     const instBPath = 'OCC/InstB/InstB.md';
     const personPath = 'OCC/InstA/Pers/Martin.md';
 
-    // The IFile objects
-    const iInstA = makeIFile(instAPath);
-    const iInstB = makeIFile(instBPath);
-    const iPerson = makeIFile(personPath);
+    // The IFile objects — declared as let so beforeEach can create fresh copies.
+    // IMPORTANT: File.move() mutates ifile.path (it's stored by reference), so each
+    // test needs its own pristine IFile object to avoid cross-test state pollution.
+    let iInstA: ReturnType<typeof makeIFile>;
+    let iInstB: ReturnType<typeof makeIFile>;
+    let iPerson: ReturnType<typeof makeIFile>;
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        // Fresh IFile objects for each test (avoid path-mutation bleed from File.move)
+        iInstA  = makeIFile(instAPath);
+        iInstB  = makeIFile(instBPath);
+        iPerson = makeIFile(personPath);
 
         // Initial metadata: Martin works at InstA
         metadataStore = {
@@ -137,5 +144,63 @@ describe('Classe.updatePropertyValue → parentFolder integration (stale-referen
         // Before the fix, it isn't because oldMetadata.postes === newMetadata.postes
         // (same mutated object reference).
         expect(mockApp.move).toHaveBeenCalled();
+    });
+
+    it('FAILS (bug 2): file moves to OLD institution when postes changes (stale getParentFile)', async () => {
+        // The stale-reference fix made us detect the change, but updateParentFolder
+        // then calls this.getParentFile() which re-reads the Obsidian cache.
+        // The cache still has the OLD value → parentFile = InstA → martin moves to InstA's folder.
+        //
+        // Fix: keep the parentFile already resolved from newValue inside the validation
+        // block and use it instead of calling this.getParentFile() again.
+
+        const person = new Personne(vault, iPerson as any);
+
+        const institutionProp = new FileProperty('institution', vault, ['Institution'], {});
+        const posteProp       = new TextProperty('poste', vault, {});
+        const postesProp      = new ObjectProperty('postes', vault, {
+            institution: institutionProp,
+            poste: posteProp,
+        }, {});
+
+        // Returns the correct File based on which institution link is passed.
+        // This is essential: when the stale cache supplies the OLD InstA link,
+        // getParentFile must return InstA's file so we can verify the fix routes
+        // to InstB (the new parent) rather than the stale InstA.
+        jest.spyOn(institutionProp, 'getParentFile').mockImplementation(async (link: any) => {
+            const s = typeof link === 'string' ? link : JSON.stringify(link ?? '');
+            if (s.includes('InstA')) return new File(vault, iInstA as any);
+            if (s.includes('InstB')) return new File(vault, iInstB as any);
+            return undefined;
+        });
+
+        person.addProperty(postesProp);
+
+        // Simulate stale cache: getMetadata still returns OLD postes (InstA) after write
+        // This mimics Obsidian not having refreshed the cache yet
+        mockApp.getMetadata.mockImplementation((ifile: any) => {
+            if (ifile.path === personPath) {
+                // Always return the OLD value — cache not refreshed
+                return Promise.resolve({
+                    classe: 'Personne',
+                    nom: 'Martin',
+                    postes: [{ institution: `[[${instAPath}|InstA]]`, poste: 'Dev' }],
+                });
+            }
+            return Promise.resolve(metadataStore[ifile.path] ?? null);
+        });
+
+        const newPostes = [{ institution: `[[${instBPath}|InstB]]`, poste: 'Dev' }];
+        await person.updatePropertyValue('postes', newPostes);
+
+        // ✅ move must have been called
+        expect(mockApp.move).toHaveBeenCalled();
+
+        // ✅ must move to InstB's folder, NOT InstA's
+        const moveCalls = mockApp.move.mock.calls;
+        expect(moveCalls.length).toBeGreaterThan(0);
+        const movedToPath: string = moveCalls[0][1]; // second arg is target path
+        expect(movedToPath).toContain('InstB');
+        expect(movedToPath).not.toContain('InstA');
     });
 });
