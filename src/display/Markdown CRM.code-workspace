@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../../Test plugin obsidian/Outils/Obsidian/Config"
+		},
+		{
+			"path": "../../../Test plugin obsidian/.obsidian/plugins/obsidian-CRM"
 		}
 	],
 	"settings": {

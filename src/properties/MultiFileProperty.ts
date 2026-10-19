@@ -127,9 +127,12 @@ export class MultiFileProperty extends ObjectProperty {
             values = values ? [values] : [];
         }
         
-        const container = document.createElement("div");
+        const container: HTMLDivElement = document.createElement("div");
         container.classList.add("metadata-multiFiles-container");
         container.classList.add("metadata-multiFiles-container-" + this.name.toLowerCase().replace(/\s+/g, '-'));
+        
+        // Store container reference for reliable reload
+        this.containerElement = container;
 
         // Créer les lignes d'objet
         this.createObjects(values, update, container);
@@ -233,10 +236,13 @@ export class MultiFileProperty extends ObjectProperty {
     }
 
     override async reloadObjects(values: any, update: (value: any) => Promise<void>, specificContainer?: HTMLDivElement) {
-        // Si un container spécifique est fourni (cas d'utilisation dans ObjectProperty), l'utiliser
-        // Sinon, chercher le container via querySelector (comportement legacy)
-        const container = specificContainer || 
-            document.querySelector(".metadata-multiFiles-container-" + this.name.toLowerCase()) as HTMLDivElement;
+        // Use specificContainer first, then stored containerElement, then fallback to querySelector
+        let container = specificContainer || this.containerElement;
+        
+        if (!container) {
+            // Fallback to querySelector (legacy behavior)
+            container = document.querySelector(".metadata-multiFiles-container-" + this.name.toLowerCase()) as HTMLDivElement;
+        }
             
         if (container) {
             console.log('🔄 MultiFileProperty: Rechargement de l\'interface avec values:', values);

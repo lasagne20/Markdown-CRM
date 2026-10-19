@@ -19,6 +19,7 @@ export class ObjectProperty extends Property{
     public allowMove : boolean = true;
     public display : string = "object"; // Organization mode: "object", "table", "tabs"
     public displayContainer? : DisplayContainer; // Custom layout for properties within each object
+    protected containerElement?: HTMLDivElement; // Store container reference for reliable reload
 
     constructor(name: string, vault: Vault, properties: { [key: string]: Property }, args: { allowMove?: boolean, appendFirst?: boolean, tooltip?: string, display?: string, displayContainer?: DisplayContainer, [key: string]: any} = {}) {
         super(name, vault, args);
@@ -310,7 +311,10 @@ export class ObjectProperty extends Property{
             }
         }
         
-        const container = document.createElement("div");
+        const container: HTMLDivElement = document.createElement("div");
+        
+        // Store container reference for reliable reload
+        this.containerElement = container;
         
         // Generate unique ID for this container instance
         const uuid = generateUUID();
@@ -908,12 +912,13 @@ export class ObjectProperty extends Property{
 
     // Recharge dynamiquement les objets
     async reloadObjects(values : any, update : (value: any) => Promise<void>, specificContainer?: HTMLDivElement) {
-        if (!specificContainer) {
+        // Use specificContainer first, then fallback to stored containerElement
+        const container = specificContainer || this.containerElement;
+        
+        if (!container) {
             console.warn(`reloadObjects called without container for ${this.name}`);
             return;
         }
-        
-        const container = specificContainer;
         
         // Store the currently active tab index before clearing the container
         const activeTabIndex = this.display === "tabs" ? this.getCurrentActiveTabIndex(container) : -1;
