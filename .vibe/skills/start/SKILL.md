@@ -8,11 +8,21 @@ description: >-
 
 Workflow de synchronisation Markdown CRM → Obsidian-CRM.
 
-## Quand l'exécuter
+## Prérequis : publier la lib sur GitHub
 
-À la fin de chaque intervention qui modifie l'interface du plugin (affichage, propriétés, modales, display, styles), après validation des tests :
+Le plugin consomme `markdown-crm` depuis `github:lasagne20/Markdown-CRM`. La lib doit donc être **commitée et poussée sur `origin/main`** avant la synchro :
 
-1. les tests Jest de Markdown CRM passent (`npm test` dans `C:\Users\leodu\Documents\1 - Pro\Markdown CRM`)
+```
+cd "C:\Users\leodu\Documents\1 - Pro\Markdown CRM"
+git add <fichiers> && git commit
+git push origin main   # demander l'autorisation utilisateur à chaque fois
+```
+
+## Quand exécuter la synchro
+
+À la fin de chaque intervention qui modifie l'interface du plugin (affichage, propriétés, modales, display, styles), après validation :
+
+1. les tests Jest de Markdown CRM passent (`npm test`)
 2. `npx tsc --noEmit` ne rapporte pas de nouvelle erreur sur les fichiers modifiés
 
 ## Commande à lancer
@@ -29,8 +39,17 @@ exécuter :
 npm update markdown-CRM --force && npm run build
 ```
 
-- `npm update markdown-CRM --force` : récupère la dernière version de la lib `markdown-crm` (GitHub : lasagne20/Markdown-CRM) dans `node_modules`
-- `npm run build` : recompile `main.js` via esbuild avec la lib à jour
+⚠️ **Important** : `npm update` seul ne re-résout PAS une dépendance GitHub vers les nouveaux commits (le package-lock fige le hash). Si `npm update` affiche "up to date" alors que des commits viennent d'être poussés, forcer la réinstallation :
+
+```
+rm -rf node_modules/markdown-crm && npm install github:lasagne20/Markdown-CRM --force
+```
+
+Puis vérifier que les derniers correctifs sont présents (grep sur un marqueur du dernier commit dans `node_modules/markdown-crm/src/...`) avant de builder :
+
+```
+npm run build
+```
 
 ## Après le build
 
@@ -39,5 +58,5 @@ npm update markdown-CRM --force && npm run build
 
 ## Notes
 
-- Si `npm update markdown-CRM --force` ne récupère pas les derniers commits du repo GitHub, supprimer le dossier `node_modules/markdown-crm` puis relancer `npm install markdown-crm` avant le build
 - Les tests du plugin obsidian-CRM se lancent avec `npm test` dans son propre dossier (config Jest locale)
+- Les warnings npm (peer dependency @codemirror/state, audit) sont préexistants et sans impact sur le build

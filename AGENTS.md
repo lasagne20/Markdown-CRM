@@ -12,13 +12,20 @@ C:\Users\leodu\Documents\1 - Pro\Test plugin obsidian\.obsidian\plugins\obsidian
 
 1. Les tests Jest passent : `npm test`
 2. `npx tsc --noEmit` ne rapporte pas de nouvelle erreur sur les fichiers modifiés
-3. Lancer dans le dossier du plugin obsidian-CRM :
+3. Committer et pousser sur `origin/main` (demander l'autorisation utilisateur pour chaque push)
+4. Lancer dans le dossier du plugin obsidian-CRM :
 
 ```
 npm update markdown-CRM --force && npm run build
 ```
 
-Cela met à jour la lib dans `node_modules` du plugin et recompile `main.js` pour qu'Obsidian charge la nouvelle version après rechargement du plugin.
+⚠️ `npm update` ne re-résout pas les dépendances GitHub vers les nouveaux commits (lock figé). Si "up to date" s'affiche alors que des commits viennent d'être poussés :
+
+```
+rm -rf node_modules/markdown-crm && npm install github:lasagne20/Markdown-CRM --force
+```
+
+Puis vérifier les correctifs dans `node_modules/markdown-crm` (grep sur un marqueur du dernier commit) et relancer `npm run build`.
 
 Détails complets : voir `.vibe/skills/start/SKILL.md`.
 
