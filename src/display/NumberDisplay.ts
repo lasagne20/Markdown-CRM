@@ -14,6 +14,9 @@ interface NumberDisplayOptions {
     color?: string; // couleur de remplissage (défaut: var(--interactive-accent))
     max?: number; // valeur maximale pour le calcul du niveau de remplissage (value/max = fill level)
     display?: 'ring' | 'plain' | 'bar'; // variante visuelle: ring (défaut), plain (chiffre seul), bar (barre horizontale)
+    prefix?: string; // texte avant le nombre
+    suffix?: string; // texte après le nombre et l'unité
+    thousandsSeparator?: string; // séparateur de milliers (ex: " ") - absent/vide = nombre brut
 }
 
 export class NumberDisplay {
@@ -82,7 +85,10 @@ export class NumberDisplay {
             // For other formulas, pass the resolved max so the fill is value/max
             // instead of falling back to value/100.
             max: item.formula === 'percent' ? 100 : maxValue,
-            display: item.display
+            display: item.display,
+            prefix: item.prefix,
+            suffix: item.suffix,
+            thousandsSeparator: item.thousandsSeparator
         });
     }
 
@@ -256,6 +262,24 @@ export class NumberDisplay {
         }
     }
 
+    /**
+     * Build the display text: prefix + formatted number + unit + suffix
+     */
+    private getValueText(): string {
+        const { value, unit, prefix, suffix, thousandsSeparator } = this.options;
+        let numberText: string;
+        if (thousandsSeparator) {
+            const [intPart, decPart] = String(value).split('.');
+            numberText = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
+            if (decPart !== undefined) {
+                numberText += `.${decPart}`;
+            }
+        } else {
+            numberText = String(value);
+        }
+        return `${prefix ?? ''}${numberText}${unit ?? ''}${suffix ?? ''}`;
+    }
+
     getDisplay() {
         const { value, unit, label, size, max } = this.options;
         const color = this.options.color || "var(--interactive-accent)";
@@ -269,7 +293,7 @@ export class NumberDisplay {
 
             const valueEl = document.createElement('div');
             valueEl.className = 'crm-number-display-value';
-            valueEl.textContent = `${value}${unit ?? ""}`;
+            valueEl.textContent = this.getValueText();
             this.container.appendChild(valueEl);
 
             this.appendLabel(size ?? 96);
@@ -284,7 +308,7 @@ export class NumberDisplay {
 
             const valueEl = document.createElement('div');
             valueEl.className = 'crm-number-display-value';
-            valueEl.textContent = `${value}${unit ?? ""}`;
+            valueEl.textContent = this.getValueText();
             this.container.appendChild(valueEl);
 
             const track = document.createElement('div');
@@ -348,7 +372,7 @@ export class NumberDisplay {
         text.setAttribute("font-size", `${displaySize * 0.3}px`); // taille du texte adapté
         text.setAttribute("fill", "var(--text-normal)");
         text.setAttribute("font-weight", "bold"); // Met le texte en gras
-        text.textContent = `${value}${unit ?? ""}`;
+        text.textContent = this.getValueText();
         svg.appendChild(text);
 
         this.container.appendChild(svg);

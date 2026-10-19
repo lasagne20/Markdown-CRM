@@ -141,6 +141,9 @@ export interface NumberDisplayItem extends BaseDisplayItem {
     color?: string; // Fill color (default: var(--interactive-accent))
     max?: number | string | MaxCalculationConfig; // Maximum value: number, property name (e.g., "budget" or "items[0].total"), or calculation config
     display?: 'ring' | 'plain' | 'bar'; // Visual variant: ring (default), plain (big number without circle), bar (horizontal progress bar)
+    prefix?: string; // Text before the number (e.g. "≈ ")
+    suffix?: string; // Text after the number and unit (e.g. " HT")
+    thousandsSeparator?: string; // Thousands separator (e.g. " " -> "1 234 567"); unset/empty = raw number
 }
 
 // Map display item (interactive map with markers)
