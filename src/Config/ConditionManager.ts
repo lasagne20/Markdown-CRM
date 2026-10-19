@@ -960,6 +960,14 @@ export class ConditionManager {
 
                 // String conversion for dates
                 if (typeof value === 'string') {
+                    // Relative keywords: today / yesterday / tomorrow (midnight UTC, aligned
+                    // with the parsing of "YYYY-MM-DD" values below)
+                    if (/^(today|yesterday|tomorrow)$/.test(value)) {
+                        const now = new Date();
+                        const offsetDays = value === 'today' ? 0 : (value === 'tomorrow' ? 1 : -1);
+                        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offsetDays)).getTime();
+                    }
+
                     // Year only: "2024"
                     if (/^\d{4}$/.test(value)) {
                         const year = parseInt(value, 10);

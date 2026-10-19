@@ -97,6 +97,115 @@ describe('ConditionManager - comparaisons sur RangeDateProperty (dateRange)', ()
         });
     });
 
+    describe('Mots-clés relatifs : today / yesterday / tomorrow', () => {
+        beforeEach(() => {
+            // Date système déterministe : 19 octobre 2026, 12:00 UTC
+            jest.useFakeTimers();
+            jest.setSystemTime(new Date('2026-10-19T12:00:00Z'));
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        test('PLANTE : greaterThanOrEqual avec "today" inclut les actions du jour', async () => {
+            // Action datée aujourd'hui (2026-10-19)
+            rangeDateProperty.read = jest.fn().mockResolvedValue('2026-10-19 to 2026-10-21');
+
+            const condition: Condition = {
+                property: 'date',
+                type: 'greaterThanOrEqual',
+                value: 'today'
+            };
+
+            const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
+            // Aujourd'hui >= aujourd'hui -> VRAI (avant le fix : today -> null -> faux)
+            expect(result).toBe(true);
+        });
+
+        test('PLANTE : une action d\'hier est exclue par "today"', async () => {
+            rangeDateProperty.read = jest.fn().mockResolvedValue('2026-10-18 to 2026-10-20');
+
+            const condition: Condition = {
+                property: 'date',
+                type: 'greaterThanOrEqual',
+                value: 'today'
+            };
+
+            const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
+            // 18 octobre < 19 octobre -> FAUX (avant le fix : toujours faux mais pour la mauvaise raison)
+            expect(result).toBe(false);
+        });
+
+        test('greaterThan strict avec "today" exclut les actions du jour même', async () => {
+            rangeDateProperty.read = jest.fn().mockResolvedValue('2026-10-19 to 2026-10-21');
+
+            const condition: Condition = {
+                property: 'date',
+                type: 'greaterThan',
+                value: 'today'
+            };
+
+            const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
+            // 19 octobre > 19 octobre -> FAUX (strict)
+            expect(result).toBe(false);
+        });
+
+        test('"tomorrow" exclut les actions du jour même', async () => {
+            rangeDateProperty.read = jest.fn().mockResolvedValue('2026-10-19 to 2026-10-21');
+
+            const condition: Condition = {
+                property: 'date',
+                type: 'greaterThanOrEqual',
+                value: 'tomorrow'   // 2026-10-20
+            };
+
+            const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
+            expect(result).toBe(false);
+        });
+
+        test('"tomorrow" inclut une action commençant demain', async () => {
+            rangeDateProperty.read = jest.fn().mockResolvedValue('2026-10-20 to 2026-10-22');
+
+            const condition: Condition = {
+                property: 'date',
+                type: 'greaterThanOrEqual',
+                value: 'tomorrow'
+            };
+
+            const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
+            expect(result).toBe(true);
+        });
+
+        test('"yesterday" fonctionne en lessThan', async () => {
+            // Action d'avant-hier (17 octobre)
+            rangeDateProperty.read = jest.fn().mockResolvedValue('2026-10-17 to 2026-10-18');
+
+            const condition: Condition = {
+                property: 'date',
+                type: 'lessThan',
+                value: 'yesterday'   // 2026-10-18
+            };
+
+            const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
+            // 17 octobre < 18 octobre -> VRAI
+            expect(result).toBe(true);
+        });
+
+        test('"today" sur une DateProperty simple (type date) fonctionne aussi', async () => {
+            simpleDateProperty.read = jest.fn().mockResolvedValue('2026-10-19');
+
+            const condition: Condition = {
+                property: 'dateSimple',
+                type: 'greaterThanOrEqual',
+                value: 'today'
+            };
+
+            const result = await conditionManager.evaluateCondition(condition, mockClasseInstance);
+            expect(result).toBe(true);
+        });
+    });
+
     describe('Cohérence après correction', () => {
         test('greaterThanOrEqual vrai quand la plage commence après la date de condition', async () => {
             rangeDateProperty.read = jest.fn().mockResolvedValue('2026-03-16 to 2026-03-20');
