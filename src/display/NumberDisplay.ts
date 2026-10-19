@@ -139,6 +139,24 @@ export class NumberDisplay {
                         value = await file.getPropertyValue(singlePropertyName, context);
                     }
 
+                    // FormulaProperty (and similar) compute their value on read() and
+                    // are not persisted to the frontmatter unless write=true. When the
+                    // metadata has nothing for a simple property, fall back to reading
+                    // the property itself so formulas contribute to the calculation.
+                    if ((value === null || value === undefined || (Array.isArray(value) && value.length === 0))
+                        && !singlePropertyName.includes('.')
+                        && !singlePropertyName.includes('[')
+                        && typeof (file as any).getProperty === 'function') {
+                        const prop = (file as any).getProperty(singlePropertyName);
+                        if (prop && typeof prop.read === 'function') {
+                            try {
+                                value = await prop.read(file);
+                            } catch (error) {
+                                console.warn(`Error reading property ${singlePropertyName} from file:`, error);
+                            }
+                        }
+                    }
+
                     // Handle arrays (from filter expressions like "partenariats.filter().montant")
                     if (Array.isArray(value)) {
                         for (const item of value) {
