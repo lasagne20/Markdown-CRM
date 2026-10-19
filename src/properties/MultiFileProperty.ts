@@ -201,7 +201,12 @@ export class MultiFileProperty extends ObjectProperty {
         });
         console.log('📂 Fichiers sélectionnés:', newFiles);
         
-        if (newFiles && newFiles.length > 0) {
+        if (!newFiles || newFiles.length === 0) {
+            console.warn(`⚠️ MultiFileProperty "${this.name}": aucune sélection résolue (sélection vide ou erreur de chargement de classe - voir logs précédents)`);
+            return;
+        }
+
+        {
             // S'assurer que values est un tableau
             if (!Array.isArray(values)) {
                 console.log('⚠️ values n\'est pas un tableau, initialisation à []');
