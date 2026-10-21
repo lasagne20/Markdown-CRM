@@ -221,7 +221,7 @@ export class Classe {
             timingProcesses = Date.now() - t;
         }
 
-        console.log(`⏱️ CRM-update "${propertyName}" (${this.file?.getPath()}): read=${timingRead}ms write=${timingWrite}ms notify=${timingNotify}ms processes=${timingProcesses}ms total=${Date.now() - timingStart}ms | classe#${(this as any).__crmId ?? ((this as any).__crmId = Math.random().toString(36).slice(2, 8))} listener=${!!this.onPropertyChanged}`);
+        console.log(`⏱️ CRM-update "${propertyName}" (${this.file?.getPath()}): read=${timingRead}ms write=${timingWrite}ms notify=${timingNotify}ms processes=${timingProcesses}ms total=${Date.now() - timingStart}ms | classe#${(this as any).__crmId ?? ((this as any).__crmId = Math.random().toString(36).slice(2, 8))} listener=${!!this.onPropertyChanged} handler=${(this.onPropertyChanged as any)?.__crmHandlerTag ?? (this.onPropertyChanged ? 'UNTAGGED' : 'none')}`);
     }
     
     async getPropertyValue(propertyName: string, context?: any): Promise<any> {

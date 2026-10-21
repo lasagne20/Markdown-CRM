@@ -208,12 +208,15 @@ export class DisplayRenderer {
         const instanceId = (context as any).__crmId ?? ((context as any).__crmId = Math.random().toString(36).slice(2, 8));
         console.log(`⏱️ CRM-subscribe: renderer subscribed on classe#${instanceId} (${context.getPath?.()})`);
         const previousListener = context.onPropertyChanged;
-        context.onPropertyChanged = async (propertyName: string) => {
+        const handler = async (propertyName: string) => {
             if (previousListener) {
                 await previousListener(propertyName);
             }
             await this.refreshComputedWidgets(propertyName);
         };
+        // TEMPORARY diagnostic tag: identifies which component set the handler
+        (handler as any).__crmHandlerTag = `renderer@classe#${instanceId}`;
+        context.onPropertyChanged = handler;
     }
 
     /**
@@ -253,6 +256,7 @@ export class DisplayRenderer {
     private async refreshComputedWidgets(changedProperty: string): Promise<void> {
         // TEMPORARY timing diagnostics (prefix ⏱️ CRM) - remove once the
         // first-edit delay is identified
+        console.log(`⏱️ CRM-refresh-enter "${changedProperty}"`);
         const timingStart = Date.now();
         let reRendered = 0;
         for (let i = this.trackedWidgets.length - 1; i >= 0; i--) {
