@@ -182,10 +182,12 @@ export class Classe {
         // Trigger onPropertyChange processes only if value actually changed
         // Compare the deep copy with the new value
         if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
-            await this.runProcesses('onPropertyChange', propertyName);
+            // Refresh computed displays FIRST: the processes below (renames,
+            // folder moves) can be slow, and the display must not wait for them
             if (this.onPropertyChanged) {
                 await this.onPropertyChanged(propertyName);
             }
+            await this.runProcesses('onPropertyChange', propertyName);
         }
     }
     
