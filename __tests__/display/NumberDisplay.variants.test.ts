@@ -28,7 +28,7 @@ describe('NumberDisplay - variantes visuelles (display)', () => {
             expect(display.container.querySelector('svg')).toBeNull();
             // La valeur avec l'unité
             const valueEl = display.container.querySelector('.crm-number-display-value');
-            expect(valueEl?.textContent).toBe('5000€');
+            expect(valueEl?.textContent).toBe('5 000€');
         });
 
         test('plain affiche le label sous la valeur', () => {
