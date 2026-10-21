@@ -8,6 +8,7 @@ import { NumberDisplay } from './NumberDisplay';
 import { DynamicMap } from './DynamicMap';
 import { PropertyNavigator } from '../utils/PropertyNavigator';
 import { ConditionManager } from '../Config/ConditionManager';
+import { FormulaProperty } from '../properties/FormulaProperty';
 
 /**
  * Utility class for rendering display configurations
@@ -19,6 +20,13 @@ export class DisplayRenderer {
     private context: any; // The Classe instance or object data
     private updateCallback?: (propertyName: string, value: any) => Promise<void>;
     private propertyNavigator: PropertyNavigator;
+    /**
+     * Widgets of computed properties (derived or formula) rendered for the
+     * context Classe, with the source properties they depend on. When a
+     * source property changes, only these widgets are re-rendered.
+     */
+    private trackedWidgets: { item: any; element: HTMLElement; dependencies: string[] }[] = [];
+    private subscribedToPropertyChanges = false;
 
     constructor(
         vault: Vault, 
@@ -34,6 +42,7 @@ export class DisplayRenderer {
     }
 
     async renderDisplayItems(container: HTMLElement, items: DisplayItem[]): Promise<void> {
+        this.subscribeToPropertyChanges();
         for (const item of items) {
             // Évaluer les conditions avant de rendre l'item
             if (item.conditions && item.conditions.length > 0) {
@@ -173,8 +182,93 @@ export class DisplayRenderer {
                 // (property as any).appendFirst = originalAppendFirst;
             }
         }
-        
+
+        if (this.subscribedToPropertyChanges && result) {
+            this.trackComputedWidget(item, property, result);
+        }
+
         return result;
+    }
+
+    /**
+     * Subscribe to the context Classe's property-change notification so that
+     * computed widgets can be refreshed when their sources change. Idempotent;
+     * chains any previously registered listener. Only applies when the
+     * context is a Classe (ObjectProperty sub-renderers use plain data).
+     */
+    private subscribeToPropertyChanges(): void {
+        if (this.subscribedToPropertyChanges) {
+            return;
+        }
+        const context = this.context as any;
+        if (!context || typeof context.updatePropertyValue !== 'function') {
+            return;
+        }
+        this.subscribedToPropertyChanges = true;
+        const previousListener = context.onPropertyChanged;
+        context.onPropertyChanged = async (propertyName: string) => {
+            if (previousListener) {
+                await previousListener(propertyName);
+            }
+            await this.refreshComputedWidgets(propertyName);
+        };
+    }
+
+    /**
+     * Register the rendered widget of a computed property with the source
+     * properties it depends on:
+     * - derivedFrom: the root of the source path (e.g. "animations" for
+     *   "animations.date")
+     * - formula: identifiers extracted from the formula code, matched against
+     *   the known property names (see FormulaProperty.extractDependencies)
+     */
+    private trackComputedWidget(item: any, property: Property, element: HTMLElement): void {
+        const prop = property as any;
+        let dependencies: string[] = [];
+        if (prop.derivedFrom) {
+            const root = String(prop.derivedFrom).split(/[.\[]/, 1)[0];
+            if (root) {
+                dependencies = [root];
+            }
+        } else if (property.type === 'formula' && prop.formula) {
+            dependencies = FormulaProperty.extractDependencies(prop.formula, Object.keys(this.properties))
+                .filter((name: string) => name !== property.name);
+        }
+        if (dependencies.length === 0) {
+            return;
+        }
+        this.trackedWidgets.push({ item, element, dependencies });
+    }
+
+    /**
+     * Re-render only the tracked widgets that depend on the changed property,
+     * replacing the old element in place. Stale entries (widget no longer in
+     * the DOM) are dropped.
+     */
+    private async refreshComputedWidgets(changedProperty: string): Promise<void> {
+        for (let i = this.trackedWidgets.length - 1; i >= 0; i--) {
+            const entry = this.trackedWidgets[i];
+            if (!entry.element.isConnected) {
+                this.trackedWidgets.splice(i, 1);
+                continue;
+            }
+            if (!entry.dependencies.includes(changedProperty)) {
+                continue;
+            }
+            const parent = entry.element.parentNode;
+            if (!parent) {
+                this.trackedWidgets.splice(i, 1);
+                continue;
+            }
+            // Remove the entry first: renderProperty re-registers the fresh widget
+            this.trackedWidgets.splice(i, 1);
+            const newElement = await this.renderProperty(entry.item);
+            if (newElement) {
+                parent.replaceChild(newElement, entry.element);
+            } else {
+                entry.element.remove();
+            }
+        }
     }
 
     /**

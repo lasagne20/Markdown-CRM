@@ -19,6 +19,38 @@ export class FormulaProperty extends LinkProperty {
         return value;
     }
 
+    /**
+     * Extract the property names a formula depends on.
+     *
+     * The formula receives the class properties as JS identifiers under their
+     * sanitized names (whitespace removed, see read()). Dependencies are the
+     * known property names whose sanitized form appears in the formula as a
+     * whole identifier. Lookarounds are used instead of \b so accented names
+     * are handled correctly; regex special characters in names are escaped.
+     *
+     * False positives (name appearing inside a string literal) only cause a
+     * superfluous re-render. False negatives (name built dynamically) are
+     * practically nonexistent.
+     */
+    static extractDependencies(formula: string, propertyNames: string[]): string[] {
+        if (!formula) {
+            return [];
+        }
+        const dependencies: string[] = [];
+        for (const name of propertyNames) {
+            const sanitized = name.replace(/\s+/g, "");
+            if (!sanitized) {
+                continue;
+            }
+            const escaped = sanitized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const regex = new RegExp(`(?<![A-Za-z0-9_])${escaped}(?![A-Za-z0-9_])`);
+            if (regex.test(formula)) {
+                dependencies.push(name);
+            }
+        }
+        return dependencies;
+    }
+
     override async read(classe: Classe) : Promise<any> {
         // Get all properties from the classe
         const allFileProperties = classe.getAllProperties() || {};

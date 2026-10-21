@@ -17,6 +17,12 @@ export class Classe {
     public template?: string;
     public data : Data | null = null;
     public displayConfig : any = {};
+    /**
+     * Notified (and awaited) by updatePropertyValue whenever a property value
+     * actually changed. Lets display layers re-render only the widgets that
+     * depend on the changed property (derived properties, formulas).
+     */
+    public onPropertyChanged?: (propertyName: string) => void | Promise<void>;
     
     constructor(protected vault: Vault, file ? : File, data ? : Data) {
         if (file) {
@@ -177,6 +183,9 @@ export class Classe {
         // Compare the deep copy with the new value
         if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
             await this.runProcesses('onPropertyChange', propertyName);
+            if (this.onPropertyChanged) {
+                await this.onPropertyChanged(propertyName);
+            }
         }
     }
     
