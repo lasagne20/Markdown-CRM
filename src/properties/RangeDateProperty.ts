@@ -2,13 +2,131 @@ import flatpickr from "flatpickr";
 import "flatpickr/dist/l10n/fr.js";
 import { DateProperty } from "./DateProperty";
 import { Vault } from "../vault/Vault";
+import { PropertyNavigator } from "../utils/PropertyNavigator";
 
 
 export class RangeDateProperty extends DateProperty {
 
     public override type : string = "dateRange";
-    constructor(name: string, vault: Vault, args: {icon?: string, static?: boolean, aliases?: string[], tooltip?: string} = {}) {
+    /**
+     * Optional path this range is derived from (e.g. "animations.date").
+     * When the path resolves to at least one valid date, the property value
+     * becomes the "min to max" range of these dates and the display is
+     * read-only. Otherwise the stored (manually entered) value is used.
+     */
+    public derivedFrom?: string;
+
+    constructor(name: string, vault: Vault, args: {icon?: string, static?: boolean, aliases?: string[], tooltip?: string, derivedFrom?: string} = {}) {
         super(name, vault, [], args);
+        this.derivedFrom = args.derivedFrom;
+    }
+
+    /**
+     * Parse any date-ish value into [startTimestamp, endTimestamp].
+     * Accepts Date objects (Obsidian metadata cache), timestamps (numbers),
+     * "YYYY-MM-DD" strings and "YYYY-MM-DD to YYYY-MM-DD" range strings.
+     * Returns null for anything unparsable.
+     */
+    static parseDateValue(value: any): [number, number] | null {
+        if (value === null || value === undefined || value === '') {
+            return null;
+        }
+        if (value instanceof Date) {
+            return isNaN(value.getTime()) ? null : [value.getTime(), value.getTime()];
+        }
+        if (typeof value === 'number') {
+            return [value, value];
+        }
+        if (typeof value === 'string') {
+            if (value.includes(' to ')) {
+                const [startStr, endStr] = value.split(' to ');
+                const start = new Date(startStr);
+                const end = new Date(endStr);
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    return null;
+                }
+                return [start.getTime(), end.getTime()];
+            }
+            const date = new Date(value);
+            return isNaN(date.getTime()) ? null : [date.getTime(), date.getTime()];
+        }
+        return null;
+    }
+
+    /**
+     * Format a timestamp as "YYYY-MM-DD" (UTC, consistent with the storage format)
+     */
+    static formatTimestamp(timestamp: number): string {
+        const d = new Date(timestamp);
+        const year = d.getUTCFullYear();
+        const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(d.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    /**
+     * Resolve the derived range from the configured path.
+     * Returns "YYYY-MM-DD", "YYYY-MM-DD to YYYY-MM-DD" or null when the
+     * path resolves to no valid date (fallback to the stored value).
+     */
+    private async resolveDerivedRange(classe: any): Promise<string | null> {
+        if (!this.derivedFrom || !classe) {
+            return null;
+        }
+        try {
+            const navigator = new PropertyNavigator(this.vault, classe);
+            const values = await navigator.collectNestedProperty(classe, this.derivedFrom);
+            const timestamps: number[] = [];
+            for (const value of (values ?? [])) {
+                const parsed = RangeDateProperty.parseDateValue(value);
+                if (parsed) {
+                    timestamps.push(parsed[0], parsed[1]);
+                }
+            }
+            if (timestamps.length === 0) {
+                return null;
+            }
+            const min = Math.min(...timestamps);
+            const max = Math.max(...timestamps);
+            if (min === max) {
+                return RangeDateProperty.formatTimestamp(min);
+            }
+            return `${RangeDateProperty.formatTimestamp(min)} to ${RangeDateProperty.formatTimestamp(max)}`;
+        } catch (error) {
+            console.warn(`RangeDateProperty: error resolving derived range for "${this.name}" from "${this.derivedFrom}":`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Derived range when the path resolves, otherwise the stored value
+     */
+    override async read(classe: any): Promise<any> {
+        const derived = await this.resolveDerivedRange(classe);
+        if (derived !== null) {
+            return derived;
+        }
+        return await super.read(classe);
+    }
+
+    /**
+     * When the range is derived, render read-only (the value cannot be edited
+     * while animations define it). Otherwise render the normal editable field.
+     */
+    override async getDisplay(classe: any, args : {staticMode? : boolean, title?: string, displayMode?: string} = {staticMode : false, title:""}) {
+        if (this.derivedFrom) {
+            const derived = await this.resolveDerivedRange(classe);
+            if (derived) {
+                const originalStatic = this.static;
+                this.static = true;
+                try {
+                    return await super.getDisplay(classe, args);
+                } finally {
+                    this.static = originalStatic;
+                }
+            }
+        }
+        return await super.getDisplay(classe, args);
     }
 
     override createFieldDate(value: string, update: (value: string) => Promise<void>, link: HTMLDivElement) {

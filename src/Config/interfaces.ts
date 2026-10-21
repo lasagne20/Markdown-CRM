@@ -19,6 +19,7 @@ export interface PropertyConfig {
     conditions?: Condition[]; // Conditions for filtering FileProperty and MultiFileProperty selections
     allowMove?: boolean; // Pour ObjectProperty - activer/désactiver le drag-and-drop (default: true)
     appendFirst?: boolean; // Pour ObjectProperty - ajouter les nouveaux items en premier (default: false)
+    derivedFrom?: string; // Pour RangeDateProperty - chemin des dates dérivées (ex: "animations.date") : range min-max calculé, readonly quand résolu
 }
 
 export interface PropertyTableRow {

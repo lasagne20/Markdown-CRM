@@ -215,7 +215,12 @@ export class ConfigLoader {
         if (config.conditions && Array.isArray(config.conditions)) {
             options.conditions = config.conditions;
         }
-        
+
+        // Add derivedFrom from config.derivedFrom (for RangeDateProperty)
+        if ((config as any).derivedFrom) {
+            options.derivedFrom = (config as any).derivedFrom;
+        }
+
         // Use propertyKey as the name (metadata key)
         const propertyName = (config as any).propertyKey;
         

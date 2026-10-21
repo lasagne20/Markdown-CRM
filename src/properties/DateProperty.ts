@@ -27,7 +27,10 @@ export class DateProperty extends Property {
     // Crée l'affichage du champ date
     override fillDisplay(value : any, update: (value: string) => Promise<void>, args? : {}) {
         // Normalize special date values like "today", "tomorrow", "yesterday"
-        if (value && typeof value === 'string' && !value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Range values ("YYYY-MM-DD to YYYY-MM-DD") are already in storage format:
+        // they must not go through getDateForOption (which would replace them
+        // with the current date)
+        if (value && typeof value === 'string' && !value.match(/^\d{4}-\d{2}-\d{2}$/) && !value.includes(' to ')) {
             // If value is not in YYYY-MM-DD format, try to convert it
             try {
                 value = this.formatDateForStorage(this.getDateForOption(value));

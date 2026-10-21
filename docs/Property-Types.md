@@ -309,6 +309,35 @@ projectTimeline:
 
 **Use Cases:** Project timelines, vacation periods, campaigns
 
+#### `derivedFrom`: computed ranges
+
+The range can be derived from the dates of another property (typically the
+items of an ObjectProperty). When the path resolves to at least one valid
+date, the property value becomes the **min to max range** of these dates and
+the display is **read-only** (the value cannot be edited while the source
+dates exist). Otherwise the stored (manually entered) value is used, with the
+normal editable field.
+
+```yaml
+date:
+  type: RangeDateProperty
+  derivedFrom: "animations.date"
+```
+
+With `derivedFrom: "animations.date"`, an Action with animations on 3 and 7
+March resolves `date` to `"2026-03-03 to 2026-03-07"` (the range covers the
+in-between days); a single animation gives the plain date `"2026-03-03"`;
+no dated animations fall back to the manually entered value.
+
+The derived value is available everywhere `property.read()` is used:
+- Property display (read-only when derived)
+- Condition filters (`date >= today` matches the start of the derived range)
+- Table sorting (via the `property.read` fallback in `getNestedPropertyValue`)
+
+Accepted source date formats: `YYYY-MM-DD` strings, range strings
+(`"A to B"`), JavaScript `Date` objects (Obsidian metadata cache) and
+timestamps. Unparsable values are ignored.
+
 ---
 
 ## ☑️ Selection Properties

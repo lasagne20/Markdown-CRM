@@ -698,7 +698,27 @@ export class DynamicTable {
         
         // If no dots, use regular getPropertyValue
         if (!propertyPath.includes('.')) {
-            return await file.getPropertyValue(propertyPath);
+            const value = await file.getPropertyValue(propertyPath);
+
+            // Fallback to the property itself when the stored metadata is empty:
+            // computed properties (e.g. RangeDateProperty with derivedFrom, or
+            // FormulaProperty) resolve their value in read(), not in the metadata.
+            if ((value === null || value === undefined || value === '')
+                && typeof file.getProperty === 'function') {
+                const property = file.getProperty(propertyPath);
+                if (property && typeof property.read === 'function') {
+                    try {
+                        const derived = await property.read(file);
+                        if (derived !== null && derived !== undefined) {
+                            return derived;
+                        }
+                    } catch (error) {
+                        console.warn(`Error reading property ${propertyPath} from file:`, error);
+                    }
+                }
+            }
+
+            return value;
         }
 
         // Check for filter syntax: array.filter(property=value).targetProperty
