@@ -645,22 +645,25 @@ productPhotos:
 ---
 
 ### 3DModelProperty
-3D models with viewer.
+Interactive 3D model viewer (three.js) with FreeCAD integration.
 
 ```yaml
-productModel:
-  type: 3DModelProperty
-  title: Product Model
-  accept: ".obj,.fbx,.gltf"
+modele3D:
+  type: 3DModelProperty       # ThreeDModelProperty fonctionne aussi
+  title: Modele3D
+  icon: cube-3d
+  openLabel: "Ouvrir dans FreeCAD"
 ```
 
 **Features:**
-- 3D model viewer
-- Rotation controls
-- Zoom support
-- Format validation
+- GLB/GLTF embedded viewer (canvas three.js, orbit controls, auto-centering)
+- `.FCStd` files: resolves the associated `.glb` (same stem, `Code`, file name) and renders it
+- Button to open the source file with the OS default application (FreeCAD)
+- Graceful error if the render is missing (no GLB, no WebGL)
 
-**Use Cases:** Product visualization, architectural models, CAD files
+**Use Cases:** CAD parts, assemblies, product visualization
+
+See [ThreeDModelProperty.md](./ThreeDModelProperty.md) for the complete documentation.
 
 ---
 

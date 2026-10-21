@@ -73,15 +73,16 @@ describe('HearderProperty', () => {
             expect(input?.style.fontSize).toBe('3em');
         });
 
-        it('should use default size when no size specified', () => {
+        it('should not set inline size when no size specified (CSS default applies)', () => {
             const mockUpdate = jest.fn();
             const container = headerProperty.fillDisplay('Test Header', mockUpdate);
-            
+
             const link = container.querySelector('.field-headerlink') as HTMLElement;
             const input = container.querySelector('.field-header') as HTMLInputElement;
-            
-            expect(link?.style.fontSize).toBe('2em');
-            expect(input?.style.fontSize).toBe('2em');
+
+            // La taille par defaut vit dans styles.css (.field-headerlink), pas en inline
+            expect(link?.style.fontSize).toBe('');
+            expect(input?.style.fontSize).toBe('');
         });
     });
 

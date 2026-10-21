@@ -36,9 +36,10 @@ export class HearderProperty extends Property {
             const link = fieldContainer.querySelector('.field-headerlink') as HTMLElement;
             const input = fieldContainer.querySelector('.field-header') as HTMLInputElement;
             
-            const size = (args && args.size) ? args.size : '2em';
-            input.style.fontSize = size;
-            link.style.fontSize = size;
+            if (args && args.size) {
+                input.style.fontSize = args.size;
+                link.style.fontSize = args.size;
+            }
         }
 
         contentRow.appendChild(fieldContainer);

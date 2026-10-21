@@ -8,6 +8,8 @@ import { DateProperty } from '../properties/DateProperty';
 import { EmailProperty } from '../properties/EmailProperty';
 import { FileProperty } from '../properties/FileProperty';
 import { FormulaProperty } from '../properties/FormulaProperty';
+import { HearderProperty } from '../properties/HeaderProperty';
+import { ThreeDModelProperty } from '../properties/3DModelProperty';
 import { LinkProperty } from '../properties/LinkProperty';
 import { MediaProperty } from '../properties/MediaProperty';
 import { MultiFileProperty } from '../properties/MultiFileProperty';
@@ -355,6 +357,13 @@ export class ConfigLoader {
 
             case 'MediaProperty':
                 return new MediaProperty(propertyName, this.vault, options);
+
+            case 'HeaderProperty':
+                return new HearderProperty(propertyName, this.vault, options);
+
+            case 'ThreeDModelProperty':
+            case '3DModelProperty':
+                return new ThreeDModelProperty(propertyName, this.vault, options);
 
             case 'IdProperty':
                 return new IdProperty(propertyName, this.vault, options);

@@ -45,12 +45,14 @@ export class FormulaProperty extends LinkProperty {
                     const properties = ${JSON.stringify(sanitizedProperties)};
                     const name = "${getName()}";
                     const { ${Object.keys(sanitizedProperties).join(", ")} } = properties;
-                    ${this.formula.includes("return") ? "" : "return "}${this.formula};
+                    ${this.formula.includes("return")
+                        ? "return (async () => { " + this.formula + " })();"
+                        : "return (async () => (" + this.formula + "))();"}
                 `;
 
             const vault = classe.getVault();
             const formulaFunction = new Function("vault", "file", formulaContent);
-            let value = formulaFunction(vault, classe);
+            let value = await formulaFunction(vault, classe);
             if (this.write) {
                 let currentValue = await classe.getPropertyValue(this.name);
                 if (currentValue !== value){

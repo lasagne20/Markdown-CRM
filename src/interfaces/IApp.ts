@@ -60,6 +60,10 @@ export interface IApp {
     listFolders( folder?: IFolder): Promise<IFolder[]>;
     getFile(path: string): Promise<IFile | IFolder | null>;
     getAbsolutePath(relativePath: string): string;
+    /** URL chargeable pour une ressource du vault (app:// sous Obsidian) */
+    getResourceUrl(relativePath: string): string;
+    /** Ouvre un chemin du vault avec l'application par defaut de l'OS (ex: FreeCAD) */
+    openExternal(relativePath: string): Promise<void>;
 
     getName(): string;
     isFolder(file : IFile): boolean;

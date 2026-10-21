@@ -14,7 +14,10 @@ module.exports = {
   },
   moduleNameMapper: { // Fixed from moduleNameMapping
     '^obsidian$': '<rootDir>/__mocks__/obsidian.js',
-    '^../src/(.*)$': '<rootDir>/src/$1'
+    '^../src/(.*)$': '<rootDir>/src/$1',
+    // three.js examples/jsm sont en ESM : stubs CJS pour jest
+    '^three/examples/jsm/loaders/GLTFLoader.js$': '<rootDir>/__mocks__/three/GLTFLoader.js',
+    '^three/examples/jsm/controls/OrbitControls.js$': '<rootDir>/__mocks__/three/OrbitControls.js'
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   collectCoverageFrom: [

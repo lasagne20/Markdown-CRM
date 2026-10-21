@@ -140,11 +140,12 @@ export class DisplayRenderer {
         if (this.context.getProperties) {
             // Cast args to any to support ObjectProperty's extended parameters (display, displayContainer, appendFirst)
             const args: any = {
-                title: item.title, 
+                title: item.title,
                 staticMode: item.static,
                 display: item.display,
                 displayContainer: item.displayContainer,
-                appendFirst: item.appendFirst
+                appendFirst: item.appendFirst,
+                size: item.size
             };
             result = await property.getDisplay(this.context, args);
         } else {
