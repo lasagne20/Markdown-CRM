@@ -238,6 +238,9 @@ export class DisplayRenderer {
             return;
         }
         this.trackedWidgets.push({ item, element, dependencies });
+        // TEMPORARY timing diagnostics (prefix ⏱️ CRM) - remove once the
+        // first-edit delay is identified
+        console.log(`⏱️ CRM-track "${property.name}" (${property.type}) deps=[${dependencies.join(",")}]`);
     }
 
     /**
@@ -246,6 +249,10 @@ export class DisplayRenderer {
      * the DOM) are dropped.
      */
     private async refreshComputedWidgets(changedProperty: string): Promise<void> {
+        // TEMPORARY timing diagnostics (prefix ⏱️ CRM) - remove once the
+        // first-edit delay is identified
+        const timingStart = Date.now();
+        let reRendered = 0;
         for (let i = this.trackedWidgets.length - 1; i >= 0; i--) {
             const entry = this.trackedWidgets[i];
             if (!entry.element.isConnected) {
@@ -265,10 +272,12 @@ export class DisplayRenderer {
             const newElement = await this.renderProperty(entry.item);
             if (newElement) {
                 parent.replaceChild(newElement, entry.element);
+                reRendered++;
             } else {
                 entry.element.remove();
             }
         }
+        console.log(`⏱️ CRM-refresh "${changedProperty}": tracked=${this.trackedWidgets.length} re-rendered=${reRendered} in ${Date.now() - timingStart}ms`);
     }
 
     /**
