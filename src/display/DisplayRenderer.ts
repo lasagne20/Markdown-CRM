@@ -205,6 +205,8 @@ export class DisplayRenderer {
             return;
         }
         this.subscribedToPropertyChanges = true;
+        const instanceId = (context as any).__crmId ?? ((context as any).__crmId = Math.random().toString(36).slice(2, 8));
+        console.log(`⏱️ CRM-subscribe: renderer subscribed on classe#${instanceId} (${context.getPath?.()})`);
         const previousListener = context.onPropertyChanged;
         context.onPropertyChanged = async (propertyName: string) => {
             if (previousListener) {

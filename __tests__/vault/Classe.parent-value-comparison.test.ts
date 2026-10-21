@@ -97,7 +97,8 @@ const mockVault = {
     app: mockApp,
     getFromLink: jest.fn(),
     createClasse: jest.fn(),
-    listFiles: jest.fn().mockResolvedValue([])
+    listFiles: jest.fn().mockResolvedValue([]),
+    moveCachedClasse: jest.fn()
 } as unknown as Vault;
 
 describe('Classe - REGRESSION: stale cache causes parent folder not to move', () => {

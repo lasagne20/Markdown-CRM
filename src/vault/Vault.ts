@@ -22,6 +22,22 @@ export class Vault {
     public settings: Settings;
     public files: { [key: string]: Classe } = {};
 
+    /**
+     * Keep the classe cache in sync when a file moves: the entry indexed by
+     * the old path must follow the new path. Without this, a renamed file
+     * (e.g. by a title-generation process) would leave the cached instance
+     * under the old path, and the next getFromFile(newPath) would create a
+     * SECOND instance for the same file (widgets bound to one instance,
+     * property-change listeners on the other).
+     */
+    moveCachedClasse(oldPath: string, newPath: string): void {
+        const cached = this.files[oldPath];
+        if (cached) {
+            delete this.files[oldPath];
+            this.files[newPath] = cached;
+        }
+    }
+
     public static classes: { [key: string]: typeof Classe } = {};
     private static dynamicClassFactory: DynamicClassFactory | null = null;
     private static processManager: ProcessManager | null = null;

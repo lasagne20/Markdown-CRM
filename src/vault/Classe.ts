@@ -93,13 +93,21 @@ export class Classe {
     
     // File operations
     setFile(file: File): void {
+        // Track the path change so the Vault's classe cache can follow it:
+        // a stale cache entry would cause the next getFromFile(newPath) to
+        // create a second instance for this same file (split-brain between
+        // the display widgets and the property-change listeners)
+        const oldPath = this.file?.getPath();
         // Ensure file is always a File instance, not just an IFile object
         if (!(file instanceof File)) {
             this.file = new File(this.vault, file as any);
         } else {
             this.file = file;
         }
-
+        const newPath = this.file.getPath();
+        if (oldPath && newPath && oldPath !== newPath) {
+            this.vault.moveCachedClasse(oldPath, newPath);
+        }
     }
     
     getFile(): File | undefined {
@@ -213,7 +221,7 @@ export class Classe {
             timingProcesses = Date.now() - t;
         }
 
-        console.log(`⏱️ CRM-update "${propertyName}" (${this.file?.getPath()}): read=${timingRead}ms write=${timingWrite}ms notify=${timingNotify}ms processes=${timingProcesses}ms total=${Date.now() - timingStart}ms`);
+        console.log(`⏱️ CRM-update "${propertyName}" (${this.file?.getPath()}): read=${timingRead}ms write=${timingWrite}ms notify=${timingNotify}ms processes=${timingProcesses}ms total=${Date.now() - timingStart}ms | classe#${(this as any).__crmId ?? ((this as any).__crmId = Math.random().toString(36).slice(2, 8))} listener=${!!this.onPropertyChanged}`);
     }
     
     async getPropertyValue(propertyName: string, context?: any): Promise<any> {
