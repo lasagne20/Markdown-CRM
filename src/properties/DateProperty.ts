@@ -74,7 +74,21 @@ export class DateProperty extends Property {
         input.type = "text";
         input.value = value || "";  // Formaté en "YYYY-MM-DD" pour le stockage
         input.classList.add("field-input");
-    
+
+        // flatpickr déclenche onChange (sélection) PUIS onClose (fermeture).
+        // Sans garde, chaque sélection produisait deux updates concurrents avec
+        // la même valeur ; et onClose écrasait l'input avec "" avant d'updater,
+        // vidant la date. La garde saute les updates redondants (même valeur) et
+        // onClose relit la valeur réelle de l'input au lieu de la vider.
+        let lastRequestedValue = value || "";
+        const guardedUpdate = async (newValue: string): Promise<void> => {
+            if (newValue === lastRequestedValue) {
+                return;
+            }
+            lastRequestedValue = newValue;
+            await update(newValue);
+        };
+
         flatpickr(input, {
             dateFormat: "Y-m-d",  // Stocker en "YYYY-MM-DD"
             defaultDate: value || "",
@@ -84,12 +98,11 @@ export class DateProperty extends Property {
                 if (selectedDate) {
                     // Met à jour la valeur de l'input avec le format "YYYY-MM-DD"
                     input.value = this.formatDateForStorage(selectedDate);
-                    await this.updateField(update, input, link)
+                    await this.updateField(guardedUpdate, input, link)
                 }
             },
             onClose : async () => {
-                input.value = ""
-                await this.updateField(update, input, link)
+                await this.updateField(guardedUpdate, input, link)
             }
         });
         return input;
