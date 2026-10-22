@@ -346,7 +346,7 @@ Displays related files in an interactive table with filtering, sorting, and tota
 | `columns[].name` | string | ✅ | Column header text |
 | `columns[].propertyName` | string | ✅ | Property to display |
 | `columns[].filter` | string/boolean | ❌ | Filter type: `text`, `select`, `false` |
-| `columns[].sort` | boolean | ❌ | Enable sorting (default: true) |
+| `columns[].sort` | boolean | ❌ | Enable sorting (default: true). SelectProperty columns sort by configuration option order (workflow states), others alphabetically |
 | `totals` | array | ❌ | Total calculations |
 | `totals[].column` | string | ✅ | Label for total |
 | `totals[].formula` | string | ✅ | Formula: `count`, `sum`, `avg`, `min`, `max` |

@@ -1369,20 +1369,53 @@ export class DynamicTable {
             
             fileValues.push({ file, value });
         }
-        
+
+        // When the property defines an ordered options list (SelectProperty),
+        // sort by configuration order (workflow states) instead of
+        // alphabetical order. Unknown values go after known ones; empty
+        // values are already handled last by the comparator below.
+        const optionOrder = new Map<string, number>();
+        if (propName !== '_fileName' && this.tableData.files.length > 0) {
+            const sampleFile = this.tableData.files[0];
+            if (typeof sampleFile.getProperty === 'function') {
+                const property = sampleFile.getProperty(propName);
+                if (property && Array.isArray((property as any).options)) {
+                    (property as any).options.forEach((opt: any, index: number) => {
+                        if (opt && opt.name !== undefined) {
+                            optionOrder.set(String(opt.name), index);
+                        }
+                    });
+                }
+            }
+        }
+
         // Sort by collected values, with empty values always at the end
         fileValues.sort((a, b) => {
             const aEmpty = !a.value || a.value.trim() === '';
             const bEmpty = !b.value || b.value.trim() === '';
-            
+
             // Both empty: maintain relative order
             if (aEmpty && bEmpty) return 0;
-            
+
             // One empty: empty always goes to the end
             if (aEmpty) return 1;
             if (bEmpty) return -1;
-            
-            // Both have values: normal comparison
+
+            // Both have values: compare by option order when available
+            if (optionOrder.size > 0) {
+                const aKnown = optionOrder.has(a.value);
+                const bKnown = optionOrder.has(b.value);
+                // Known options first; two unknowns fall back to alphabetical
+                if (aKnown !== bKnown) {
+                    return this.tableData.currentSort.ascending ? (aKnown ? -1 : 1) : (aKnown ? 1 : -1);
+                }
+                if (aKnown && bKnown) {
+                    const comparison = optionOrder.get(a.value)! - optionOrder.get(b.value)!;
+                    return this.tableData.currentSort.ascending ? comparison : -comparison;
+                }
+            }
+
+            // Default: alphabetical comparison
             const comparison = a.value.localeCompare(b.value);
             return this.tableData.currentSort.ascending ? comparison : -comparison;
         });
