@@ -309,14 +309,44 @@ export class Vault {
         // Get populate manager singleton and handle population
         let populatedValues: { [key: string]: any } = {};
         
+        // Quand un parent est fourni, pre-remplit la propriete parent declaree
+        // dans la config de la classe : le populate ne redemande pas la valeur
+        // et le lien arrive dans le frontmatter du fichier cree.
+        // Desactivable par classe : parent.autoFill: false (le populate demandera)
+        let existingProperties = args.properties || {};
+        if (args.parent) {
+            try {
+                const factory = this.getDynamicClassFactory();
+                const classConfig = factory ? await factory.getClassConfig(classeType.name) : null;
+                const parentConfig = classConfig?.parent;
+                const parentPropertyName = parentConfig?.property;
+                if (parentPropertyName && parentConfig?.autoFill !== false) {
+                    const parent = args.parent as any;
+                    // Le lien doit etre un wikilink [[chemin|nom]] : la propriete
+                    // parent (FileProperty) ne valide/resout QUE ce format
+                    const parentFile = parent.getFile?.();
+                    const parentLink = parentFile?.getLink
+                        ? parentFile.getLink()
+                        : (parent.getPath?.() ? `[[${parent.getPath()}]]` : undefined);
+                    if (parentLink) {
+                        existingProperties = { ...existingProperties, [parentPropertyName]: parentLink };
+                    }
+                }
+            } catch (error) {
+                console.warn(`Impossible de pré-remplir la propriété parent de ${classeType.name}:`, error);
+            }
+        }
+        
         try {
             const populateManager = this.getPopulateManager();
             
             // Try to populate properties (will check if populate is configured)
             // Pass existing properties from args so they won't be prompted
+            // Pass the parent so the fromParent entries can inherit from it
             const values = await populateManager.populateProperties(
                 classeType.name,
-                args.properties
+                existingProperties,
+                args.parent
             );
             
             if (values === null) {
@@ -333,8 +363,9 @@ export class Vault {
         
         // Merge properties from args (from ProcessManager) with populated values
         // Properties from args take priority over populated values
-        if (args.properties) {
-            populatedValues = { ...populatedValues, ...args.properties };
+        // (existingProperties inclut le lien parent pre-rempli)
+        if (Object.keys(existingProperties).length > 0) {
+            populatedValues = { ...populatedValues, ...existingProperties };
             console.log("📦 Properties from args merged with populate:", populatedValues);
         }
         

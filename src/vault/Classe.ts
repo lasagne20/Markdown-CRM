@@ -353,13 +353,49 @@ export class Classe {
      * 1. Files in dedicated folder (same name as parent file)
      * 2. Files with parent property pointing to this file
      */
+    /**
+     * Chemins des ancetres de cette fiche (chaine des proprietes parent),
+     * bornes pour eviter toute boucle sur des donnees corrompues
+     */
+    protected async getAncestorPaths(maxDepth = 50): Promise<Set<string>> {
+        const paths = new Set<string>();
+        let current: any = this;
+        for (let depth = 0; depth < maxDepth; depth++) {
+            if (typeof current?.getParentFile !== 'function') {
+                break;
+            }
+            let parentFile: any;
+            try {
+                parentFile = await current.getParentFile();
+            } catch (e) {
+                break;
+            }
+            const parentPath = parentFile?.getPath?.();
+            if (!parentPath || paths.has(parentPath)) {
+                break; // garde anti-cycle sur les metadonnees
+            }
+            paths.add(parentPath);
+            try {
+                // Resolution sans onCreate : on ne declenche aucun rangement ici
+                current = await (this.vault as any).createClasse(parentFile, false);
+            } catch (e) {
+                break;
+            }
+        }
+        return paths;
+    }
+
     protected async findChildren(): Promise<Classe[]> {
         if (!this.file) {
             return [];
         }
 
         const children: Classe[] = [];
-        
+
+        // Un ancetre (parent, grand-parent...) ne peut jamais etre un enfant :
+        // c est la graine de la recursion mutuelle qui cree les dossiers zigzag
+        const ancestorPaths = await this.getAncestorPaths();
+
         // Filesystem scan for fresh data
         console.log(`🔍 Filesystem scan for children`);
         const allFiles = await this.vault.listFiles();
@@ -427,8 +463,17 @@ export class Classe {
             }
             
             if (isChild) {
+                // Un ancetre (present dans le dossier dedie suite a une corruption)
+                // ne doit jamais etre compte comme enfant
+                if (ancestorPaths.has(file.path)) {
+                    console.log(`⏭️ ${file.path} est un ancêtre de ${thisFileBaseName} : ignoré comme enfant`);
+                    continue;
+                }
                 try {
-                    const childClasse = await this.vault.createClasse(file);
+                    // Resolution SANS onCreate : la detection d enfants ne doit
+                    // jamais declencher de cascade de rangement (source de moves
+                    // repetes a chaque affichage)
+                    const childClasse = await this.vault.createClasse(file, false);
                     if (childClasse) {
                         children.push(childClasse);
                     }
@@ -479,13 +524,23 @@ export class Classe {
      * Move children files to the target folder recursively
      * If a child has its own children, create a dedicated subfolder for it
      */
-    protected async moveChildrenToFolder(targetFolderPath: string): Promise<void> {
+    protected async moveChildrenToFolder(targetFolderPath: string, visited: Set<string> = new Set<string>()): Promise<void> {
         const children = await this.findChildren();
-        
+
         for (const child of children) {
             const childFile = child.getFile();
             if (!childFile) {
                 continue;
+            }
+
+            // Garde anti-cycle : chaque fichier n est deplace qu une fois
+            const childPath = childFile.getPath();
+            if (childPath) {
+                if (visited.has(childPath)) {
+                    console.log(`⏭️ ${childPath} déjà traité : cycle de rangement stoppé`);
+                    continue;
+                }
+                visited.add(childPath);
             }
 
             const childBaseName = childFile.getName(false);
@@ -524,10 +579,10 @@ export class Classe {
                 }
 
                 // Recursively move this child's children to its folder
-                await child.moveChildrenToFolder(childTargetFolder);
+                await child.moveChildrenToFolder(childTargetFolder, visited);
             } else {
                 // Even if already in folder, check its children
-                await child.moveChildrenToFolder(childTargetFolder);
+                await child.moveChildrenToFolder(childTargetFolder, visited);
             }
         }
     }

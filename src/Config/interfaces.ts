@@ -17,6 +17,7 @@ export interface PropertyConfig {
     aliases?: string[]; // Old property names for automatic migration
     tooltip?: string; // Tooltip text to display on icon hover
     conditions?: Condition[]; // Conditions for filtering FileProperty and MultiFileProperty selections
+    createMissing?: boolean; // FileProperty : clic sur un lien non resolu -> creation du fichier (opt-in)
     allowMove?: boolean; // Pour ObjectProperty - activer/désactiver le drag-and-drop (default: true)
     appendFirst?: boolean; // Pour ObjectProperty - ajouter les nouveaux items en premier (default: false)
 }
@@ -232,9 +233,10 @@ export interface DataSourceConfig {
 
 export interface PopulateConfig {
     property: string; // Name of the property to populate
-    title: string; // Title/prompt to show to the user
+    title?: string; // Title/prompt to show to the user
     required?: boolean; // If true, user cannot skip this field
     fallback?: PopulateConfig; // Alternative populate config if this one is not filled
+    fromParent?: boolean; // Herite la valeur de la meme propriete du parent au lieu de la demander
 }
 
 export interface ProcessConfig {
@@ -252,10 +254,12 @@ export interface ClassConfig {
     parent?: {
         property: string; // Name of the property that defines the parent (FileProperty, ObjectProperty, or MultiFileProperty)
         folder?: string; // Optional subfolder name in parent's folder where this file should be placed
+        autoFill?: boolean; // default true : pre-remplit la propriete parent quand un parent est fourni a la creation
     };
     parents?: Array<{ // Support multiple parents with fallback
         property: string;
         folder?: string;
+        autoFill?: boolean;
     }>;
     folder?: string; // Subfolder in vault for this class
     subClassesProperty?: {

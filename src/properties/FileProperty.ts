@@ -10,12 +10,15 @@ export class FileProperty extends LinkProperty{
 
     public classes : string[];
     public conditions?: Condition[];
+    /** Opt-in : clic sur un lien non resolu -> creation du fichier (defaut : desactive) */
+    public createMissing: boolean = false;
     public override type : string = "file";
     // Used for property with a single file
-    constructor(name : string, vault: Vault, classes: string[], args: {icon?: string, aliases?: string[], tooltip?: string, conditions?: Condition[]} = {}){
+    constructor(name : string, vault: Vault, classes: string[], args: {icon?: string, aliases?: string[], tooltip?: string, conditions?: Condition[], createMissing?: boolean} = {}){
       super(name, vault, args);
       this.classes = classes;
       this.conditions = args.conditions;
+      this.createMissing = args.createMissing ?? false;
     }
 
     getClasses() : string[] {
@@ -125,8 +128,22 @@ export class FileProperty extends LinkProperty{
     return "";
    }
   
+   // Contexte classe par lien (WeakMap : pas d'etat partage entre instances,
+   // les proprietes sont partagees entre toutes les fiches d'une classe)
+   private static classeByLink: WeakMap<HTMLElement, any> = new WeakMap<HTMLElement, any>();
+
    override fillDisplay(value: any, update: (value: any) => Promise<void>, args? : { classe?: any }) {
         const field = super.fillDisplay(value, update, args);
+
+        const link = field.querySelector('.field-link') as HTMLElement;
+        if (link) {
+            if (args?.classe) {
+                FileProperty.classeByLink.set(link, args.classe);
+            }
+            // Clic : ouvre le fichier cible, ou le cree s'il n'existe pas
+            link.addEventListener("click", (event) => { void this.modifyField(event); });
+            void this.refreshMissingStyle(link, value);
+        }
 
         // Charger l'icône de la classe de manière asynchrone si aucune icône n'est configurée
         if (!this.icon || this.icon === 'align-left') {
@@ -137,6 +154,79 @@ export class FileProperty extends LinkProperty{
         }
 
         return field;
+    }
+
+    /**
+     * Marque le lien avec la classe missing-file si le fichier cible
+     * n'existe pas (le clic proposera alors sa creation)
+     */
+    protected async refreshMissingStyle(link: HTMLElement, value: any): Promise<void> {
+        if (!value || !this.vault?.getFromLink) {
+            return;
+        }
+        try {
+            const resolved = await this.vault.getFromLink(value);
+            link.classList.toggle('missing-file', !resolved);
+        } catch (error) {
+            // resolution impossible : on laisse le lien sans style particulier
+            console.warn("Verification du lien impossible:", error);
+        }
+    }
+
+    /**
+     * Retourne le constructeur d'une classe par son nom
+     * (factory dynamique puis registre statique)
+     */
+    protected async getClassConstructor(className: string): Promise<any | null> {
+        const factory = (this.vault as any)?.getDynamicClassFactory?.();
+        if (factory?.getClass) {
+            try {
+                return await factory.getClass(className);
+            } catch (error) {
+                console.warn(`Classe ${className} non chargee depuis la factory:`, error);
+            }
+        }
+        const registry = (this.vault?.constructor as any)?.classes;
+        return registry?.[className] ?? null;
+    }
+
+    /**
+     * Cree le fichier pointe par un lien non resolu : premiere classe declaree
+     * sur la propriete, parent = classe de contexte (la fiche courante).
+     * Opt-in via createMissing: true (defaut desactive).
+     */
+    protected async createMissingFile(link: HTMLElement, rawName: string): Promise<void> {
+        if (!this.createMissing) {
+            // Comportement sans l option : signale simplement que le fichier manque
+            const name = this.vault?.readLinkFile?.(rawName, false) || rawName;
+            console.error(`Le fichier ${name} n'existe pas`);
+            this.vault?.app?.sendNotice?.(`Le fichier ${name} n'existe pas`);
+            return;
+        }
+        const targetClass = this.classes?.[0];
+        if (!targetClass) {
+            console.error(`Aucune classe declaree pour ${this.name} : creation impossible`);
+            return;
+        }
+        const ClassConstructor = await this.getClassConstructor(targetClass);
+        if (!ClassConstructor) {
+            console.error(`Constructeur de la classe ${targetClass} introuvable`);
+            return;
+        }
+        const name = this.vault?.readLinkFile?.(rawName, false) || rawName;
+        const parentClasse = FileProperty.classeByLink.get(link) || null;
+        const created = await this.vault.createFile(
+            ClassConstructor,
+            name,
+            parentClasse ? { parent: parentClasse } : {}
+        );
+        if (created) {
+            link.classList.remove('missing-file');
+            const path = created?.getPath?.() ?? created?.path;
+            if (path) {
+                await this.vault.app.open(path);
+            }
+        }
     }
 
     async loadClassIcon(value: string, iconContainer: HTMLDivElement) {
@@ -211,15 +301,16 @@ export class FileProperty extends LinkProperty{
     // Fonction pour gérer le clic sur l'icône
     override async modifyField(event: Event) {
       const mouseEvent = event as MouseEvent;
-      const link = (event.target as HTMLElement).closest('.metadata-field')?.querySelector('.field-link') as HTMLElement;
+      const link = (event.target as HTMLElement).closest('.field-link') as HTMLElement;
+      if (!link) { return; }
       let currentField = link.textContent
       if (!currentField){return}
-      
+
       // Déterminer si on doit ouvrir dans un nouvel onglet (clic molette ou Ctrl/Cmd+clic)
       const newTab = mouseEvent.button === 1 || mouseEvent.ctrlKey || mouseEvent.metaKey;
-      
+
       event.preventDefault();
-     
+
       const classe = await this.vault.getFromLink(currentField);
       if (classe) {
         let path = classe.getPath()
@@ -227,7 +318,9 @@ export class FileProperty extends LinkProperty{
            await this.vault.app.open(path, newTab);
          }
       } else {
-        console.error(`Le fichier ${currentField}.md n'existe pas`) // TODO: Use Notice when available
+        // Le fichier n'existe pas : on le cree (premiere classe declaree,
+        // parent = fiche courante si le contexte est disponible)
+        await this.createMissingFile(link, currentField);
       }
     }
     // Fonction pour créer le conteneur principal pour l'field

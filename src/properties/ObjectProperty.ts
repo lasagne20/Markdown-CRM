@@ -21,6 +21,10 @@ export class ObjectProperty extends Property{
     public displayContainer? : DisplayContainer; // Custom layout for properties within each object
     protected containerElement?: HTMLDivElement; // Store container reference for reliable reload
 
+    // Contexte classe par conteneur (les instances de propriete sont partagees
+    // entre les fiches : le contexte se rattache au DOM, pas a l'instance)
+    private static classeByContainer: WeakMap<HTMLElement, any> = new WeakMap<HTMLElement, any>();
+
     constructor(name: string, vault: Vault, properties: { [key: string]: Property }, args: { allowMove?: boolean, appendFirst?: boolean, tooltip?: string, display?: string, displayContainer?: DisplayContainer, [key: string]: any} = {}) {
         super(name, vault, args);
         this.appendFirst = args?.appendFirst || false;
@@ -299,7 +303,7 @@ export class ObjectProperty extends Property{
     }
 
      // Méthode principale pour obtenir l'affichage - synchrone pour les modes standards
-     override fillDisplay(values: any, update: (value: any) => Promise<void>) {
+     override fillDisplay(values: any, update: (value: any) => Promise<void>, args?: { classe?: any }) {
         console.log("Fill display ObjectProperty ", this.name)
         
         // Parse JSON string if needed
@@ -322,6 +326,11 @@ export class ObjectProperty extends Property{
         
         // Store the container class in a data attribute so reloadObjects can find it
         container.setAttribute('data-object-property-id', containerClass);
+
+        // Contexte classe pour les cellules (retrouve apres reload)
+        if (args?.classe) {
+            ObjectProperty.classeByContainer.set(container, args.classe);
+        }
         
         container.classList.add("metadata-object-container");
         container.classList.add(containerClass);
@@ -331,14 +340,14 @@ export class ObjectProperty extends Property{
         
         // Choose organization mode based on display property
         if (this.display == "table") {
-            this.createTable(values, update, container);
+            this.createTable(values, update, container, args?.classe);
         }
         else if (this.display == "tabs") {
-            this.createTabs(values, update, container);
+            this.createTabs(values, update, container, undefined, args?.classe);
         }
         else {
             // Affichage par défaut (objet)
-            this.createObjects(values, update, container);
+            this.createObjects(values, update, container, args?.classe);
         }
 
         
@@ -359,7 +368,7 @@ export class ObjectProperty extends Property{
         return -1; // No active tab found
     }
 
-    createTable(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
+    createTable(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement, classe?: any) {
         // Créer un tableau pour les objets
         const tableWrapper = document.createElement("div");
         tableWrapper.style.position = "relative";
@@ -398,7 +407,8 @@ export class ObjectProperty extends Property{
                 Object.values(this.properties).forEach(property => {
                     const td = document.createElement("td");
                     td.appendChild(property.fillDisplay(objects[property.name],
-                        async (value : any) => await this.updateObject(values, update, index, property, value)));
+                        async (value : any) => await this.updateObject(values, update, index, property, value),
+                        classe ? { classe } : undefined));
                     row.appendChild(td);
                 });
 
@@ -415,7 +425,7 @@ export class ObjectProperty extends Property{
         }
     }
 
-    createTabs(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement, activeTabIndex?: number) {
+    createTabs(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement, activeTabIndex?: number, classe?: any) {
         // Parser les valeurs
         let parsedValues = values;
         if (typeof values === 'string') {
@@ -575,21 +585,23 @@ export class ObjectProperty extends Property{
                 // For ObjectProperty, we need special handling to pass its own container
                 if (property instanceof ObjectProperty) {
                     let elementRef: HTMLDivElement | null = null;
-                    
+
                     const propertyElement = property.fillDisplay(value,
                         async (value: any) => {
                             const targetContainer = elementRef || container;
                             await this.updateObject(values, update, index, property, value, targetContainer);
-                        });
-                    
+                        },
+                        classe ? { classe } : undefined);
+
                     elementRef = propertyElement;
                     propertyContainer.appendChild(propertyElement);
                 } else {
                     const propertyElement = property.fillDisplay(value,
-                        async (value: any) => await this.updateObject(values, update, index, property, value, container));
+                        async (value: any) => await this.updateObject(values, update, index, property, value, container),
+                        classe ? { classe } : undefined);
                     propertyContainer.appendChild(propertyElement);
                 }
-                
+
                 propertiesGrid.appendChild(propertyContainer);
             });
             
@@ -641,7 +653,7 @@ export class ObjectProperty extends Property{
       }
   
       // Crée les objets et les lignes à afficher
-      createObjects(values: any, update : (value: any) => Promise<void>,  container: HTMLDivElement) {
+      createObjects(values: any, update : (value: any) => Promise<void>,  container: HTMLDivElement, classe?: any) {
           if (!values){return}
           
           // Afficher les éléments dans l'ordre du tableau
@@ -653,7 +665,7 @@ export class ObjectProperty extends Property{
                   values[index] = {}; // Remplacer par un objet vide
                   objects = values[index];
               }
-              const row = this.createObjectRow(values, update, objects, index, container);
+              const row = this.createObjectRow(values, update, objects, index, container, classe);
               container.appendChild(row);
           });
           if (this.allowMove){
@@ -663,7 +675,7 @@ export class ObjectProperty extends Property{
       }
   
       // Crée une ligne d'objet avec ses propriétés
-    createObjectRow(values : any, update : (value: any) => Promise<void>, objects: any, index: number, container: HTMLDivElement): HTMLDivElement {
+    createObjectRow(values : any, update : (value: any) => Promise<void>, objects: any, index: number, container: HTMLDivElement, classe?: any): HTMLDivElement {
         const row = document.createElement("div");
         row.classList.add("metadata-object-row");
         
@@ -729,18 +741,20 @@ export class ObjectProperty extends Property{
                         // Use the element's own container for updates
                         const targetContainer = elementRef || container;
                         await this.updateObject(values, update, index, property, value, targetContainer);
-                    });
-                
+                    },
+                    classe ? { classe } : undefined);
+
                 // Store the reference after creation
                 elementRef = propertyElement;
                 propertyContainer.appendChild(propertyElement);
             } else {
                 // For non-ObjectProperty, use the parent container
                 const propertyElement = property.fillDisplay(value,
-                    async (value: any) => await this.updateObject(values, update, index, property, value, container));
+                    async (value: any) => await this.updateObject(values, update, index, property, value, container),
+                    classe ? { classe } : undefined);
                 propertyContainer.appendChild(propertyElement);
             }
-            
+
             row.appendChild(propertyContainer);
 
         });
@@ -926,18 +940,21 @@ export class ObjectProperty extends Property{
         container.innerHTML = "";
         // Recréer l'en-tête et les objets
         console.log("Values : ", values)
-        
+
+        // Retrouve la classe de contexte associee au conteneur (perdue sinon au reload)
+        const classe = ObjectProperty.classeByContainer.get(container);
+
         this.createHeader(values, update, container);
-        
+
         if (this.display == "table") {
-            this.createTable(values, update, container);
+            this.createTable(values, update, container, classe);
         }
         else if (this.display == "tabs") {
-            this.createTabs(values, update, container, activeTabIndex);
+            this.createTabs(values, update, container, activeTabIndex, classe);
         }
         else {
             // Affichage par défaut (objet)
-            this.createObjects(values, update, container);
+            this.createObjects(values, update, container, classe);
         }
     }
   }

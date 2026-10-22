@@ -431,7 +431,7 @@ describe('ObjectProperty', () => {
             
             const container = objectProperty.fillDisplay(values, mockUpdate);
 
-            expect(objectProperty.createTable).toHaveBeenCalledWith(values, mockUpdate, container);
+            expect(objectProperty.createTable).toHaveBeenCalledWith(values, mockUpdate, container, undefined);
             expect(objectProperty.createObjects).not.toHaveBeenCalled();
         });
 
@@ -441,7 +441,7 @@ describe('ObjectProperty', () => {
             
             const container = objectProperty.fillDisplay(values, mockUpdate);
 
-            expect(objectProperty.createObjects).toHaveBeenCalledWith(values, mockUpdate, container);
+            expect(objectProperty.createObjects).toHaveBeenCalledWith(values, mockUpdate, container, undefined);
             expect(objectProperty.createTable).not.toHaveBeenCalled();
         });
 
@@ -656,8 +656,8 @@ describe('ObjectProperty', () => {
             objectProperty.createObjects(values, mockUpdate, mockContainer);
             
             expect(objectProperty.createObjectRow).toHaveBeenCalledTimes(2);
-            expect(objectProperty.createObjectRow).toHaveBeenCalledWith(values, mockUpdate, values[0], 0, mockContainer);
-            expect(objectProperty.createObjectRow).toHaveBeenCalledWith(values, mockUpdate, values[1], 1, mockContainer);
+            expect(objectProperty.createObjectRow).toHaveBeenCalledWith(values, mockUpdate, values[0], 0, mockContainer, undefined);
+            expect(objectProperty.createObjectRow).toHaveBeenCalledWith(values, mockUpdate, values[1], 1, mockContainer, undefined);
         });
 
         test('should enable drag and drop when allowMove is true', () => {
@@ -746,12 +746,14 @@ describe('ObjectProperty', () => {
             const row = objectProperty.createObjectRow(values, mockUpdate, objects, index, mockContainer);
             
             expect(mockFileProperty.fillDisplay).toHaveBeenCalledWith(
-                'file1.md', 
-                expect.any(Function)
+                'file1.md',
+                expect.any(Function),
+                undefined
             );
             expect(mockTextProperty.fillDisplay).toHaveBeenCalledWith(
-                'Title 1', 
-                expect.any(Function)
+                'Title 1',
+                expect.any(Function),
+                undefined
             );
             
             const propertyContainers = row.querySelectorAll('.metadata-object-property');
@@ -1039,7 +1041,7 @@ describe('ObjectProperty', () => {
             
             await objectProperty.reloadObjects(values, mockUpdate, container);
             
-            expect(objectProperty.createObjects).toHaveBeenCalledWith(values, mockUpdate, container);
+            expect(objectProperty.createObjects).toHaveBeenCalledWith(values, mockUpdate, container, undefined);
             expect(objectProperty.createTable).not.toHaveBeenCalled();
         });
 
@@ -1053,7 +1055,7 @@ describe('ObjectProperty', () => {
             
             await objectProperty.reloadObjects(values, mockUpdate, container);
             
-            expect(objectProperty.createTable).toHaveBeenCalledWith(values, mockUpdate, container);
+            expect(objectProperty.createTable).toHaveBeenCalledWith(values, mockUpdate, container, undefined);
             expect(objectProperty.createObjects).not.toHaveBeenCalled();
         });
 

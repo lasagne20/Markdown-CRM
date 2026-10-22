@@ -2532,3 +2532,15 @@ span.flatpickr-weekday {
     transform: translate3d(0, 0, 0);
   }
 }
+/* Lien vers un fichier inexistant (creable au clic) */
+.field-link.missing-file {
+    color: var(--text-muted);
+    font-style: italic;
+    text-decoration: underline dashed var(--text-faint);
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.field-link.missing-file:hover {
+    color: var(--text-normal);
+}

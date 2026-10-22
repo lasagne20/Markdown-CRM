@@ -63,7 +63,8 @@ export class PopulateManager {
      */
     async populateProperties(
         classNameOrConfig: string | ClassConfig, 
-        existingProperties?: { [key: string]: any }
+        existingProperties?: { [key: string]: any },
+        parent?: any
     ): Promise<{ [key: string]: any } | null> {
         let classConfig: ClassConfig | null;
         
@@ -85,6 +86,19 @@ export class PopulateManager {
             // Skip properties that are already provided in existingProperties
             if (existingProperties && populateConfig.property in existingProperties) {
                 console.log(`⏭️  Skipping populate for "${populateConfig.property}" (already provided)`);
+                continue;
+            }
+
+            // fromParent : herite la valeur de la meme propriete du parent
+            // au lieu de la demander a l'utilisateur (ex: Modele3D herite du parent)
+            if (populateConfig.fromParent) {
+                if (parent && typeof parent.getPropertyValue === 'function') {
+                    const inherited = await parent.getPropertyValue(populateConfig.property);
+                    if (inherited !== undefined && inherited !== null) {
+                        console.log(`📋 Héritage de "${populateConfig.property}" depuis le parent`);
+                        populatedValues[populateConfig.property] = inherited;
+                    }
+                }
                 continue;
             }
 
@@ -156,8 +170,8 @@ export class PopulateManager {
         }
 
         const title = populateConfig.required 
-            ? `${populateConfig.title} (requis)` 
-            : populateConfig.title;
+            ? `${populateConfig.title || populateConfig.property} (requis)` 
+            : (populateConfig.title || populateConfig.property);
 
         // Route to appropriate handler based on property type
         switch (propertyConfig.type) {

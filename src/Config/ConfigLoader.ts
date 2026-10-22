@@ -217,6 +217,11 @@ export class ConfigLoader {
         if (config.conditions && Array.isArray(config.conditions)) {
             options.conditions = config.conditions;
         }
+
+        // FileProperty : creation du fichier cible au clic sur un lien non resolu
+        if (config.createMissing !== undefined) {
+            options.createMissing = config.createMissing;
+        }
         
         // Use propertyKey as the name (metadata key)
         const propertyName = (config as any).propertyKey;
