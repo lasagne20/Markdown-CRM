@@ -164,35 +164,19 @@ export class Classe {
         const oldMetadata = await this.getMetadata();
         const oldParentProperty = await this.getParentProperty();
 
-        // TEMPORARY timing diagnostics (prefix ⏱️ CRM) - remove once the
-        // first-edit delay is identified
-        let t = Date.now();
-
         // Update metadata first
         await this.vault.app.updateMetadata(this.file, metadata);
-        const timingAppUpdate = Date.now() - t;
 
         // Let updateParentFolder decide if it needs to do anything
-        t = Date.now();
         await this.updateParentFolder(oldMetadata, oldParentProperty, metadata);
-        const timingFolder = Date.now() - t;
-
-        console.log(`⏱️ CRM-metadata (${this.file.getPath()}): appUpdate=${timingAppUpdate}ms folderSort=${timingFolder}ms`);
     }
     
     async updatePropertyValue(propertyName: string, value: any): Promise<void> {
-        // TEMPORARY timing diagnostics (prefix ⏱️ CRM) - remove once the
-        // first-edit delay is identified
-        let timingRead = 0, timingWrite = 0, timingNotify = 0, timingProcesses = 0;
-        const timingStart = Date.now();
-
         // Get old metadata and parent property before update.
         // Deep-copy immediately so mutations below don't corrupt the "old" snapshot
         // that updateMetadata() will read back via this.getMetadata().
-        let t = Date.now();
         const rawMetadata = await this.getMetadata() || {};
         const metadata = JSON.parse(JSON.stringify(rawMetadata));
-        timingRead = Date.now() - t;
 
         // Deep copy the old value to preserve it for comparison
         // Handle undefined/null values that can't be JSON stringified
@@ -201,27 +185,18 @@ export class Classe {
             : rawMetadata[propertyName];
 
         metadata[propertyName] = value;
-        t = Date.now();
         await this.updateMetadata(metadata);
-        timingWrite = Date.now() - t;
 
         // Trigger onPropertyChange processes only if value actually changed
         // Compare the deep copy with the new value
         if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
             // Refresh computed displays FIRST: the processes below (renames,
             // folder moves) can be slow, and the display must not wait for them
-            t = Date.now();
             if (this.onPropertyChanged) {
                 await this.onPropertyChanged(propertyName);
             }
-            timingNotify = Date.now() - t;
-
-            t = Date.now();
             await this.runProcesses('onPropertyChange', propertyName);
-            timingProcesses = Date.now() - t;
         }
-
-        console.log(`⏱️ CRM-update "${propertyName}" (${this.file?.getPath()}): read=${timingRead}ms write=${timingWrite}ms notify=${timingNotify}ms processes=${timingProcesses}ms total=${Date.now() - timingStart}ms | classe#${(this as any).__crmId ?? ((this as any).__crmId = Math.random().toString(36).slice(2, 8))} listener=${!!this.onPropertyChanged} handler=${(this.onPropertyChanged as any)?.__crmHandlerTag ?? (this.onPropertyChanged ? 'UNTAGGED' : 'none')}`);
     }
     
     async getPropertyValue(propertyName: string, context?: any): Promise<any> {

@@ -205,18 +205,13 @@ export class DisplayRenderer {
             return;
         }
         this.subscribedToPropertyChanges = true;
-        const instanceId = (context as any).__crmId ?? ((context as any).__crmId = Math.random().toString(36).slice(2, 8));
-        console.log(`⏱️ CRM-subscribe: renderer subscribed on classe#${instanceId} (${context.getPath?.()})`);
         const previousListener = context.onPropertyChanged;
-        const handler = async (propertyName: string) => {
+        context.onPropertyChanged = async (propertyName: string) => {
             if (previousListener) {
                 await previousListener(propertyName);
             }
             await this.refreshComputedWidgets(propertyName);
         };
-        // TEMPORARY diagnostic tag: identifies which component set the handler
-        (handler as any).__crmHandlerTag = `renderer@classe#${instanceId}`;
-        context.onPropertyChanged = handler;
     }
 
     /**
@@ -243,9 +238,6 @@ export class DisplayRenderer {
             return;
         }
         this.trackedWidgets.push({ item, element, dependencies });
-        // TEMPORARY timing diagnostics (prefix ⏱️ CRM) - remove once the
-        // first-edit delay is identified
-        console.log(`⏱️ CRM-track "${property.name}" (${property.type}) deps=[${dependencies.join(",")}]`);
     }
 
     /**
@@ -254,11 +246,6 @@ export class DisplayRenderer {
      * the DOM) are dropped.
      */
     private async refreshComputedWidgets(changedProperty: string): Promise<void> {
-        // TEMPORARY timing diagnostics (prefix ⏱️ CRM) - remove once the
-        // first-edit delay is identified
-        console.log(`⏱️ CRM-refresh-enter "${changedProperty}"`);
-        const timingStart = Date.now();
-        let reRendered = 0;
         for (let i = this.trackedWidgets.length - 1; i >= 0; i--) {
             const entry = this.trackedWidgets[i];
             if (!entry.element.isConnected) {
@@ -278,12 +265,10 @@ export class DisplayRenderer {
             const newElement = await this.renderProperty(entry.item);
             if (newElement) {
                 parent.replaceChild(newElement, entry.element);
-                reRendered++;
             } else {
                 entry.element.remove();
             }
         }
-        console.log(`⏱️ CRM-refresh "${changedProperty}": tracked=${this.trackedWidgets.length} re-rendered=${reRendered} in ${Date.now() - timingStart}ms`);
     }
 
     /**
