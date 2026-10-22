@@ -888,25 +888,33 @@ export class ObjectProperty extends Property{
   
       // Mise à jour des métadonnées
       async updateObject(values : any, update : (value: any) => Promise<void>, index: number, property: Property, value: string, parentContainer?: HTMLDivElement) {
-        console.log("Update index : ", index)
-          if (values){
+          // Work on a deep copy: `values` can be the LIVE metadata cache object
+          // (read() returns it by reference, like Obsidian's metadataCache).
+          // Mutating it in place poisons the cache, so updatePropertyValue's
+          // old-vs-new comparison sees identical values (the cache already
+          // contains the edit) and silently skips notifications and processes
+          // (derived-property refresh, rename processes...).
+          const workingValues: any[] = values
+              ? JSON.parse(JSON.stringify(values))
+              : [];
+          if (workingValues.length){
             // S'assurer que values[index] est un objet
-            if (typeof values[index] !== 'object' || values[index] === null) {
-                console.warn(`values[${index}] is not an object:`, values[index]);
-                values[index] = {};
+            if (typeof workingValues[index] !== 'object' || workingValues[index] === null) {
+                console.warn(`values[${index}] is not an object:`, workingValues[index]);
+                workingValues[index] = {};
             }
-            values[index][property.name] = value;
+            workingValues[index][property.name] = value;
           }
           else {
-            values = [{[property.name] : value}]
+            workingValues.push({[property.name] : value})
           }
-          console.log("Updated Values : ", values)
-          await update(values);
+          console.log("Updated Values : ", workingValues)
+          await update(workingValues);
           
           // Only reload if the updated property is not an ObjectProperty
           // If it's an ObjectProperty, it will handle its own reload
           if (!(property instanceof ObjectProperty)) {
-              await this.reloadObjects(values, update, parentContainer);
+              await this.reloadObjects(workingValues, update, parentContainer);
           }
       }
 

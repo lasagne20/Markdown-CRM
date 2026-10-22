@@ -976,7 +976,14 @@ describe('ObjectProperty', () => {
             
             await objectProperty.updateObject(values, mockUpdate, index, property, newValue);
             
-            expect(values[1].title).toBe('Updated Title');
+            // updateObject works on a deep copy (values can be the live cache
+            // object): the update receives the edited copy...
+            expect(mockUpdate).toHaveBeenCalledWith([
+                { file: 'file1.md', title: 'Title 1' },
+                { file: 'file2.md', title: 'Updated Title' }
+            ]);
+            // ...and the original array is NOT mutated (no cache poisoning)
+            expect(values[1].title).toBe('Title 2');
             expect(values[0]).toEqual({ file: 'file1.md', title: 'Title 1' }); // Unchanged
         });
 
@@ -999,8 +1006,9 @@ describe('ObjectProperty', () => {
             
             await objectProperty.updateObject(values, mockUpdate, index, property, newValue);
             
-            expect(mockUpdate).toHaveBeenCalledWith(values);
-            expect(objectProperty.reloadObjects).toHaveBeenCalledWith(values, mockUpdate, undefined);
+            const updated = [{ file: 'file1.md', title: 'Updated Title' }];
+            expect(mockUpdate).toHaveBeenCalledWith(updated);
+            expect(objectProperty.reloadObjects).toHaveBeenCalledWith(updated, mockUpdate, undefined);
         });
     });
 
