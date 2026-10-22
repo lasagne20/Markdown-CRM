@@ -85,6 +85,14 @@ export class ConfigLoader {
             if (config.icon && !config.classIcon) {
                 config.classIcon = config.icon;
             }
+
+            // Normaliser la section search : les chips en forme string deviennent
+            // des objets { name } pour une consommation uniforme par le modal
+            if (config.search && Array.isArray(config.search.properties)) {
+                config.search.properties = config.search.properties.map((chip: any) =>
+                    typeof chip === 'string' ? { name: chip } : chip
+                );
+            }
             
             // Vérifier que properties est un objet (le format liste n'est plus supporté)
             if (config.properties && Array.isArray(config.properties)) {

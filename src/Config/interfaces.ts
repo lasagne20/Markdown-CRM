@@ -245,6 +245,18 @@ export interface ProcessConfig {
     actions: any[]; // Actions from ProcessManager
 }
 
+export interface SearchChipConfig {
+    name: string;          // Property name to display as a chip
+    color?: string;        // CSS color for the icon+value (SelectProperty chips use the option color by default)
+}
+
+export interface SearchConfig {
+    properties?: (string | SearchChipConfig)[];  // Properties highlighted as chips in search results
+    sort?: string;                              // Property used to sort results when the query is empty
+    sortDirection?: 'asc' | 'desc';
+    titleTemplate?: string;                     // Rename template (e.g. "{animations[0].date} - Action - {current}"): the prefix before {current} is stripped from the displayed title
+}
+
 export interface ClassConfig {
     className: string;
     classIcon: string;
@@ -268,4 +280,5 @@ export interface ClassConfig {
     populate?: PopulateConfig[]; // Properties to prompt for during file creation
     process?: ProcessConfig[]; // Automated processes to run on triggers
     rename?: string; // Template for renaming files (e.g., "{date} - {client} - {current}")
+    search?: SearchConfig; // Search modal customization (chips, sort, title)
 }
