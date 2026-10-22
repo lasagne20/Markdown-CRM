@@ -960,12 +960,33 @@ export class ConditionManager {
 
                 // String conversion for dates
                 if (typeof value === 'string') {
-                    // Relative keywords: today / yesterday / tomorrow (midnight UTC, aligned
-                    // with the parsing of "YYYY-MM-DD" values below)
-                    if (/^(today|yesterday|tomorrow)$/.test(value)) {
+                    // Relative date keywords with optional +/- offset:
+                    //   today / yesterday / tomorrow      offset in days
+                    //   startOfYear / endOfYear           offset in years
+                    //   startOfMonth / endOfMonth         offset in months
+                    // (midnight UTC, aligned with the parsing of "YYYY-MM-DD" values below)
+                    const keywordMatch = /^(today|yesterday|tomorrow|startOfYear|endOfYear|startOfMonth|endOfMonth)(?:([+-])(\d+))?$/.exec(value);
+                    if (keywordMatch) {
+                        const keyword = keywordMatch[1];
+                        const offset = keywordMatch[3]
+                            ? parseInt(keywordMatch[3], 10) * (keywordMatch[2] === '-' ? -1 : 1)
+                            : 0;
                         const now = new Date();
-                        const offsetDays = value === 'today' ? 0 : (value === 'tomorrow' ? 1 : -1);
-                        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offsetDays)).getTime();
+                        if (keyword === 'today' || keyword === 'yesterday' || keyword === 'tomorrow') {
+                            const baseDays = keyword === 'today' ? 0 : (keyword === 'tomorrow' ? 1 : -1);
+                            return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + baseDays + offset)).getTime();
+                        }
+                        if (keyword === 'startOfYear') {
+                            return new Date(Date.UTC(now.getUTCFullYear() + offset, 0, 1)).getTime();
+                        }
+                        if (keyword === 'endOfYear') {
+                            return new Date(Date.UTC(now.getUTCFullYear() + offset, 11, 31)).getTime();
+                        }
+                        if (keyword === 'startOfMonth') {
+                            return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1)).getTime();
+                        }
+                        // endOfMonth: day 0 of the following month = last day of the target month
+                        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset + 1, 0)).getTime();
                     }
 
                     // Year only: "2024"

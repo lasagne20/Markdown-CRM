@@ -32,6 +32,34 @@ Standard conditions that evaluate properties of an instance:
 - **isEmpty**: Property value is empty (null, undefined, empty string, or empty array)
 - **isNotEmpty**: Property value is not empty
 
+### Date Condition Values
+
+For date properties (`DateProperty`, `RangeDateProperty`), condition values can be:
+
+- An explicit date: `"2026-03-15"`
+- A year: `"2026"` (January 1st of that year)
+
+Or a **relative keyword** with an optional `+N` / `-N` offset (midnight UTC):
+
+| Keyword | Meaning | Offset unit |
+|---|---|---|
+| `today` / `yesterday` / `tomorrow` | Current day / day before / day after | days |
+| `startOfYear` / `endOfYear` | January 1st / December 31st of the current year | years |
+| `startOfMonth` / `endOfMonth` | First / last day of the current month | months |
+
+**Example**: Chiffre d'affaires de l'année en cours (no hardcoded year):
+
+```yaml
+- property: date
+  type: greaterThanOrEqual
+  value: startOfYear
+- property: date
+  type: lessThanOrEqual
+  value: endOfYear
+```
+
+Offsets are written directly after the keyword: `today+7` (dans une semaine), `endOfYear-1` (31 décembre de l'année précédente), `startOfMonth+1` (1er du mois suivant).
+
 ### DirectLink Condition
 
 Special condition that checks if an instance has a direct link to the current document:
