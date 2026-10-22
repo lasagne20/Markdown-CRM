@@ -114,8 +114,16 @@ export class DateProperty extends Property {
         link.textContent = value ? this.formatDateForDisplay(value) : "Aucune date sélectionnée";
         link.classList.add("date-field-link");
         link.classList.add("field-link");
-        link.style.cursor = "pointer";
-        link.onclick = (event) => this.modifyField(event);
+        // Capture l'état au RENDU : une RangeDateProperty dérivée met
+        // static = true seulement pendant getDisplay (restauré ensuite),
+        // un garde au moment du clic serait donc contourné.
+        const isStatic = this.static;
+        if (isStatic) {
+            link.style.cursor = "default";
+        } else {
+            link.style.cursor = "pointer";
+            link.onclick = (event) => this.modifyField(event);
+        }
         return link;
     }
 
@@ -208,6 +216,17 @@ export class DateProperty extends Property {
         const link = this.createFieldLink(currentField);
         const input = this.createFieldDate(currentField, update, link);
         
+
+        // Read-only mode: only the link is shown, no quick-select buttons.
+        // (Captured at render time: a derived RangeDateProperty only sets
+        // static during getDisplay.)
+        if (this.static) {
+            link.style.display = "block";
+            input.style.display = "none";
+            fieldContainer.appendChild(link);
+            fieldContainer.appendChild(input);
+            return fieldContainer;
+        }
 
         // Affichage initial : Si la date existe, afficher le lien
         if (currentField && this.validate(value)) {

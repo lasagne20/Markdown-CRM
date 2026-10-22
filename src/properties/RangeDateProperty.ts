@@ -166,8 +166,16 @@ export class RangeDateProperty extends DateProperty {
         link.textContent = value ? this.formatDateRangeForDisplay(value) : "Aucune date sélectionnée";
         link.classList.add("date-field-link");
         link.classList.add("field-link");
-        link.style.cursor = "pointer";
-        link.onclick = (event) => this.modifyField(event);
+        // Capture l'état au RENDU : la plage dérivée met static = true
+        // seulement pendant getDisplay (restauré ensuite), un garde au
+        // moment du clic serait donc contourné.
+        const isStatic = this.static;
+        if (isStatic) {
+            link.style.cursor = "default";
+        } else {
+            link.style.cursor = "pointer";
+            link.onclick = (event) => this.modifyField(event);
+        }
         return link;
     }
 

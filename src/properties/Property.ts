@@ -295,6 +295,10 @@ export class Property {
      * @param event - Click event on the icon
      */
     modifyField(event: Event) {
+        // Read-only properties never enter edit mode
+        if (this.static) {
+            return;
+        }
         const link = (event.target as HTMLElement).closest('.metadata-field')?.querySelector('.field-link') as HTMLElement;
         const input = (event.target as HTMLElement).closest('.metadata-field')?.querySelector('.field-input') as HTMLInputElement;
         if (link && input) {
