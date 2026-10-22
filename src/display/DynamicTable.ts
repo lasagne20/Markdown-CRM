@@ -508,6 +508,48 @@ export class DynamicTable {
     }
 
     /**
+     * Parse a value into a number for totals calculation.
+     * Numbers and Dates are used as-is (timestamp); strings are cleaned the
+     * same way as the DOM path: currency symbols (€, $), thousands separators
+     * (spaces, commas) and French decimal commas ("1 500,25 €" -> 1500.25).
+     * Returns NaN when the value cannot be parsed.
+     */
+    private parseNumericValue(value: any): number {
+        if (typeof value === 'number') {
+            return value;
+        }
+        if (value instanceof Date) {
+            return value.getTime();
+        }
+        if (typeof value !== 'string') {
+            return NaN;
+        }
+
+        let cleanValue = value;
+
+        // Remove currency symbols
+        cleanValue = cleanValue.replace(/[€$]/g, '');
+
+        // Check if it's a French format (comma as decimal separator)
+        if (cleanValue.includes(',') && !cleanValue.includes('.')) {
+            // French format: "1 500,25" -> remove spaces, replace comma with dot
+            cleanValue = cleanValue.replace(/\s/g, '').replace(',', '.');
+        } else if (cleanValue.includes('.') && cleanValue.includes(',')) {
+            // Mixed format: "1,500.25" -> remove commas (thousands separator)
+            cleanValue = cleanValue.replace(/,/g, '').replace(/\s/g, '');
+        } else {
+            // Simple number or US format: remove spaces and commas if they're thousands separators
+            const parts = cleanValue.split('.');
+            if (parts.length <= 2) {
+                // Remove spaces and commas from integer part only
+                cleanValue = cleanValue.replace(/[\s,]/g, '');
+            }
+        }
+
+        return Number(cleanValue);
+    }
+
+    /**
      * Calculate totals from DOM table (production mode)
      */
     private calculateTotalFromDOM(total: any, tbody: HTMLElement): string {
@@ -538,33 +580,11 @@ export class DynamicTable {
             const cells = row.querySelectorAll('td');
             if (cells[columnIndex]) {
                 const cellText = cells[columnIndex].textContent?.trim() || '';
-                
-                // Parse currency and numeric values correctly
-                // Handle French format: "1 500,25 €" -> 1500.25
-                // Handle US format: "$1,500.25" -> 1500.25
-                let cleanValue = cellText;
-                
-                // Remove currency symbols
-                cleanValue = cleanValue.replace(/[€$]/g, '');
-                
-                // Check if it's a French format (comma as decimal separator)
-                if (cleanValue.includes(',') && !cleanValue.includes('.')) {
-                    // French format: "1 500,25" -> remove spaces, replace comma with dot
-                    cleanValue = cleanValue.replace(/\s/g, '').replace(',', '.');
-                } else if (cleanValue.includes('.') && cleanValue.includes(',')) {
-                    // Mixed format: "1,500.25" -> remove commas (thousands separator)
-                    cleanValue = cleanValue.replace(/,/g, '').replace(/\s/g, '');
-                } else {
-                    // Simple number or US format: remove spaces and commas if they're thousands separators
-                    const parts = cleanValue.split('.');
-                    if (parts.length <= 2) {
-                        // Remove spaces and commas from integer part only
-                        cleanValue = cleanValue.replace(/[\s,]/g, '');
-                    }
-                }
-                
-                const numValue = Number(cleanValue);
-                
+
+                // Same cleaning as the file-based path (parseNumericValue):
+                // currency symbols, French/US formats, thousands separators
+                const numValue = this.parseNumericValue(cellText);
+
                 if (!isNaN(numValue)) {
                     values.push(numValue);
                 }
@@ -621,7 +641,7 @@ export class DynamicTable {
         // Extract values for calculation
         for (const file of filteredFiles) {
             const value = await this.getNestedPropertyValue(file, total.propertyName);
-            const numValue = Number(value);
+            const numValue = this.parseNumericValue(value);
             if (!isNaN(numValue)) {
                 values.push(numValue);
             }
