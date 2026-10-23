@@ -1078,6 +1078,27 @@ properties:
 
 ---
 
+## Search Modal Customization
+
+The `search` section customizes the "Rechercher ou créer" modal for a class:
+
+```yaml
+search:
+  properties:            # chips displayed on each result line
+    - name: date
+      color: "red"       # CSS color for the icon+value
+    - etat               # string form: SelectProperty chips use the option color
+  sort: date             # property used to sort results when the query is empty
+  sortDirection: desc    # asc | desc
+  titleTemplate: "{animations[0].date} - Action - {current}"
+```
+
+- **properties**: one chip per entry, rendered as `icon + value` on the result line. Icons and select option colors come from the property definitions; `color` overrides explicitly. Date properties display in short French format ("15 nov. 2026", ranges as "A → B"). Computed values (derived dates, formulas) resolve through `read()`.
+- **sort / sortDirection**: applied only when the search field is empty (initial list); while typing, the fuzzy score takes over. Missing values go last.
+- **titleTemplate**: the rename template (same syntax as RenameFileAction). The prefix before `{current}` is stripped from the displayed title, so generated filenames like "2026-11-15 - Action - ..." display as their clean name.
+
+---
+
 ## See Also
 
 - [Property Types](./Property-Types.md) - All available property types
