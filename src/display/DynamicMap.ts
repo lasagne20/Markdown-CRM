@@ -39,9 +39,13 @@ export class DynamicMap {
         context?: Classe
     ): Promise<DynamicMap> {
         const propertyNavigator = new PropertyNavigator(vault, context);
-        
+
+        // Load geo.json entries once (coordinate source for locationProperty
+        // resolution and boundary display)
+        const geoEntries = await DynamicMap.loadGeoEntries(vault, item);
+
         // Convert files to markers
-        const markers = await DynamicMap.convertFilesToMarkers(files, item, vault, propertyNavigator);
+        const markers = await DynamicMap.convertFilesToMarkers(files, item, vault, propertyNavigator, geoEntries);
         
         // Create map options
         const mapOptions = {
@@ -62,7 +66,7 @@ export class DynamicMap {
         
         // Add boundary if configured and context is available
         if (item.boundary?.enabled && context) {
-            await map.loadAndAddBoundary(item, context);
+            await map.loadAndAddBoundary(item, context, geoEntries);
         }
         
         // Fit bounds if no center specified
@@ -74,13 +78,121 @@ export class DynamicMap {
     }
 
     /**
+     * Load the geo.json entries used as the coordinate source. Sources: the
+     * explicit `coordinates.geoFile` item option, then the `data` sources of
+     * the Lieu class config containing "geo.json".
+     */
+    static async loadGeoEntries(vault: Vault, item?: MapDisplayItem): Promise<any[]> {
+        const sources: string[] = [];
+        if (item?.coordinates?.geoFile) {
+            sources.push(item.coordinates.geoFile);
+        }
+        try {
+            const factory = vault.getDynamicClassFactory?.();
+            const config = factory ? await factory.getClassConfig?.('Lieu') : null;
+            for (const dataSource of config?.data ?? []) {
+                if (dataSource.file && dataSource.file.includes('geo.json') && !sources.includes(dataSource.file)) {
+                    sources.push(dataSource.file);
+                }
+            }
+        } catch (error) {
+            console.warn('Error reading Lieu class config for geo data:', error);
+        }
+
+        for (const source of sources) {
+            try {
+                const configPath = vault.settings?.configPath || './config';
+                const file = await vault.app.getFile(`${configPath}/${source}`);
+                if (!file) {
+                    console.warn(`Geo data file not found: ${configPath}/${source}`);
+                    continue;
+                }
+                if (!('extension' in file)) {
+                    console.warn(`Geo data path is a folder, not a file: ${configPath}/${source}`);
+                    continue;
+                }
+                const fileContent = await vault.app.readFile(file);
+                const data = JSON.parse(fileContent);
+                if (Array.isArray(data)) {
+                    return data;
+                }
+                if (data.features) {
+                    // GeoJSON FeatureCollection: flatten properties + geometry
+                    return data.features.map((f: any) => ({
+                        ...f.properties,
+                        geometry: f.geometry
+                    }));
+                }
+            } catch (error) {
+                console.warn(`Error loading geo data from ${source}:`, error);
+            }
+        }
+        return [];
+    }
+
+    /**
+     * Resolve the coordinates of a file via its location property: the path
+     * resolves to a Lieu (commune or institution); its name is looked up in
+     * the geo.json entries. If the target has no coordinates (an institution
+     * for example), walk up the parent chain by appending `.parent` hops.
+     */
+    private static async resolveLocationCoords(
+        file: Classe,
+        locationProperty: string,
+        propertyNavigator: PropertyNavigator,
+        geoEntries: any[]
+    ): Promise<{ lat: number; lng: number } | null> {
+        const geoByName = new Map<string, any>();
+        for (const entry of geoEntries) {
+            if (typeof entry?.latitude === 'number' && typeof entry?.longitude === 'number' && entry.nom) {
+                geoByName.set(entry.nom, entry);
+            }
+        }
+
+        let path = locationProperty;
+        for (let hop = 0; hop <= 5; hop++) {
+            let value: any;
+            try {
+                value = await propertyNavigator.getNestedProperty(file, path);
+            } catch (error) {
+                return null;
+            }
+            if (value === undefined || value === null || value === '') {
+                return null;
+            }
+
+            // Extract the target name from a [[link]], a Classe or a plain string
+            let name: string | null = null;
+            if (typeof value === 'string') {
+                const match = value.match(/^\[\[(.+)\]\]$/);
+                name = match ? match[1] : value;
+            } else if (typeof value.getName === 'function') {
+                name = value.getName();
+            }
+            if (!name) {
+                return null;
+            }
+
+            const entry = geoByName.get(name);
+            if (entry) {
+                return { lat: entry.latitude, lng: entry.longitude };
+            }
+
+            // No coordinates for this Lieu: walk up to its parent
+            path = `${path}.parent`;
+        }
+        return null;
+    }
+
+    /**
      * Convert files to map markers with geocoding support
      */
     private static async convertFilesToMarkers(
         files: Classe[],
         item: MapDisplayItem,
         vault: Vault,
-        propertyNavigator: PropertyNavigator
+        propertyNavigator: PropertyNavigator,
+        geoEntries?: any[]
     ): Promise<any[]> {
         const markers: any[] = [];
         
@@ -125,6 +237,18 @@ export class DynamicMap {
                     }
                 }
                 
+                // If no direct coordinates, resolve the location property: the
+                // file's Lieu (commune/institution) with coordinates from geo.json
+                if ((lat === undefined || lng === undefined) && item.coordinates.locationProperty && geoEntries && geoEntries.length > 0) {
+                    const resolved = await DynamicMap.resolveLocationCoords(
+                        file, item.coordinates.locationProperty, propertyNavigator, geoEntries
+                    );
+                    if (resolved) {
+                        lat = resolved.lat;
+                        lng = resolved.lng;
+                    }
+                }
+
                 // Skip if no coordinates found
                 if (lat === undefined || lng === undefined) {
                     continue;
@@ -137,8 +261,10 @@ export class DynamicMap {
                         try {
                             const propPath = typeof propConfig === 'string' ? propConfig : propConfig.property;
                             const label = typeof propConfig === 'object' && propConfig.label ? propConfig.label : propPath;
-                            
-                            const value = await propertyNavigator.getNestedProperty(file, propPath);
+
+                            const value = propPath === '_fileName'
+                                ? file.getName()
+                                : await propertyNavigator.getNestedProperty(file, propPath);
                             if (value !== undefined && value !== null) {
                                 const isFile = typeof value === 'string' && (
                                     value.includes('[[') && value.includes(']]') ||
@@ -408,38 +534,34 @@ export class DynamicMap {
     /**
      * Load and add boundary polygon to the map
      */
-    private async loadAndAddBoundary(item: MapDisplayItem, context: Classe): Promise<void> {
+    private async loadAndAddBoundary(item: MapDisplayItem, context: Classe, geoEntries?: any[]): Promise<void> {
         try {
             let boundaryCoords: [number, number][] | null = null;
-            
+            let boundaryTarget: Classe | null = context;
+
             // Try to get boundary from property
             if (item.boundary!.property) {
                 const coords = await context.getPropertyValue(item.boundary!.property);
                 if (coords && Array.isArray(coords)) {
+                    // Legacy: direct coordinate array
                     boundaryCoords = coords;
+                } else if (typeof coords === 'string' && coords.match(/^\[\[.+\]\]$/)) {
+                    // Property pointing to a Lieu (e.g. the partenariat's "lieu"):
+                    // display that Lieu's geo.json contour instead of the context's
+                    try {
+                        const lieu = await this.vault.getFromLink(coords);
+                        if (lieu) {
+                            boundaryTarget = lieu;
+                        }
+                    } catch (error) {
+                        console.warn(`Error resolving boundary lieu ${coords}:`, error);
+                    }
                 }
             }
             
-            // If no property or not found, try to load from geo.json data
-            if (!boundaryCoords) {
-                const factory = this.vault.getDynamicClassFactory();
-                if (factory && context.name) {
-                    const config = await factory.getClassConfig(context.name);
-                    if (config?.data) {
-                        for (const dataSource of config.data) {
-                            if (dataSource.file && dataSource.file.includes('geo.json')) {
-                                // Load geo.json and find matching feature
-                                const geoData = await this.loadGeoJsonData(dataSource.file);
-                                if (geoData) {
-                                    boundaryCoords = await this.findBoundaryForContext(geoData, context);
-                                    if (boundaryCoords) {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            // Load the contour from the geo.json data
+            if (!boundaryCoords && boundaryTarget && geoEntries && geoEntries.length > 0) {
+                boundaryCoords = await this.findBoundaryForContext(geoEntries, boundaryTarget);
             }
             
             // Add polygon to map if coordinates found
@@ -455,33 +577,6 @@ export class DynamicMap {
             }
         } catch (error) {
             console.warn('Error adding boundary to map:', error);
-        }
-    }
-
-    /**
-     * Load GeoJSON data from local file
-     */
-    private async loadGeoJsonData(source: string): Promise<any> {
-        try {
-            const configPath = this.vault.settings.configPath || './config';
-            const dataFilePath = `${configPath}/${source}`;
-            
-            const file = await this.vault.app.getFile(dataFilePath);
-            if (!file) {
-                console.warn(`Data file not found: ${dataFilePath}`);
-                return null;
-            }
-
-            if (!('extension' in file)) {
-                console.warn(`Data path is a folder, not a file: ${dataFilePath}`);
-                return null;
-            }
-
-            const fileContent = await this.vault.app.readFile(file);
-            return JSON.parse(fileContent);
-        } catch (error) {
-            console.warn(`Error loading GeoJSON data from ${source}:`, error);
-            return null;
         }
     }
 

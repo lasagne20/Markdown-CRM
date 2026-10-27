@@ -1,0 +1,204 @@
+/**
+ * @jest-environment jsdom
+ *
+ * Carte dynamique : résolution des coordonnées via locationProperty.
+ *
+ * Les actions n'ont pas de latitude/longitude propres : leur position est
+ * celle de leur commune (clients[0].client), résolue depuis les données
+ * geo.json du Lieu. Le client peut être directement une commune ou une
+ * institution dont le parent est la commune (chaîne .parent).
+ *
+ * Attendu :
+ * - locationProperty -> nom du Lieu -> coords de l'entrée geo.json
+ * - si l'entrée n'a pas de coords (institution), remonter via .parent
+ * - action sans client résolvable -> pas de marqueur
+ * - boundary.property ("lieu" du partenariat) -> contour geo.json du Lieu lié
+ * - marker.properties supporte _fileName (titre du popup)
+ */
+
+import { DynamicMap } from '../../src/display/DynamicMap';
+
+// geo.json de test : ordre correct latitude/longitude + geometry départment
+const geoEntries = [
+    {
+        nom: '38 - Isère', type: 'Département', code: '38',
+        latitude: 45.268, longitude: 5.574,
+        geometry: {
+            type: 'Polygon',
+            coordinates: [[[5.0, 45.0], [6.0, 45.0], [6.0, 45.6], [5.0, 45.0]]]
+        }
+    },
+    { nom: '26700 - Pierrelatte', type: 'Commune', latitude: 44.3764, longitude: 4.6989 },
+    { nom: '05200 - Les Orres', type: 'Commune', latitude: 44.5717, longitude: 6.2345 }
+];
+
+interface FakeClasse {
+    getName(): string;
+    getPath(): string;
+    getClassName(): string;
+    getPropertyValue(prop: string): Promise<any>;
+    getProperty(prop: string): any;
+    getParent?(): Promise<any>;
+    [key: string]: any;
+}
+
+function fakeClasse(name: string, className: string, metadata: Record<string, any> = {}, extra: Record<string, any> = {}): FakeClasse {
+    return {
+        getName: () => name,
+        getPath: () => `Test/${name}.md`,
+        getClassName: () => className,
+        getPropertyValue: async (prop: string) => metadata[prop],
+        getProperty: () => null,
+        ...extra
+    };
+}
+
+describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
+    let mockVault: any;
+    let container: HTMLElement;
+    let fakesByName: Record<string, FakeClasse>;
+    let L: any;
+
+    beforeEach(() => {
+        container = document.createElement('div');
+        document.body.appendChild(container);
+
+        const communePierrelatte = fakeClasse('26700 - Pierrelatte', 'Commune');
+        const communeOrres = fakeClasse('05200 - Les Orres', 'Commune');
+        const institution = fakeClasse('Ecole des Orres', 'Institution', {}, {
+            getParent: async () => communeOrres
+        });
+
+        fakesByName = {
+            '26700 - Pierrelatte': communePierrelatte,
+            '05200 - Les Orres': communeOrres,
+            'Ecole des Orres': institution
+        };
+
+        mockVault = {
+            app: {
+                getFile: async (path: string) =>
+                    path.endsWith('geo.json') ? { path, extension: 'json' } : null,
+                readFile: async () => JSON.stringify(geoEntries)
+            },
+            settings: { configPath: 'config' },
+            getDynamicClassFactory: () => ({
+                getClassConfig: async (name: string) =>
+                    name === 'Lieu' ? { data: [{ file: 'data/geo.json' }] } : null
+            }),
+            getFromLink: async (link: string) => fakesByName[link.replace(/\[\[|\]\]/g, '')],
+            open: jest.fn()
+        };
+
+        L = {
+            map: jest.fn(() => ({
+                setView: jest.fn().mockReturnThis(),
+                addLayer: jest.fn(),
+                eachLayer: jest.fn(),
+                fitBounds: jest.fn(),
+                remove: jest.fn()
+            })),
+            tileLayer: jest.fn(() => ({ addTo: jest.fn() })),
+            marker: jest.fn(() => ({
+                addTo: jest.fn().mockReturnThis(),
+                bindPopup: jest.fn().mockReturnThis(),
+                on: jest.fn()
+            })),
+            divIcon: jest.fn(() => ({})),
+            polygon: jest.fn(() => ({ addTo: jest.fn().mockReturnThis() })),
+            latLngBounds: jest.fn(() => ({
+                extend: jest.fn().mockReturnThis(),
+                isValid: jest.fn(() => true)
+            }))
+        };
+        (global as any).L = L;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(container);
+        delete (global as any).L;
+    });
+
+    const baseItem: any = {
+        type: 'map',
+        title: 'Actions',
+        source: { class: 'Action' },
+        coordinates: { locationProperty: 'clients[0].client' },
+        center: [45, 5],
+        marker: { properties: [{ property: '_fileName' }] }
+    };
+
+    test("PLANTE : marqueur positionné sur la commune du client (coords geo.json)", async () => {
+        const action = fakeClasse('Fête de la science', 'Action', {
+            clients: [{ client: '[[26700 - Pierrelatte]]' }]
+        });
+
+        await DynamicMap.fromConfig(baseItem, mockVault, container, [action], undefined);
+
+        expect(L.marker).toHaveBeenCalledWith(
+            [44.3764, 4.6989],
+            expect.any(Object)
+        );
+    });
+
+    test("PLANTE : client institution sans coords -> remonte au parent commune", async () => {
+        const action = fakeClasse('Action école', 'Action', {
+            clients: [{ client: '[[Ecole des Orres]]' }]
+        });
+
+        await DynamicMap.fromConfig(baseItem, mockVault, container, [action], undefined);
+
+        expect(L.marker).toHaveBeenCalledWith(
+            [44.5717, 6.2345],
+            expect.any(Object)
+        );
+    });
+
+    test("PLANTE : action sans client résolvable -> pas de marqueur", async () => {
+        const actionSansClient = fakeClasse('Action perdue', 'Action', { clients: [] });
+        const actionSansCommune = fakeClasse('Action introuvable', 'Action', {
+            clients: [{ client: '[[Nulle part]]' }]
+        });
+
+        await DynamicMap.fromConfig(baseItem, mockVault, container, [actionSansClient, actionSansCommune], undefined);
+
+        expect(L.marker).not.toHaveBeenCalled();
+    });
+
+    test("PLANTE : boundary.property pointe vers le Lieu lié -> contour geo.json", async () => {
+        const partenariat = fakeClasse('Partenariat TE38', 'Partenariat', {
+            lieu: '[[38 - Isère]]'
+        });
+        const action = fakeClasse('Action TE38', 'Action', {
+            clients: [{ client: '[[26700 - Pierrelatte]]' }]
+        });
+
+        const item = {
+            ...baseItem,
+            boundary: { enabled: true, property: 'lieu' }
+        };
+
+        await DynamicMap.fromConfig(item, mockVault, container, [action], partenariat);
+
+        // geometry geo.json [lng, lat] convertie en [lat, lng] pour Leaflet
+        expect(L.polygon).toHaveBeenCalledWith(
+            [[45.0, 5.0], [45.0, 6.0], [45.6, 6.0], [45.0, 5.0]],
+            expect.any(Object)
+        );
+    });
+
+    test("PLANTE : _fileName résolu comme propriété de popup (titre cliquable)", async () => {
+        const action = fakeClasse('Fête de la science', 'Action', {
+            clients: [{ client: '[[26700 - Pierrelatte]]' }]
+        });
+
+        const map = await DynamicMap.fromConfig(baseItem, mockVault, container, [action], undefined);
+
+        // Le popup doit contenir le nom du fichier comme titre
+        const markerMock = L.marker.mock.results[0].value;
+        expect(markerMock.bindPopup).toHaveBeenCalled();
+        const popupHtml: string = markerMock.bindPopup.mock.calls[0][0];
+        expect(popupHtml).toContain('Fête de la science');
+        expect(popupHtml).toContain('data-file="Test/Fête de la science.md"');
+    });
+});

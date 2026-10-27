@@ -161,6 +161,8 @@ export interface MapDisplayItem extends BaseDisplayItem {
         latitude?: string;      // nom de la propriété latitude
         longitude?: string;     // nom de la propriété longitude  
         address?: string;       // nom de la propriété adresse (alternative, supports {fileName} placeholder)
+        locationProperty?: string;  // chemin vers un Lieu (ex: "clients[0].client") — coords lues dans les données geo.json, remonte via .parent si le Lieu n'en a pas
+        geoFile?: string;       // fichier de données geo (par défaut: data/geo.json du config de la classe Lieu)
     };
     
     // Configuration du marqueur
