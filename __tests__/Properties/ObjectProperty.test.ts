@@ -902,9 +902,14 @@ describe('ObjectProperty', () => {
             
             await objectProperty.removeProperty(values, mockUpdate, index, mockContainer);
             
-            expect(values).toHaveLength(2);
-            expect(values[0]).toEqual({ file: 'file1.md', title: 'Title 1' });
-            expect(values[1]).toEqual({ file: 'file3.md', title: 'Title 3' });
+            // removeProperty travaille sur une copie : le tableau d'origine
+            // (potentiellement le cache vivant) n'est jamais muté en place
+            expect(values).toHaveLength(3);
+            // ... et l'update reçoit bien le tableau sans l'élément supprimé
+            expect(mockUpdate).toHaveBeenCalledWith([
+                { file: 'file1.md', title: 'Title 1' },
+                { file: 'file3.md', title: 'Title 3' }
+            ]);
         });
 
         test('should call update and reloadObjects', async () => {

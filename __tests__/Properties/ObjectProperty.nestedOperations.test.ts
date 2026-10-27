@@ -207,7 +207,11 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
         // Ajouter 2 fois à la première animation
         await addButton1.click();
         await new Promise(resolve => setTimeout(resolve, 50));
-        await addButton1.click();
+        // Le re-rendu a recréé le bouton d'ajout (comme dans l'UI réelle,
+        // l'ancien bouton est détaché du DOM) : reprendre le nouveau
+        const addButton1New = display.querySelectorAll('[class*="metadata-object-container-animateurs-"]')[0]
+            .querySelector(".metadata-add-button") as HTMLButtonElement;
+        await addButton1New.click();
         await new Promise(resolve => setTimeout(resolve, 50));
 
         // VÉRIFICATION DES MÉTADONNÉES SAUVEGARDÉES
@@ -531,7 +535,10 @@ describe("ObjectProperty - Nested Operations (Add/Remove)", () => {
         expect(lastCall[1].animateurs.length).toBe(1);
 
         // Deuxième ajout
-        await addButton1.click();
+        // Le re-rendu a recréé le bouton d'ajout (comme dans l'UI réelle,
+        // l'ancien bouton est détaché du DOM) : reprendre le nouveau
+        const addButton1New = animateursContainers[0].querySelector(".metadata-add-button") as HTMLButtonElement;
+        await addButton1New.click();
         await new Promise(resolve => setTimeout(resolve, 50));
 
         // Vérifier l'appel après le deuxième ajout

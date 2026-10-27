@@ -185,18 +185,23 @@ export class Classe {
             : rawMetadata[propertyName];
 
         metadata[propertyName] = value;
+
+        // No-op guard: writing an identical value still notifies the display,
+        // which re-renders widgets that can re-fire their update callback with
+        // the same value — the recipe for an infinite update loop. When the
+        // value is unchanged, skip the write, the notification and the processes.
+        if (JSON.stringify(oldValue) === JSON.stringify(value)) {
+            return;
+        }
+
         await this.updateMetadata(metadata);
 
-        // Trigger onPropertyChange processes only if value actually changed
-        // Compare the deep copy with the new value
-        if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
-            // Refresh computed displays FIRST: the processes below (renames,
-            // folder moves) can be slow, and the display must not wait for them
-            if (this.onPropertyChanged) {
-                await this.onPropertyChanged(propertyName);
-            }
-            await this.runProcesses('onPropertyChange', propertyName);
+        // Refresh computed displays FIRST: the processes below (renames,
+        // folder moves) can be slow, and the display must not wait for them
+        if (this.onPropertyChanged) {
+            await this.onPropertyChanged(propertyName);
         }
+        await this.runProcesses('onPropertyChange', propertyName);
     }
     
     async getPropertyValue(propertyName: string, context?: any): Promise<any> {

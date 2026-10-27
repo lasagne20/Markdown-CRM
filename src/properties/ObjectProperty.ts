@@ -840,9 +840,15 @@ export class ObjectProperty extends Property{
       // Fonction pour supprimer un objet
       async removeProperty(values : any, update : (value: any) => Promise<void>, index: number, container: HTMLDivElement) {
           console.log("Remove index : ", index)
-          values.splice(index, 1);
-          await update(values);
-          await this.reloadObjects(values, update, container)
+          // Work on a deep copy: `values` can be the LIVE metadata cache object
+          // (or a live sub-array of it). Splicing it in place poisons the cache
+          // and makes the update look like a no-op for change detection.
+          const workingValues: any[] = values
+              ? JSON.parse(JSON.stringify(values))
+              : [];
+          workingValues.splice(index, 1);
+          await update(workingValues);
+          await this.reloadObjects(workingValues, update, container)
       }
   
       // Fonction pour ajouter un objet
@@ -875,15 +881,20 @@ export class ObjectProperty extends Property{
         
         }; 
         // Valeurs par défaut
-        if (!values){values = []}
+        // Work on a deep copy: `values` can be the LIVE metadata cache object
+        // (or a live sub-array of it). Pushing into it in place poisons the
+        // cache and makes the update look like a no-op for change detection.
+        const workingValues: any[] = values
+            ? JSON.parse(JSON.stringify(values))
+            : [];
         if (this.appendFirst) {
-            values.unshift(newObject);
+            workingValues.unshift(newObject);
         } else {
-            values.push(newObject);
+            workingValues.push(newObject);
         }
-        console.log("New Values : ", values)
-          await update(values);
-          await this.reloadObjects(values, update, container)
+        console.log("New Values : ", workingValues)
+          await update(workingValues);
+          await this.reloadObjects(workingValues, update, container)
       }
   
       // Mise à jour des métadonnées
@@ -908,6 +919,13 @@ export class ObjectProperty extends Property{
           else {
             workingValues.push({[property.name] : value})
           }
+          // No-op guard: a re-rendered widget can re-fire its update callback
+          // with the value already in place. Writing anyway starts a loop
+          // (update -> write -> reloadObjects -> re-render -> update...).
+          // If nothing actually changed, skip both the update and the reload.
+          if (values && JSON.stringify(workingValues) === JSON.stringify(values)) {
+              return;
+          }
           console.log("Updated Values : ", workingValues)
           await update(workingValues);
           
@@ -915,6 +933,12 @@ export class ObjectProperty extends Property{
           // If it's an ObjectProperty, it will handle its own reload
           if (!(property instanceof ObjectProperty)) {
               await this.reloadObjects(workingValues, update, parentContainer);
+          } else if (values && Array.isArray(values) && values[index] && typeof values[index] === 'object') {
+              // The nested property re-rendered its own container, but the
+              // parent's `values` closure is stale (the update worked on a
+              // copy). Sync it so subsequent sibling edits build on the
+              // fresh state instead of resurrecting old data.
+              values[index][property.name] = value;
           }
       }
 
