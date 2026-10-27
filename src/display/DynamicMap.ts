@@ -431,44 +431,42 @@ export class DynamicMap {
             }
             const marker = L.marker([point.latitude, point.longitude], {
                 icon: L.divIcon({
-                    className: "custom-lucide-marker",
+                    className: "crm-map-marker",
                     html: `
-                        <span style="display: flex; align-items: center; justify-content: center; width: 38px; height: 44px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 24 34" fill="none" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-                                <path d="M12 2C7.03 2 3 6.03 3 11c0 7.25 8.25 19 8.25 19s8.25-11.75 8.25-19c0-4.97-4.03-9-9-9zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z" fill="${point.color ?? '#2c3e50'}" stroke="#ffffff" stroke-width="1.5"/>
-                            </svg>
-                        </span>
+                        <div style="
+                            width: 22px; height: 22px; border-radius: 50%;
+                            background-color: ${point.color ?? '#2c3e50'};
+                            border: 2px solid rgba(255, 255, 255, 0.9);
+                            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+                        "></div>
                     `,
-                    iconSize: [38, 44],
-                    iconAnchor: [19, 44],
-                    popupAnchor: [0, -44],
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11],
+                    popupAnchor: [0, -12],
                 })
             }).addTo(this.map!);
-        
+
             // Build popup content from properties
             let popupContent = '';
             if (point.properties && point.properties.length > 0) {
                 // First property as title (clickable link to main file)
                 const firstProp = point.properties[0];
-                popupContent += `<div style="margin-bottom: 8px;"><strong><a href="#" class="map-marker-link" data-file="${point.file}" style="color: ${point.color ?? '#2c3e50'}; text-decoration: none; font-weight: bold; font-size: 1.1em;">${this.formatValue(firstProp.value)}</a></strong></div>`;
-                
-                // Remaining properties as list
+                popupContent += `<div style="margin-bottom: 8px; border-bottom: 1px solid var(--background-modifier-border, #ddd); padding-bottom: 6px;"><strong><a href="#" class="map-marker-link" data-file="${point.file}" style="color: ${point.color ?? '#2c3e50'}; text-decoration: none; font-weight: bold; font-size: 1.1em;">${this.formatValue(firstProp.value)}</a></strong></div>`;
+
+                // Remaining properties as a labelled grid
                 if (point.properties.length > 1) {
-                    popupContent += '<div style="font-size: 0.95em;">';
+                    popupContent += '<div style="font-size: 0.95em; display: grid; grid-template-columns: auto auto; gap: 4px 12px; align-items: baseline;">';
                     for (let i = 1; i < point.properties.length; i++) {
                         const prop = point.properties[i];
-                        popupContent += `<div style="margin: 4px 0;">`;
-                        popupContent += `<span style="color: #666;">${prop.label}:</span> `;
-                        
+                        popupContent += `<span style="color: var(--text-muted, #666);">${prop.label}</span>`;
+
                         // If it's a file property, make it clickable
                         if (prop.isFile) {
                             const filePath = this.extractFilePath(prop.value);
-                            popupContent += `<a href="#" class="map-property-link" data-file="${filePath}" style="color: ${point.color ?? '#2c3e50'}; text-decoration: underline;">${this.formatValue(prop.value)}</a>`;
+                            popupContent += `<span><a href="#" class="map-property-link" data-file="${filePath}" style="color: ${point.color ?? '#2c3e50'}; text-decoration: underline;">${this.formatValue(prop.value)}</a></span>`;
                         } else {
-                            popupContent += this.formatValue(prop.value);
+                            popupContent += `<span>${this.formatValue(prop.value)}</span>`;
                         }
-                        
-                        popupContent += `</div>`;
                     }
                     popupContent += '</div>';
                 }
@@ -536,15 +534,16 @@ export class DynamicMap {
      */
     private async loadAndAddBoundary(item: MapDisplayItem, context: Classe, geoEntries?: any[]): Promise<void> {
         try {
-            let boundaryCoords: [number, number][] | null = null;
+            // A contour can be made of several rings (MultiPolygon: islands...)
+            let boundaryRings: [number, number][][] | null = null;
             let boundaryTarget: Classe | null = context;
 
             // Try to get boundary from property
             if (item.boundary!.property) {
                 const coords = await context.getPropertyValue(item.boundary!.property);
                 if (coords && Array.isArray(coords)) {
-                    // Legacy: direct coordinate array
-                    boundaryCoords = coords;
+                    // Legacy: direct coordinate array (single ring)
+                    boundaryRings = [coords];
                 } else if (typeof coords === 'string' && coords.match(/^\[\[.+\]\]$/)) {
                     // Property pointing to a Lieu (e.g. the partenariat's "lieu"):
                     // display that Lieu's geo.json contour instead of the context's
@@ -558,22 +557,24 @@ export class DynamicMap {
                     }
                 }
             }
-            
+
             // Load the contour from the geo.json data
-            if (!boundaryCoords && boundaryTarget && geoEntries && geoEntries.length > 0) {
-                boundaryCoords = await this.findBoundaryForContext(geoEntries, boundaryTarget);
+            if (!boundaryRings && boundaryTarget && geoEntries && geoEntries.length > 0) {
+                boundaryRings = await this.findBoundaryForContext(geoEntries, boundaryTarget);
             }
-            
-            // Add polygon to map if coordinates found
-            if (boundaryCoords && boundaryCoords.length > 0) {
-                this.addPolygon(boundaryCoords, {
-                    fillColor: item.boundary!.fillColor,
-                    fillOpacity: item.boundary!.fillOpacity,
-                    color: item.boundary!.color,
-                    weight: item.boundary!.weight,
-                    opacity: item.boundary!.opacity,
-                    dashArray: item.boundary!.dashArray
-                });
+
+            // Add polygons to map if coordinates found
+            if (boundaryRings && boundaryRings.length > 0) {
+                for (const ring of boundaryRings) {
+                    this.addPolygon(ring, {
+                        fillColor: item.boundary!.fillColor,
+                        fillOpacity: item.boundary!.fillOpacity,
+                        color: item.boundary!.color,
+                        weight: item.boundary!.weight,
+                        opacity: item.boundary!.opacity,
+                        dashArray: item.boundary!.dashArray
+                    });
+                }
             }
         } catch (error) {
             console.warn('Error adding boundary to map:', error);
@@ -581,9 +582,27 @@ export class DynamicMap {
     }
 
     /**
-     * Find boundary coordinates for context from GeoJSON data
+     * Find boundary coordinates for context from GeoJSON data.
+     * Returns ALL rings of the contour (a MultiPolygon draws every polygon,
+     * e.g. islands), each ring as [lat, lng] pairs for Leaflet.
      */
-    private async findBoundaryForContext(geoData: any, context: Classe): Promise<[number, number][] | null> {
+    private async findBoundaryForContext(geoData: any, context: Classe): Promise<[number, number][][] | null> {
+        // [lng, lat] GeoJSON ring -> [lat, lng] Leaflet ring
+        const toLeafletRing = (ring: number[][]): [number, number][] =>
+            ring.map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
+        // geometry -> list of outer rings
+        const geometryToRings = (geometry: any): [number, number][][] | null => {
+            if (!geometry?.coordinates) return null;
+            if (geometry.type === 'Polygon') {
+                return [toLeafletRing(geometry.coordinates[0])];
+            }
+            if (geometry.type === 'MultiPolygon') {
+                // One ring per polygon: no island left behind
+                return geometry.coordinates.map((poly: number[][][]) => toLeafletRing(poly[0]));
+            }
+            return null;
+        };
+
         try {
             // Support both FeatureCollection format and array format
             let features = geoData;
@@ -593,42 +612,34 @@ export class DynamicMap {
                 features = [geoData];
             }
 
-            // Try to match by nom, code_insee, or code_postal
+            // Try to match by nom, code_insee, or code_postal.
+            // Codes are only compared when the target actually has one:
+            // `undefined === undefined` would otherwise match any entry
+            // without codes (e.g. the first département with a geometry).
             const contextNom = context.getName();
             const codeInsee = await context.getPropertyValue?.('code_insee');
             const codePostal = await context.getPropertyValue?.('code_postal');
+            const matchesEntry = (nom: any, insee: any, postal: any): boolean =>
+                (nom !== undefined && nom === contextNom) ||
+                (codeInsee !== undefined && insee === codeInsee) ||
+                (codePostal !== undefined && postal === codePostal);
 
             for (const item of features) {
                 // For array format, check direct properties
-                if (item.nom === contextNom || item.code_insee === codeInsee || item.code_postal === codePostal) {
-                    if (item.geometry) {
-                        // Extract coordinates from geometry
-                        if (item.geometry.type === 'Polygon' && item.geometry.coordinates) {
-                            // Convert [lng, lat] to [lat, lng] for Leaflet
-                            return item.geometry.coordinates[0].map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
-                        } else if (item.geometry.type === 'MultiPolygon' && item.geometry.coordinates) {
-                            // Use first polygon for MultiPolygon
-                            return item.geometry.coordinates[0][0].map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
-                        }
+                if (matchesEntry(item.nom, item.code_insee, item.code_postal)) {
+                    const rings = geometryToRings(item.geometry);
+                    if (rings) {
+                        return rings;
                     }
                 }
-                
+
                 // For FeatureCollection format
                 if (item.properties) {
                     const props = item.properties;
-                    if (
-                        props.nom === contextNom ||
-                        props.name === contextNom ||
-                        props.code_insee === codeInsee ||
-                        props.postal_code === codePostal
-                    ) {
-                        // Extract coordinates from geometry
-                        if (item.geometry?.type === 'Polygon' && item.geometry.coordinates) {
-                            // Convert [lng, lat] to [lat, lng] for Leaflet
-                            return item.geometry.coordinates[0].map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
-                        } else if (item.geometry?.type === 'MultiPolygon' && item.geometry.coordinates) {
-                            // Use first polygon for MultiPolygon
-                            return item.geometry.coordinates[0][0].map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
+                    if (matchesEntry(props.nom ?? props.name, props.code_insee, props.postal_code ?? props.code_postal)) {
+                        const rings = geometryToRings(item.geometry);
+                        if (rings) {
+                            return rings;
                         }
                     }
                 }

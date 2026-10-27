@@ -166,6 +166,7 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
     });
 
     test("PLANTE : boundary.property pointe vers le Lieu lié -> contour geo.json", async () => {
+        fakesByName['38 - Isère'] = fakeClasse('38 - Isère', 'Département');
         const partenariat = fakeClasse('Partenariat TE38', 'Partenariat', {
             lieu: '[[38 - Isère]]'
         });
@@ -200,5 +201,97 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
         const popupHtml: string = markerMock.bindPopup.mock.calls[0][0];
         expect(popupHtml).toContain('Fête de la science');
         expect(popupHtml).toContain('data-file="Test/Fête de la science.md"');
+    });
+
+    test("PLANTE : marqueurs en point coloré (dot), pas en pin géant", async () => {
+        const action = fakeClasse('Fête de la science', 'Action', {
+            clients: [{ client: '[[26700 - Pierrelatte]]' }]
+        });
+
+        await DynamicMap.fromConfig(baseItem, mockVault, container, [action], undefined);
+
+        expect(L.divIcon).toHaveBeenCalledWith(
+            expect.objectContaining({ iconSize: [22, 22] })
+        );
+    });
+
+    test("PLANTE : popup avec lignes labellisées et liens cliquables vers les fichiers liés", async () => {
+        const action = fakeClasse('Fête de la science', 'Action', {
+            date: '2025-10-05',
+            etat: 'Confirmée',
+            clients: [{ client: '[[26700 - Pierrelatte]]', nombre: '80' }],
+            partenariats: [{ partenariat: '[[Partenariat TE38]]', montant: '1560' }]
+        });
+
+        const item = {
+            ...baseItem,
+            marker: {
+                properties: [
+                    { property: '_fileName' },
+                    { property: 'date', label: 'Date' },
+                    { property: 'etat', label: 'État' },
+                    { property: 'clients[0].client', label: 'Commune' },
+                    { property: 'partenariats[0].montant', label: 'Montant' }
+                ],
+                colorProperty: 'etat'
+            }
+        };
+
+        await DynamicMap.fromConfig(item, mockVault, container, [action], undefined);
+
+        const markerMock = L.marker.mock.results[0].value;
+        const popupHtml: string = markerMock.bindPopup.mock.calls[0][0];
+        // Lignes labellisées
+        expect(popupHtml).toContain('Date');
+        expect(popupHtml).toContain('2025-10-05');
+        expect(popupHtml).toContain('État');
+        expect(popupHtml).toContain('Confirmée');
+        // La commune est un lien cliquable
+        expect(popupHtml).toContain('Commune');
+        expect(popupHtml).toContain('data-file="26700 - Pierrelatte.md"');
+        expect(popupHtml).toContain('Montant');
+        expect(popupHtml).toContain('1560');
+    });
+
+    test("PLANTE : contour MultiPolygon -> tous les polygones ajoutés", async () => {
+        const partenariat = fakeClasse('Partenariat Corse', 'Partenariat', {
+            lieu: '[[20A - Corse-du-Sud]]'
+        });
+        const action = fakeClasse('Action corse', 'Action', {
+            clients: [{ client: '[[26700 - Pierrelatte]]' }]
+        });
+
+        fakesByName['20A - Corse-du-Sud'] = fakeClasse('20A - Corse-du-Sud', 'Département');
+        (mockVault as any).app.readFile = async () => JSON.stringify([
+            ...geoEntries,
+            {
+                nom: '20A - Corse-du-Sud', type: 'Département', code: '2A',
+                geometry: {
+                    type: 'MultiPolygon',
+                    coordinates: [
+                        [[[8.5, 41.5], [8.7, 41.5], [8.7, 41.7], [8.5, 41.5]]],
+                        [[[9.0, 41.3], [9.2, 41.3], [9.2, 41.5], [9.0, 41.5]]]
+                    ]
+                }
+            }
+        ]);
+
+        const item = {
+            ...baseItem,
+            boundary: { enabled: true, property: 'lieu' }
+        };
+
+        await DynamicMap.fromConfig(item, mockVault, container, [action], partenariat);
+
+        // Les DEUX polygones du MultiPolygon sont dessinés
+        expect(L.polygon).toHaveBeenCalledTimes(2);
+        expect(L.polygon).toHaveBeenCalledWith(
+            [[41.5, 8.5], [41.5, 8.7], [41.7, 8.7], [41.5, 8.5]],
+            expect.any(Object)
+        );
+        expect(L.polygon).toHaveBeenCalledWith(
+            [[41.3, 9.0], [41.3, 9.2], [41.5, 9.2], [41.5, 9.0]],
+            expect.any(Object)
+        );
     });
 });
