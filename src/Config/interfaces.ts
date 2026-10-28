@@ -184,6 +184,7 @@ export interface MapDisplayItem extends BaseDisplayItem {
     boundary?: {
         enabled: boolean;           // afficher le contour du lieu
         property?: string;          // propriété contenant les coordonnées (par défaut: utilise data/geo.json)
+        geoFile?: string;           // fichier de contours dédié (ex: data/geo-contours.json) - évite de charger le gros fichier combiné
         fillColor?: string;         // couleur de remplissage
         fillOpacity?: number;       // opacité du remplissage (0-1)
         color?: string;             // couleur du contour

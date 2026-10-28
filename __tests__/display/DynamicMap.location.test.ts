@@ -255,6 +255,55 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
         expect(popupHtml).toContain('1560');
     });
 
+    test("PLANTE : coordinates.geoFile + boundary.geoFile chargent uniquement les fichiers légers", async () => {
+        const partenariat = fakeClasse('Partenariat TE38', 'Partenariat', {
+            lieu: '[[38 - Isère]]'
+        });
+        fakesByName['38 - Isère'] = fakeClasse('38 - Isère', 'Département');
+        const action = fakeClasse('Fête de la science', 'Action', {
+            clients: [{ client: '[[26700 - Pierrelatte]]' }]
+        });
+
+        const readPaths: string[] = [];
+        (mockVault as any).app.getFile = async (p: string) => {
+            readPaths.push(p);
+            return p.endsWith('.json') ? { path: p, extension: 'json' } : null;
+        };
+        (mockVault as any).app.readFile = async (f: any) => {
+            if (f.path.includes('geo-communes')) {
+                return JSON.stringify(geoEntries.filter((e: any) => e.latitude !== undefined));
+            }
+            if (f.path.includes('geo-contours')) {
+                return JSON.stringify([{
+                    nom: '38 - Isère', type: 'Département', code: '38',
+                    geometry: { type: 'Polygon', coordinates: [[[5.0, 45.0], [6.0, 45.0], [6.0, 45.6], [5.0, 45.0]]] }
+                }]);
+            }
+            return '[]';
+        };
+
+        const item = {
+            ...baseItem,
+            coordinates: { ...baseItem.coordinates, geoFile: 'data/geo-communes.json' },
+            boundary: { enabled: true, property: 'lieu', geoFile: 'data/geo-contours.json' }
+        };
+
+        await DynamicMap.fromConfig(item, mockVault, container, [action], partenariat);
+
+        // Les deux fichiers légers sont lus...
+        expect(readPaths.some(p => p.includes('geo-communes'))).toBe(true);
+        expect(readPaths.some(p => p.includes('geo-contours'))).toBe(true);
+        // ...et PAS le gros geo.json combiné
+        expect(readPaths.some(p => p.endsWith('geo.json'))).toBe(false);
+
+        // Marqueurs depuis les coordonnées communes, contour depuis les contours
+        expect(L.marker).toHaveBeenCalledWith([44.3764, 4.6989], expect.any(Object));
+        expect(L.polygon).toHaveBeenCalledWith(
+            [[45.0, 5.0], [45.0, 6.0], [45.6, 6.0], [45.0, 5.0]],
+            expect.any(Object)
+        );
+    });
+
     test("PLANTE : contour MultiPolygon -> tous les polygones ajoutés", async () => {
         const partenariat = fakeClasse('Partenariat Corse', 'Partenariat', {
             lieu: '[[20A - Corse-du-Sud]]'

@@ -66,7 +66,11 @@ export class DynamicMap {
         
         // Add boundary if configured and context is available
         if (item.boundary?.enabled && context) {
-            await map.loadAndAddBoundary(item, context, geoEntries);
+            // Dedicated contour file: don't pull the heavy combined geo.json
+            const boundaryGeoEntries = (item.boundary as any).geoFile
+                ? await DynamicMap.loadGeoEntries(vault, item, (item.boundary as any).geoFile)
+                : geoEntries;
+            await map.loadAndAddBoundary(item, context, boundaryGeoEntries);
         }
         
         // Fit bounds if no center specified
@@ -93,22 +97,27 @@ export class DynamicMap {
         DynamicMap.geoEntriesCache.clear();
     }
 
-    static async loadGeoEntries(vault: Vault, item?: MapDisplayItem): Promise<any[]> {
+    static async loadGeoEntries(vault: Vault, item?: MapDisplayItem, explicitSource?: string): Promise<any[]> {
         const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         const sources: string[] = [];
-        if (item?.coordinates?.geoFile) {
+        if (explicitSource) {
+            // Source explicite (boundary.geoFile par exemple) : uniquement celle-là
+            sources.push(explicitSource);
+        } else if (item?.coordinates?.geoFile) {
             sources.push(item.coordinates.geoFile);
         }
-        try {
-            const factory = vault.getDynamicClassFactory?.();
-            const config = factory ? await factory.getClassConfig?.('Lieu') : null;
-            for (const dataSource of config?.data ?? []) {
-                if (dataSource.file && dataSource.file.includes('geo.json') && !sources.includes(dataSource.file)) {
-                    sources.push(dataSource.file);
+        if (!explicitSource) {
+            try {
+                const factory = vault.getDynamicClassFactory?.();
+                const config = factory ? await factory.getClassConfig?.('Lieu') : null;
+                for (const dataSource of config?.data ?? []) {
+                    if (dataSource.file && dataSource.file.includes('geo.json') && !sources.includes(dataSource.file)) {
+                        sources.push(dataSource.file);
+                    }
                 }
+            } catch (error) {
+                console.warn('Error reading Lieu class config for geo data:', error);
             }
-        } catch (error) {
-            console.warn('Error reading Lieu class config for geo data:', error);
         }
 
         for (const source of sources) {
