@@ -100,6 +100,9 @@ export interface TabsDisplayItem extends BaseDisplayItem {
     type: 'tabs';
     className?: string;
     title?: string;
+    // Si true : seul l'onglet actif est rendu immédiatement, les autres sont
+    // rendus en arrière-plan (sans bloquer l'affichage de la page)
+    lazy?: boolean;
     tabs: Array<{
         name: string;
         items: DisplayItem[];

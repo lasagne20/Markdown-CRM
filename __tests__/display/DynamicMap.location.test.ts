@@ -60,6 +60,7 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
     let L: any;
 
     beforeEach(() => {
+        DynamicMap.clearGeoCache();
         container = document.createElement('div');
         document.body.appendChild(container);
 
@@ -116,6 +117,7 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
 
     afterEach(() => {
         document.body.removeChild(container);
+        DynamicMap.clearGeoCache();
         delete (global as any).L;
     });
 

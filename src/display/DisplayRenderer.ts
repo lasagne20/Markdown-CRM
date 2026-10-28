@@ -52,7 +52,11 @@ export class DisplayRenderer {
                 }
             }
             
+            const __perfItemStart = Date.now(); // [PERF] instrumentation temporaire
             const element = await this.renderDisplayItem(item);
+            if (item.type !== 'line' && item.type !== 'property') {
+                console.log(`[PERF] renderItem(${item.type}${(item as any).title ? ' « ' + (item as any).title + ' »' : ''}): ${Date.now() - __perfItemStart}ms`);
+            }
             if (element) {
                 container.appendChild(element);
             }
@@ -405,7 +409,25 @@ export class DisplayRenderer {
         container.appendChild(tabContents);
         
         if (!item.tabs) return container;
-        
+
+        // Keep a reference to each tab content element for lazy rendering
+        const tabContentElements: HTMLElement[] = [];
+        const renderedTabs = new Set<number>();
+
+        const renderTab = async (index: number) => {
+            if (renderedTabs.has(index)) return;
+            renderedTabs.add(index);
+
+            const tabConfig = item.tabs[index];
+            const tabContent = tabContentElements[index];
+            if (!tabConfig || !tabContent || !tabConfig.items) return;
+
+            await this.renderDisplayItems(tabContent, tabConfig.items);
+
+            // Remove the loading placeholder if any
+            tabContent.querySelector('.tab-loading-placeholder')?.remove();
+        };
+
         for (let i = 0; i < item.tabs.length; i++) {
             const tabConfig = item.tabs[i];
             
@@ -420,9 +442,16 @@ export class DisplayRenderer {
             tabContent.classList.add("tab-content");
             if (i === 0) tabContent.classList.add("active");
             tabContent.dataset.tabIndex = i.toString();
-            
-            if (tabConfig.items) {
-                await this.renderDisplayItems(tabContent, tabConfig.items);
+            tabContentElements.push(tabContent);
+
+            if (item.lazy === true && i > 0) {
+                // Lazy: the non-active tabs render in the background;
+                // show a placeholder until then
+                const placeholder = document.createElement("div");
+                placeholder.className = "tab-loading-placeholder";
+                placeholder.textContent = "Chargement...";
+                placeholder.style.cssText = "color: var(--text-muted, #888); font-style: italic; padding: 12px;";
+                tabContent.appendChild(placeholder);
             }
             tabContents.appendChild(tabContent);
             
@@ -433,8 +462,25 @@ export class DisplayRenderer {
                 tabContent.classList.add("active");
             });
         }
-        
-        console.log(`[PERF] renderTabs: ${Date.now() - __perfStart}ms — ${item.tabs.length} onglets rendus d'un coup`);
+
+        if (item.lazy === true) {
+            // Render ONLY the active tab now: the page appears immediately,
+            // the other tabs render in the background (yielding between each
+            // so the visible tab is never starved)
+            await renderTab(0);
+            void (async () => {
+                for (let i = 1; i < item.tabs.length; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                    await renderTab(i);
+                }
+            })();
+            console.log(`[PERF] renderTabs(lazy): ${Date.now() - __perfStart}ms — onglet actif rendu, ${item.tabs.length - 1} en arrière-plan`);
+        } else {
+            for (let i = 0; i < item.tabs.length; i++) {
+                await renderTab(i);
+            }
+            console.log(`[PERF] renderTabs: ${Date.now() - __perfStart}ms — ${item.tabs.length} onglets rendus d'un coup`);
+        }
         return container;
     }
 
@@ -503,16 +549,40 @@ export class DisplayRenderer {
     /**
      * Get files for a table based on source configuration
      */
+    // Cache des sources résolues : les items d'une même page partageant la
+    // même source (classe + conditions + fichier courant) ne rescanment pas
+    // le vault chacun leur tour. Clé valide pour la durée du rendu courant.
+    private sourceCache = new Map<string, Promise<Classe[]>>();
+
     private async getFilesForTable(source: any, currentInstance?: Classe): Promise<Classe[]> {
         const __perfStart = Date.now(); // [PERF] instrumentation temporaire
-        try {
-            const files = await this.getFilesForTableInner(source, currentInstance);
-            console.log(`[PERF] getFilesForTable(${source.class}${source.smartFilter ? ' smart=' + source.smartFilter : ''}): ${Date.now() - __perfStart}ms — ${files.length} fichiers`);
+        const cacheKey = JSON.stringify({
+            class: source?.class,
+            smartFilter: source?.smartFilter,
+            conditions: source?.conditions,
+            current: currentInstance?.getPath?.() ?? null
+        });
+
+        const cached = this.sourceCache.get(cacheKey);
+        if (cached) {
+            // Copy the array: callers sort/filter their result in place and
+            // must not reorder the shared one
+            const files = [...await cached];
+            console.log(`[PERF] getFilesForTable(${source.class}${source.smartFilter ? ' smart=' + source.smartFilter : ''}): ${Date.now() - __perfStart}ms — ${files.length} fichiers (cache)`);
             return files;
-        } catch (error) {
-            console.log(`[PERF] getFilesForTable(${source.class}): ERREUR après ${Date.now() - __perfStart}ms`);
-            throw error;
         }
+
+        const promise = this.getFilesForTableInner(source, currentInstance)
+            .catch(error => {
+                // Don't cache failures: a retry should rescan
+                this.sourceCache.delete(cacheKey);
+                throw error;
+            });
+        this.sourceCache.set(cacheKey, promise);
+
+        const files = await promise;
+        console.log(`[PERF] getFilesForTable(${source.class}${source.smartFilter ? ' smart=' + source.smartFilter : ''}): ${Date.now() - __perfStart}ms — ${files.length} fichiers`);
+        return [...files];
     }
 
     private async getFilesForTableInner(source: any, currentInstance?: Classe): Promise<Classe[]> {

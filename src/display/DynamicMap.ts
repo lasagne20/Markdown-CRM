@@ -82,6 +82,17 @@ export class DynamicMap {
      * explicit `coordinates.geoFile` item option, then the `data` sources of
      * the Lieu class config containing "geo.json".
      */
+    /**
+     * Cache des entrées geo.json déjà parsées (clé = chemin du fichier).
+     * Le fichier ne change qu'à la régénération des données, et Obsidian est
+     * relancé dans ce cas : le cache vit le temps de la session.
+     */
+    private static geoEntriesCache = new Map<string, Promise<any[]>>();
+
+    static clearGeoCache(): void {
+        DynamicMap.geoEntriesCache.clear();
+    }
+
     static async loadGeoEntries(vault: Vault, item?: MapDisplayItem): Promise<any[]> {
         const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         const sources: string[] = [];
@@ -101,36 +112,60 @@ export class DynamicMap {
         }
 
         for (const source of sources) {
-            try {
-                const configPath = vault.settings?.configPath || './config';
-                const file = await vault.app.getFile(`${configPath}/${source}`);
-                if (!file) {
-                    console.warn(`Geo data file not found: ${configPath}/${source}`);
-                    continue;
-                }
-                if (!('extension' in file)) {
-                    console.warn(`Geo data path is a folder, not a file: ${configPath}/${source}`);
-                    continue;
-                }
-                const fileContent = await vault.app.readFile(file);
-                const data = JSON.parse(fileContent);
-                if (Array.isArray(data)) {
-                    console.log(`[PERF] loadGeoEntries(${source}): ${Date.now() - __perfStart}ms — ${data.length} entrées`);
-                    return data;
-                }
-                if (data.features) {
-                    // GeoJSON FeatureCollection: flatten properties + geometry
-                    console.log(`[PERF] loadGeoEntries(${source}): ${Date.now() - __perfStart}ms — ${data.features.length} features`);
-                    return data.features.map((f: any) => ({
-                        ...f.properties,
-                        geometry: f.geometry
-                    }));
-                }
-            } catch (error) {
-                console.warn(`Error loading geo data from ${source}:`, error);
+            const configPath = vault.settings?.configPath || './config';
+            const cacheKey = `${configPath}/${source}`;
+
+            let entriesPromise = DynamicMap.geoEntriesCache.get(cacheKey);
+            if (!entriesPromise) {
+                entriesPromise = DynamicMap.loadGeoEntriesFrom(vault, source, configPath)
+                    .catch(error => {
+                        // Don't cache failures: a retry should re-read the file
+                        DynamicMap.geoEntriesCache.delete(cacheKey);
+                        throw error;
+                    });
+                DynamicMap.geoEntriesCache.set(cacheKey, entriesPromise);
+            }
+
+            const entries = await entriesPromise;
+            if (entries.length > 0) {
+                console.log(`[PERF] loadGeoEntries(${source}): ${Date.now() - __perfStart}ms — ${entries.length} entrées`);
+                return entries;
             }
         }
         console.log(`[PERF] loadGeoEntries: AUCUNE donnée trouvée (${Date.now() - __perfStart}ms)`);
+        return [];
+    }
+
+    /**
+     * Read and parse one geo data source. Returns [] when the file is
+     * missing, unreadable or in an unsupported format.
+     */
+    private static async loadGeoEntriesFrom(vault: Vault, source: string, configPath: string): Promise<any[]> {
+        try {
+            const file = await vault.app.getFile(`${configPath}/${source}`);
+            if (!file) {
+                console.warn(`Geo data file not found: ${configPath}/${source}`);
+                return [];
+            }
+            if (!('extension' in file)) {
+                console.warn(`Geo data path is a folder, not a file: ${configPath}/${source}`);
+                return [];
+            }
+            const fileContent = await vault.app.readFile(file);
+            const data = JSON.parse(fileContent);
+            if (Array.isArray(data)) {
+                return data;
+            }
+            if (data.features) {
+                // GeoJSON FeatureCollection: flatten properties + geometry
+                return data.features.map((f: any) => ({
+                    ...f.properties,
+                    geometry: f.geometry
+                }));
+            }
+        } catch (error) {
+            console.warn(`Error loading geo data from ${source}:`, error);
+        }
         return [];
     }
 
