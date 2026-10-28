@@ -27,6 +27,7 @@ export class DynamicMap {
     private map: L.Map;
     private container: HTMLDivElement;
     private vault: Vault;
+    private resizeObserver?: ResizeObserver;
 
     /**
      * Create a DynamicMap from a MapDisplayItem configuration
@@ -436,25 +437,20 @@ export class DynamicMap {
 
  
 
-        // Invalidate map size whenever the container is shown
-        const observer = new MutationObserver(() => {
-            if (this.container.offsetParent !== null) {
-            this.map?.invalidateSize();
-            }
-        });
-        observer.observe(this.container, { attributes: true, attributeFilter: ['style', 'class'] });
-
-        // Initial invalidate in case it's already visible
-        setTimeout(() => {
-            this.map?.invalidateSize();
-        }, 3000);
-
-        // Invalidate map size on first mousemove
-        const handleFirstMouseMove = () => {
-            this.map?.invalidateSize();
-            this.container.removeEventListener('mousemove', handleFirstMouseMove);
-        };
-        this.container.addEventListener('mousemove', handleFirstMouseMove);
+        // The map is often initialized while its tab is hidden (lazy tabs /
+        // background render): Leaflet measures a 0x0 container and renders
+        // nothing until its size is invalidated. A ResizeObserver fires
+        // exactly when the container gains a real size (tab shown, layout
+        // change, window resize). This replaces the MutationObserver +
+        // delayed timer + first-mousemove workarounds (the map used to stay
+        // blank until the mouse hovered over it).
+        if (typeof ResizeObserver !== 'undefined') {
+            const resizeObserver = new ResizeObserver(() => {
+                this.map?.invalidateSize();
+            });
+            resizeObserver.observe(this.container);
+            this.resizeObserver = resizeObserver;
+        }
     }
 
     public getElement(): HTMLElement {
@@ -747,6 +743,7 @@ export class DynamicMap {
     }
 
     public destroy() {
+        this.resizeObserver?.disconnect();
         if (this.map) {
             this.map.remove();
         }

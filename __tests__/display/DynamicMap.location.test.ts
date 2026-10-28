@@ -96,6 +96,7 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
                 setView: jest.fn().mockReturnThis(),
                 addLayer: jest.fn(),
                 eachLayer: jest.fn(),
+                invalidateSize: jest.fn(),
                 fitBounds: jest.fn(),
                 remove: jest.fn()
             })),
@@ -369,6 +370,37 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
         expect(propertyLink).toBeTruthy();
         propertyLink.click();
         expect(mockVault.open).toHaveBeenCalledWith('26700 - Pierrelatte.md');
+    });
+
+    test("PLANTE : invalidateSize appelé quand le conteneur prend une taille réelle (onglet affiché)", async () => {
+        const resizeCallbacks: Array<() => void> = [];
+        class FakeResizeObserver {
+            constructor(callback: () => void) { resizeCallbacks.push(callback); }
+            observe() {}
+            disconnect() {}
+        }
+        (global as any).ResizeObserver = FakeResizeObserver;
+
+        try {
+            const action = fakeClasse('Fête de la science', 'Action', {
+                clients: [{ client: '[[26700 - Pierrelatte]]' }]
+            });
+
+            await DynamicMap.fromConfig(baseItem, mockVault, container, [action], undefined);
+
+            // La carte est initialisée cachée : pas encore d'invalidateSize
+            const mapMock = L.map.mock.results[0].value;
+            expect(mapMock.invalidateSize).not.toHaveBeenCalled();
+
+            // L'onglet devient visible -> le conteneur prend une taille réelle
+            // -> ResizeObserver déclenche invalidateSize (plus besoin de
+            // passer la souris sur la carte)
+            expect(resizeCallbacks.length).toBeGreaterThan(0);
+            resizeCallbacks[0]();
+            expect(mapMock.invalidateSize).toHaveBeenCalled();
+        } finally {
+            delete (global as any).ResizeObserver;
+        }
     });
 
     test("PLANTE : contour MultiPolygon -> tous les polygones ajoutés", async () => {
