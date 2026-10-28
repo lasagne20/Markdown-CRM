@@ -45,3 +45,36 @@ export function generateUUID(): string {
         return v.toString(16);
     });
 }
+/**
+ * Comparaison canonique de valeurs de propriétés.
+ *
+ * Les widgets ré-envoient parfois des formes différentes du "vide" :
+ * undefined, null, "" ou clé absente. Sémantiquement identiques, ces
+ * formes DIFFERENT en JSON brut - deux chaînes d'update qui alternent
+ * undefined et "" passent alors toutes les gardes no-op et s'écrivent
+ * l'une l'autre en boucle infinie. La forme canonique neutralise les
+ * clés vides : absent ≡ null ≡ "".
+ */
+export function canonicalizeValue(value: any): any {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+    if (Array.isArray(value)) {
+        return value.map(canonicalizeValue);
+    }
+    if (typeof value === 'object') {
+        const out: Record<string, any> = {};
+        for (const key of Object.keys(value)) {
+            const canonical = canonicalizeValue(value[key]);
+            if (canonical !== null) {
+                out[key] = canonical;
+            }
+        }
+        return out;
+    }
+    return value;
+}
+
+export function jsonValuesEqual(a: any, b: any): boolean {
+    return JSON.stringify(canonicalizeValue(a)) === JSON.stringify(canonicalizeValue(b));
+}

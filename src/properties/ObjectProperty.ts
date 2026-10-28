@@ -7,7 +7,7 @@ import { MultiFileProperty } from "./MultiFileProperty";
 import { Vault } from "../vault/Vault";
 import { DisplayContainer } from "../Config/interfaces";
 import { DisplayRenderer } from "../display/DisplayRenderer";
-import { generateUUID } from "../utils/Utils";
+import { generateUUID, jsonValuesEqual } from "../utils/Utils";
 
 export class ObjectProperty extends Property{
     // Used for property object
@@ -917,8 +917,11 @@ export class ObjectProperty extends Property{
           // No-op guard: a re-rendered widget can re-fire its update callback
           // with the value already in place. Writing anyway starts a loop
           // (update -> write -> reloadObjects -> re-render -> update...).
-          // If nothing actually changed, skip both the update and the reload.
-          if (values && JSON.stringify(workingValues) === JSON.stringify(values)) {
+          // The comparison is CANONICAL: absent ≡ null ≡ "" - a widget
+          // re-firing undefined where the value is "" (or the key is absent)
+          // is a no-op, not a change; the raw JSON comparison let two such
+          // "empty" forms ping-pong forever.
+          if (values && jsonValuesEqual(workingValues, values)) {
               return;
           }
           await update(workingValues);

@@ -4,6 +4,7 @@ import { Property } from '../properties/Property';
 import { File } from './File';
 import { Data } from './Data';
 import { PropertyNavigator } from '../utils/PropertyNavigator';
+import { jsonValuesEqual } from '../utils/Utils';
 
 export class Classe {
     protected static Properties: { [key: string]: Property } = {};
@@ -190,7 +191,10 @@ export class Classe {
         // which re-renders widgets that can re-fire their update callback with
         // the same value — the recipe for an infinite update loop. When the
         // value is unchanged, skip the write, the notification and the processes.
-        if (JSON.stringify(oldValue) === JSON.stringify(value)) {
+        // The comparison is CANONICAL: absent ≡ null ≡ "" - two update chains
+        // alternating undefined and "" would otherwise ping-pong forever (each
+        // form differs in raw JSON while being semantically the same empty value).
+        if (jsonValuesEqual(oldValue, value)) {
             return;
         }
 
