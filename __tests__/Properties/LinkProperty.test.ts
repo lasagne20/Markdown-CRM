@@ -327,35 +327,28 @@ describe('LinkProperty', () => {
     });
 
     describe('context menu functionality', () => {
-        it('should copy link text on right-click', async () => {
+        it('PLANTE : clic droit copie l\'URL COMPLETE, pas le texte tronqué affiché', async () => {
             // Mock clipboard API
             Object.assign(navigator, {
                 clipboard: {
                     writeText: jest.fn(() => Promise.resolve())
                 }
             });
+            mockVault.app.sendNotice = jest.fn();
 
-            // Mock Notice globally since LinkProperty declares it as global
-            const mockNotice = jest.fn();
-            (global as any).Notice = mockNotice;
+            const longUrl = 'https://www.ledauphine.com/culture-loisirs/2024/05/23/un-article-avec-un-tres-long-chemin';
+            const link = linkProperty.createFieldLink(longUrl);
 
-            const url = 'https://example.com';
-            const link = linkProperty.createFieldLink(url);
-            
-            // Test the link properties instead of event handling
-            expect(link.href).toBe('https://example.com/');
-            expect(link.textContent).toBe('example.com');
-            expect(link.classList.contains('field-link')).toBe(true);
-            
-            // Test clipboard functionality by simulating the contextmenu handler logic
-            const mockEvent = { preventDefault: jest.fn() };
-            await navigator.clipboard.writeText(link.textContent);
-            mockNotice("Lien copié dans le presse-papiers");
-            
-            expect(navigator.clipboard.writeText).toHaveBeenCalledWith('example.com');
-            expect(mockNotice).toHaveBeenCalledWith('Lien copié dans le presse-papiers');
+            // Le texte affiché est la version tronquée (pretty)...
+            expect(link.textContent).not.toBe(longUrl);
+            expect(link.textContent).toContain('...');
+
+            // ...mais le clic droit copie l'URL complète
+            link.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+            await new Promise(r => setTimeout(r, 20));
+
+            expect(navigator.clipboard.writeText).toHaveBeenCalledWith(longUrl);
         });
-
         it('should not copy if no text content', async () => {
             Object.assign(navigator, {
                 clipboard: {

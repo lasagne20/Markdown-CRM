@@ -82,9 +82,12 @@ export class LinkProperty extends Property{
       link.classList.add("field-link");
       link.oncontextmenu = (event) => {
         event.preventDefault();
-        const value = link.textContent;
-        if (value) {
-            navigator.clipboard.writeText(value).then(() => {
+        // Copie l'URL COMPLETE : le texte affiché est la version tronquée
+        // (getPretty) et le clic droit doit emporter le lien entier, pas
+        // l'affichage raccourci
+        const fullUrl = this.getLink(value) || value;
+        if (fullUrl) {
+            navigator.clipboard.writeText(fullUrl).then(() => {
             this.vault.app.sendNotice("Lien copié dans le presse-papiers");
           });
         }

@@ -292,7 +292,6 @@ export class DynamicTable {
      * Render table body with filtering applied
      */
     private async renderTableBody(): Promise<void> {
-        const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         // Remove existing tbody
         const existingTbody = this.table.querySelector('tbody');
         if (existingTbody) existingTbody.remove();
@@ -406,7 +405,6 @@ export class DynamicTable {
         }
 
         this.table.appendChild(tbody);
-        console.log(`[PERF] renderTableBody(${filteredFiles.length} lignes): ${Date.now() - __perfStart}ms`);
     }
     
     /**

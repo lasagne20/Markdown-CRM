@@ -53,11 +53,7 @@ export class DisplayRenderer {
                     }
                 }
 
-                const __perfItemStart = Date.now(); // [PERF] instrumentation temporaire
                 const element = await this.renderDisplayItem(item);
-                if (item.type !== 'line' && item.type !== 'property') {
-                    console.log(`[PERF] renderItem(${item.type}${(item as any).title ? ' « ' + (item as any).title + ' »' : ''}): ${Date.now() - __perfItemStart}ms`);
-                }
                 if (element) {
                     container.appendChild(element);
                 }
@@ -394,7 +390,6 @@ export class DisplayRenderer {
     }
 
     private async renderTabs(item: any): Promise<HTMLElement> {
-        const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         const container = document.createElement("div");
         container.classList.add("metadata-tabs-container");
         
@@ -483,12 +478,10 @@ export class DisplayRenderer {
                     await renderTab(i);
                 }
             })();
-            console.log(`[PERF] renderTabs(lazy): ${Date.now() - __perfStart}ms — onglet actif rendu, ${item.tabs.length - 1} en arrière-plan`);
         } else {
             for (let i = 0; i < item.tabs.length; i++) {
                 await renderTab(i);
             }
-            console.log(`[PERF] renderTabs: ${Date.now() - __perfStart}ms — ${item.tabs.length} onglets rendus d'un coup`);
         }
         return container;
     }
@@ -564,7 +557,6 @@ export class DisplayRenderer {
     private sourceCache = new Map<string, Promise<Classe[]>>();
 
     private async getFilesForTable(source: any, currentInstance?: Classe): Promise<Classe[]> {
-        const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         const cacheKey = JSON.stringify({
             class: source?.class,
             smartFilter: source?.smartFilter,
@@ -577,7 +569,6 @@ export class DisplayRenderer {
             // Copy the array: callers sort/filter their result in place and
             // must not reorder the shared one
             const files = [...await cached];
-            console.log(`[PERF] getFilesForTable(${source.class}${source.smartFilter ? ' smart=' + source.smartFilter : ''}): ${Date.now() - __perfStart}ms — ${files.length} fichiers (cache)`);
             return files;
         }
 
@@ -590,7 +581,6 @@ export class DisplayRenderer {
         this.sourceCache.set(cacheKey, promise);
 
         const files = await promise;
-        console.log(`[PERF] getFilesForTable(${source.class}${source.smartFilter ? ' smart=' + source.smartFilter : ''}): ${Date.now() - __perfStart}ms — ${files.length} fichiers`);
         return [...files];
     }
 

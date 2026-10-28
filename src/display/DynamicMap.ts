@@ -98,7 +98,6 @@ export class DynamicMap {
     }
 
     static async loadGeoEntries(vault: Vault, item?: MapDisplayItem, explicitSource?: string): Promise<any[]> {
-        const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         const sources: string[] = [];
         if (explicitSource) {
             // Source explicite (boundary.geoFile par exemple) : uniquement celle-là
@@ -137,11 +136,9 @@ export class DynamicMap {
 
             const entries = await entriesPromise;
             if (entries.length > 0) {
-                console.log(`[PERF] loadGeoEntries(${source}): ${Date.now() - __perfStart}ms — ${entries.length} entrées`);
                 return entries;
             }
         }
-        console.log(`[PERF] loadGeoEntries: AUCUNE donnée trouvée (${Date.now() - __perfStart}ms)`);
         return [];
     }
 
