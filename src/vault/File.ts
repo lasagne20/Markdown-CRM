@@ -90,7 +90,6 @@ export class File implements IFile {
       if (this.lock) {
         while (this.lock) {
           await new Promise(resolve => setTimeout(resolve, 100));
-          console.log("Waiting for lock")
         }
       };
       this.lock = true;
@@ -106,7 +105,6 @@ export class File implements IFile {
         // Vérification si le fichier cible existe déjà
         const existingFile = await this.vault.app.getFile(newFilePath);
         if (existingFile && existingFile.path === newFilePath) {
-            console.log('Le fichier existe déjà, impossible de déplacer.');
             this.lock = false;
             return;
         }
@@ -114,7 +112,6 @@ export class File implements IFile {
         try {
             // Déplacer uniquement le fichier .md
             await this.vault.app.move(this.file, newFilePath);
-            console.log(`Fichier déplacé vers ${newFilePath}`);
             
             // Update internal file object with new path
             this.file.path = newFilePath;
@@ -196,7 +193,6 @@ export class File implements IFile {
       if (this.lock) {
         while (this.lock) {
           await new Promise(resolve => setTimeout(resolve, 100));
-          console.log("Waiting for lock")
         }
       };
       this.lock = true;
@@ -226,7 +222,6 @@ export class File implements IFile {
     }
 
     async removeMetadata(key: string) {
-      console.log("Remove metadata " + key)
       const metadata = await this.vault.app.getMetadata(this.file);
       if (!metadata) return;
       delete metadata[key];

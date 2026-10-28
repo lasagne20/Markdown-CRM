@@ -64,7 +64,6 @@ export class ConfigLoader {
                     fileContent = await this.vault.app.readFile(file);
                 }
             } else {
-                console.log("Configuration file not found in vault, trying plugin folder:", configFilePath);
                 // If loading a parent class that doesn't exist, throw an error
                 if (isLoadingParent) {
                     throw new Error(`Parent class configuration not found: ${className}`);
@@ -101,7 +100,6 @@ export class ConfigLoader {
             
             // Handle class inheritance with extend
             if (config.extend) {
-                console.log(`🔗 ${className} extends ${config.extend}`);
                 const parentConfig = await this.loadClassConfig(config.extend, true);
                 
                 // Merge properties from parent (parent properties first, then child can override)
@@ -125,10 +123,8 @@ export class ConfigLoader {
                     config.display = parentConfig.display;
                 }
                 
-                console.log(`✅ Merged ${Object.keys(mergedProperties).length} properties from ${config.extend}`);
             }
             
-            console.log("Parent config:", config.parent);
 
             this.loadedConfigs.set(className, config as ClassConfig);
             return config;

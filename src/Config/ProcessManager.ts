@@ -129,7 +129,6 @@ export class ProcessManager {
             return; // No processes configured
         }
 
-        console.log(`🔄 Running processes for trigger: ${trigger}`, changedProperty ? `(property: ${changedProperty})` : '');
 
         // Execute each process in order
         for (const processConfig of classConfig.process) {
@@ -146,7 +145,6 @@ export class ProcessManager {
      * Execute a process manually (e.g., from a button)
      */
     async execute(processConfig: ProcessConfig, instance: Classe): Promise<void> {
-        console.log(`🔘 Manually executing process: ${processConfig.name}`);
         
         // Evaluate conditions (pass instance as currentDocument for context)
         const conditionsMet = await this.conditionManager.evaluateConditions(
@@ -156,11 +154,9 @@ export class ProcessManager {
         );
 
         if (!conditionsMet) {
-            console.log(`⏭️  Process ${processConfig.name} conditions not met`);
             return;
         }
 
-        console.log(`✅ Executing actions for process ${processConfig.name}...`);
 
         // Execute all actions in order
         for (const action of processConfig.actions) {
@@ -180,7 +176,6 @@ export class ProcessManager {
         // Check if this process should run for this trigger
         const triggers = processConfig.triggers || ['onUpdate'];
         if (!triggers.includes(trigger)) {
-            console.log(`⏭️  Skipping process ${processConfig.name} (trigger ${trigger} not in ${triggers.join(', ')})`);
             return;
         }
 
@@ -192,11 +187,9 @@ export class ProcessManager {
         );
 
         if (!conditionsMet) {
-            console.log(`⏭️  Skipping process ${processConfig.name} (conditions not met)`);
             return;
         }
 
-        console.log(`✅ Process ${processConfig.name} conditions met, executing actions...`);
 
         // Execute all actions in order
         for (const action of processConfig.actions) {
@@ -212,7 +205,6 @@ export class ProcessManager {
         instance: Classe,
         changedProperty?: string
     ): Promise<void> {
-        console.log(`🎬 Executing action: ${action.type}`);
 
         switch (action.type) {
             case 'UpdateClassAction':
@@ -248,11 +240,9 @@ export class ProcessManager {
         const newClass = action.newClass;
 
         if (currentClass === newClass) {
-            console.log(`ℹ️  Instance already has class ${newClass}, skipping`);
             return;
         }
 
-        console.log(`🔄 Updating class from ${currentClass} to ${newClass}`);
 
         try {
             // Update the Classe property via the instance so updateParentFolder() runs
@@ -261,7 +251,6 @@ export class ProcessManager {
             
             await instance.updatePropertyValue(classePropertyName, newClass);
             
-            console.log(`✅ Class updated successfully to ${newClass}`);
             
             // Update the Vault cache with a new instance of the correct class
             const filePath = file.getPath();
@@ -282,7 +271,6 @@ export class ProcessManager {
                     // Update the Vault cache
                     (this.vault as any).files[filePath] = newInstance;
                     
-                    console.log(`✅ Vault cache updated with new ${newClass} instance`);
                 } catch (error) {
                     console.warn(`⚠️  Could not update Vault cache:`, error);
                 }
@@ -306,7 +294,6 @@ export class ProcessManager {
         action: CreateFileAction,
         instance: Classe
     ): Promise<void> {
-        console.log(`📄 Creating new file of class ${action.className}`);
 
         try {
             // Get the class constructor from dynamic factory
@@ -369,7 +356,6 @@ export class ProcessManager {
             // Open the newly created file
             await this.vault.app.open(newFile.path);
 
-            console.log(`✅ File created successfully: ${newFile.path}`);
         } catch (error) {
             console.error(`❌ Error creating file:`, error);
             throw error;
@@ -383,7 +369,6 @@ export class ProcessManager {
         action: RenameFileAction,
         instance: Classe
     ): Promise<void> {
-        console.log(`📝 Renaming file with template: ${action.template}`);
 
         try {
             const file = instance.getFile();
@@ -394,24 +379,20 @@ export class ProcessManager {
             // Generate new filename from template
             const newFileName = await this.generateFileName(action.template, instance);
             if (!newFileName) {
-                console.log(`⚠️ Cannot rename - filename generation failed`);
                 return;
             }
 
             const currentPath = file.getPath();
             const currentFileName = file.basename;
-            console.log(`📂 Current: "${currentFileName}" → New: "${newFileName}"`);
 
             // Don't rename if the name is already correct
             if (currentFileName === newFileName) {
-                console.log(`✅ Filename already correct, skipping rename`);
                 return;
             }
 
             // Build new path
             const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
             const newPath = `${parentPath}/${newFileName}.md`;
-            console.log(`🎯 Target path: ${newPath}`);
 
             // Check if target file already exists (and it's not the same file)
             const targetExists = await this.vault.app.getFile(newPath);
@@ -421,16 +402,13 @@ export class ProcessManager {
             }
 
             // Rename the file
-            console.log(`🔄 Moving file: ${currentPath} → ${newPath}`);
             await this.vault.app.move(file.getFile(), newPath);
-            console.log(`✅ File moved successfully`);
 
             // Update internal file reference
             const newFile = await this.vault.app.getFile(newPath);
             if (newFile && !this.vault.app.isFolder(newFile as any)) {
                 const fileInstance = new (await import('../vault/File')).File(this.vault, newFile as any);
                 instance.setFile(fileInstance);
-                console.log(`✅ File reference updated`);
             }
         } catch (error) {
             console.error(`❌ Error renaming file:`, error);

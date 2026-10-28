@@ -75,7 +75,6 @@ export class ObjectProperty extends Property{
                         // Update valid property
                         updatedObject[subPropName] = subValidatedValue;
                         objectChanged = true;
-                        console.log(`📝 Updated object property '${this.name}.${subPropName}' from:`, subCurrentValue, 'to:', subValidatedValue);
                     }
                     // Note: Keep properties with broken links (when subValidatedValue === undefined)
                 }
@@ -300,7 +299,6 @@ export class ObjectProperty extends Property{
 
      // Méthode principale pour obtenir l'affichage - synchrone pour les modes standards
      override fillDisplay(values: any, update: (value: any) => Promise<void>) {
-        console.log("Fill display ObjectProperty ", this.name)
         
         // Parse JSON string if needed
         if (typeof values === 'string') {
@@ -823,7 +821,6 @@ export class ObjectProperty extends Property{
   
       // Met à jour l'ordre des éléments après un glisser-déposer
       async updateOrder(values : any, update : (value: any) => Promise<void>, container: HTMLDivElement) {
-        console.log("Update order")
           let newOrder: any[] = [];
           Array.from(container.querySelectorAll(".metadata-object-row")).forEach((row) => {
               // Assurer qu'on travaille avec un HTMLElement pour accéder à dataset
@@ -839,7 +836,6 @@ export class ObjectProperty extends Property{
   
       // Fonction pour supprimer un objet
       async removeProperty(values : any, update : (value: any) => Promise<void>, index: number, container: HTMLDivElement) {
-          console.log("Remove index : ", index)
           // Work on a deep copy: `values` can be the LIVE metadata cache object
           // (or a live sub-array of it). Splicing it in place poisons the cache
           // and makes the update look like a no-op for change detection.
@@ -892,7 +888,6 @@ export class ObjectProperty extends Property{
         } else {
             workingValues.push(newObject);
         }
-        console.log("New Values : ", workingValues)
           await update(workingValues);
           await this.reloadObjects(workingValues, update, container)
       }
@@ -926,7 +921,6 @@ export class ObjectProperty extends Property{
           if (values && JSON.stringify(workingValues) === JSON.stringify(values)) {
               return;
           }
-          console.log("Updated Values : ", workingValues)
           await update(workingValues);
           
           // Only reload if the updated property is not an ObjectProperty
@@ -957,7 +951,6 @@ export class ObjectProperty extends Property{
         
         container.innerHTML = "";
         // Recréer l'en-tête et les objets
-        console.log("Values : ", values)
         
         this.createHeader(values, update, container);
         

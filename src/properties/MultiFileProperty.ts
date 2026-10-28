@@ -106,9 +106,7 @@ export class MultiFileProperty extends ObjectProperty {
         // Parser les valeurs si c'est une string JSON
         if (typeof values === 'string' && values.trim()) {
             try {
-                console.log('📝 MultiFileProperty: Parsing de la string:', values);
                 values = JSON.parse(values);
-                console.log('✅ MultiFileProperty: Parsing réussi:', values);
             } catch (e) {
                 console.error('❌ MultiFileProperty: Erreur de parsing:', e);
                 // Si ce n'est pas du JSON, peut-être que c'est un tableau avec un seul élément
@@ -147,7 +145,6 @@ export class MultiFileProperty extends ObjectProperty {
     override createObjects(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
         if (!values) return;
         
-        console.log("MultiFileProperty - createObjects - values:", values, "type:", typeof values, "isArray:", Array.isArray(values));
         
         // S'assurer que values est un tableau
         if (!Array.isArray(values)) {
@@ -186,7 +183,6 @@ export class MultiFileProperty extends ObjectProperty {
     }
 
     override async addProperty(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement, currentDocument?: Classe) {
-        console.log('📂 Début de sélection multiple, values actuelles:', values);
         // Get extended classes (includes classes that inherit from the specified ones)
         const classesToSelect = await this.vault.getExtendedClasses(this.classes);
         
@@ -199,7 +195,6 @@ export class MultiFileProperty extends ObjectProperty {
             hint: "Choisissez des fichiers " + this.getClasses().join(" ou "),
             validationFunction: validationFunction
         });
-        console.log('📂 Fichiers sélectionnés:', newFiles);
         
         if (!newFiles || newFiles.length === 0) {
             console.warn(`⚠️ MultiFileProperty "${this.name}": aucune sélection résolue (sélection vide ou erreur de chargement de classe - voir logs précédents)`);
@@ -209,17 +204,14 @@ export class MultiFileProperty extends ObjectProperty {
         {
             // S'assurer que values est un tableau
             if (!Array.isArray(values)) {
-                console.log('⚠️ values n\'est pas un tableau, initialisation à []');
                 values = [];
             }
             
             newFiles.forEach((fileObj: any) => {
                 const link = fileObj.getLink();
-                console.log('📎 Ajout du lien:', link);
                 values.push(link);
             });
             
-            console.log('✅ Mise à jour avec:', values);
             
             // FIX: Appeler update ET attendre qu'il se termine avant de reloadObjects
             // Cela garantit que les valeurs sont persistées avant le refresh
@@ -250,12 +242,9 @@ export class MultiFileProperty extends ObjectProperty {
         }
             
         if (container) {
-            console.log('🔄 MultiFileProperty: Rechargement de l\'interface avec values:', values);
-            console.log('🔄 Container utilisé:', specificContainer ? 'specificContainer (passed)' : 'querySelector');
             
             // Garder l'en-tête, supprimer uniquement les lignes d'objets
             const objectRows = container.querySelectorAll('.metadata-multiFiles-row-inline');
-            console.log('🔄 Nombre de lignes à supprimer:', objectRows.length);
             objectRows.forEach(row => row.remove());
             
             // FIX: S'assurer que values est un tableau avant de créer les objets
@@ -265,7 +254,6 @@ export class MultiFileProperty extends ObjectProperty {
             // Recréer les lignes d'objets avec les valeurs mises à jour
             this.createObjects(arrayValues, update, container);
             
-            console.log('✅ MultiFileProperty: Interface rechargée avec', arrayValues.length, 'éléments');
         } else {
             console.error('❌ MultiFileProperty: Container non trouvé pour reloadObjects');
             console.error('   Property name:', this.name);

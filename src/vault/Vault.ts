@@ -394,7 +394,6 @@ export class Vault {
             classeType = await this.app.selectClasse(this, dynamicClasses, "Quelle classe pour ce fichier ?");
             if (!classeType) { return; }
         }
-        console.log("Args ; ",args)
         
         // Get populate manager singleton and handle population
         let populatedValues: { [key: string]: any } = {};
@@ -425,7 +424,6 @@ export class Vault {
         // Properties from args take priority over populated values
         if (args.properties) {
             populatedValues = { ...populatedValues, ...args.properties };
-            console.log("📦 Properties from args merged with populate:", populatedValues);
         }
         
         if (!name) {
@@ -451,12 +449,10 @@ export class Vault {
                     const classConfig = await factory.getClassConfig(classeType.name);
                     if (classConfig?.folder) {
                         folderPath = classConfig.folder;
-                        console.log(`📁 Using class folder: ${folderPath}`);
                         
                         // Ensure the folder exists
                         const folder = await this.app.getFile(folderPath);
                         if (!folder) {
-                            console.log(`📁 Creating folder: ${folderPath}`);
                             await this.app.createFolder(folderPath);
                         }
                     }
@@ -484,7 +480,6 @@ export class Vault {
         
         // Apply populated values to template content before creating file
         if (Object.keys(populatedValues).length > 0) {
-            console.log("📝 Injection des valeurs populate dans le template...");
             
             // Parse frontmatter and inject values
             const frontmatterMatch = templateContent.match(/^---\n([\s\S]*?)\n---/);
@@ -501,7 +496,6 @@ export class Vault {
                 // Merge populated values into frontmatter object
                 for (const [propName, value] of Object.entries(populatedValues)) {
                     frontmatterObj[propName] = value;
-                    console.log(`  ✓ ${propName}:`, value);
                 }
                 
                 // Serialize back to YAML
@@ -523,7 +517,6 @@ export class Vault {
         let file: File | null = null;
         try {
             file = new File(this, await this.app.createFile(newFilePath, templateContent));
-            console.log("Nouveau fichier créé : " + newFilePath);
         } catch (error) {
             // Modifier le fichier s'il existe déjà
             const existingFile = await this.app.getFile(newFilePath);
@@ -532,7 +525,6 @@ export class Vault {
             }
             if (existingFile && 'extension' in existingFile && this.app.isFile(existingFile as IFile)) {
                 await this.app.writeFile(existingFile as IFile, templateContent);
-                console.log("Fichier modifié : " + newFilePath);
                 // Récupérer le fichier après modification
                 file = new File(this, existingFile as IFile);
             } else {
@@ -557,7 +549,6 @@ export class Vault {
             // before file creation, so we don't need to update them here
             
             await classe.onCreate();
-            console.log("Classe créée : " + classe.name);
         });
         return file;
     }
@@ -569,7 +560,6 @@ export class Vault {
             if (watchedFiles.includes(file.name) && !file.name.endsWith(".md")) {
                 continue;
             }
-            console.log("Refresh : " + file.path);
             const classe = await this.getFromFile(file);
             if (classe) {
                 await classe.onCreate();

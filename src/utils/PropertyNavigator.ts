@@ -471,7 +471,6 @@ export class PropertyNavigator {
             const [, propertyName, indexStr, subPropertyName] = arrayMatch;
             const index = parseInt(indexStr, 10);
             
-            console.log(`🔍 Getting display for ${path}: property=${propertyName}, index=${index}, subProperty=${subPropertyName}`);
             
             // Get the ObjectProperty
             const objectProperty = this.properties[propertyName];
@@ -487,7 +486,6 @@ export class PropertyNavigator {
                 return null;
             }
             
-            console.log(`✅ Found sub-property ${subPropertyName}, type: ${subProperty.type}`);
             
             // Get the array value
             let arrayValue: any[];
@@ -497,7 +495,6 @@ export class PropertyNavigator {
                 arrayValue = this.context[propertyName];
             }
             
-            console.log(`📊 Array value for ${propertyName}:`, arrayValue);
             
             if (!Array.isArray(arrayValue)) {
                 console.warn(`❌ ${propertyName} is not an array:`, arrayValue);
@@ -513,13 +510,11 @@ export class PropertyNavigator {
             const itemValue = arrayValue[index];
             const value = itemValue?.[subPropertyName];
             
-            console.log(`📦 Value at ${propertyName}[${index}].${subPropertyName}:`, value);
             
             // Create update callback
             const updateFn = async (newValue: any) => {
                 if (!Array.isArray(arrayValue)) return;
                 
-                console.log(`💾 Updating ${propertyName}[${index}].${subPropertyName} to:`, newValue);
                 arrayValue[index][subPropertyName] = newValue;
                 
                 if (this.updateCallback) {
@@ -531,7 +526,6 @@ export class PropertyNavigator {
             
             // Use the sub-property's fillDisplay method to get the actual property widget
             const display = subProperty.fillDisplay(value, updateFn);
-            console.log(`🎨 Created display for ${subPropertyName}:`, display);
             
             // Wrap with title if provided
             if (title) {
@@ -557,7 +551,6 @@ export class PropertyNavigator {
         if (objectMatch) {
             const [, propertyName, subPropertyName] = objectMatch;
             
-            console.log(`🔍 Getting display for ${path}: property=${propertyName}, subProperty=${subPropertyName}`);
             
             // Get the first property
             const property = this.properties[propertyName];
@@ -566,14 +559,9 @@ export class PropertyNavigator {
                 return null;
             }
             
-            console.log(`📋 Property ${propertyName} type: ${property.type}`);
             
             // Check if this is a FileProperty (link to another class)
             if (property.type === 'file') {
-                console.log(`🔗 ${propertyName} is a FileProperty, resolving linked class...`);
-                console.log(`🔍 Context type:`, typeof this.context);
-                console.log(`🔍 Context is array:`, Array.isArray(this.context));
-                console.log(`🔍 Context value:`, this.context);
                 
                 // Get the file link value from context
                 // Guard against null/undefined context
@@ -587,25 +575,20 @@ export class PropertyNavigator {
                 // If context is an array, use the first element
                 if (Array.isArray(this.context) && this.context.length > 0 && this.context[0]) {
                     fileLink = this.context[0][propertyName];
-                    console.log(`📦 Extracted from array[0]:`, fileLink);
                 }
                 // If context is a plain object (e.g., from ObjectProperty), access directly
                 else if (typeof this.context === 'object' && this.context !== null && !this.context.getPropertyValue) {
                     fileLink = this.context[propertyName];
-                    console.log(`📦 Extracted from plain object:`, fileLink);
                 } 
                 // If context is a Classe instance, use getPropertyValue
                 else if (this.context.getPropertyValue) {
                     fileLink = await this.context.getPropertyValue(propertyName);
-                    console.log(`📦 Extracted from Classe:`, fileLink);
                 } 
                 // Fallback to direct access
                 else {
                     fileLink = this.context[propertyName];
-                    console.log(`📦 Extracted via fallback:`, fileLink);
                 }
                 
-                console.log(`📎 File link value:`, fileLink);
                 
                 if (!fileLink) {
                     console.warn(`❌ No file link value for ${propertyName}`);
@@ -626,7 +609,6 @@ export class PropertyNavigator {
                     return null;
                 }
                 
-                console.log(`✅ Resolved linked class:`, linkedClasse.getName());
                 
                 // Get the property from the linked class
                 const linkedProperty = linkedClasse.getProperty(subPropertyName);
@@ -635,12 +617,10 @@ export class PropertyNavigator {
                     return null;
                 }
                 
-                console.log(`✅ Found property ${subPropertyName} in linked class, type: ${linkedProperty.type}`);
                 
                 // Get the value from the linked class
                 const value = await linkedClasse.getPropertyValue(subPropertyName);
                 
-                console.log(`📦 Value of ${subPropertyName} in linked class:`, value);
                 
                 // Create update callback for the linked class
                 const updateFn = async (newValue: any) => {
@@ -651,7 +631,6 @@ export class PropertyNavigator {
                 
                 // Get the display from the linked property
                 const display = linkedProperty.fillDisplay(value, updateFn);
-                console.log(`🎨 Created display for ${subPropertyName} from linked class`);
                 
                 // Wrap with title if provided
                 if (title) {
@@ -686,7 +665,6 @@ export class PropertyNavigator {
                 return null;
             }
             
-            console.log(`✅ Found sub-property ${subPropertyName} in object, type: ${subProperty.type}`);
             
             // Get the object value
             let objectValue: any;
@@ -703,7 +681,6 @@ export class PropertyNavigator {
             
             const value = objectValue[subPropertyName];
             
-            console.log(`📦 Value at ${propertyName}.${subPropertyName}:`, value);
             
             // Create update callback
             const updateFn = async (newValue: any) => {
@@ -717,7 +694,6 @@ export class PropertyNavigator {
             };
             
             const display = subProperty.fillDisplay(value, updateFn);
-            console.log(`🎨 Created display for ${subPropertyName}`);
             
             if (title) {
                 const wrapper = document.createElement('div');

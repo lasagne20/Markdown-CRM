@@ -84,7 +84,6 @@ export class PopulateManager {
         for (const populateConfig of classConfig.populate) {
             // Skip properties that are already provided in existingProperties
             if (existingProperties && populateConfig.property in existingProperties) {
-                console.log(`⏭️  Skipping populate for "${populateConfig.property}" (already provided)`);
                 continue;
             }
 
@@ -127,7 +126,6 @@ export class PopulateManager {
             
             // If no value and there's a fallback, try it
             if (currentConfig.fallback) {
-                console.log(`🔄 No value for "${currentConfig.property}", trying fallback: "${currentConfig.fallback.property}"`);
                 currentConfig = currentConfig.fallback;
             } else {
                 // No more fallbacks, return null

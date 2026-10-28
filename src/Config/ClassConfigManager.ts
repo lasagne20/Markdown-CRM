@@ -137,19 +137,15 @@ export class ClassConfigManager {
             DynamicClasseBase.parentPropertyNames = config.parents.map((p: any) => p.property);
             // Use the folder from the first parent
             DynamicClasseBase.parentFolderName = config.parents[0].folder;
-            console.log(`🔧 Propriétés parentes pour ${className}:`, DynamicClasseBase.parentPropertyNames);
         } else if (config.parent?.property) {
             // Legacy format: single parent
             DynamicClasseBase.parentPropertyName = config.parent.property;
             if (config.parent?.folder) {
                 DynamicClasseBase.parentFolderName = config.parent.folder;
             }
-            console.log(`🔧 Propriété parente pour ${className}:`, DynamicClasseBase.parentPropertyName);
         }
         
-        console.log(`📁 Dossier parent pour ${className}:`, DynamicClasseBase.parentFolderName);
         
-        console.log("Propriétés : ", config.properties);
 
         // Add default classe property if not already defined
         const classePropertyName = this.configLoader.vault?.app?.getSettings?.()?.classePropertyName || "Classe";

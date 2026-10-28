@@ -174,14 +174,11 @@ describe('Classe - REGRESSION: stale cache causes parent folder not to move', ()
 
         const currentParentProperty = await classe.testGetParentProperty();
 
-        const consoleSpy = jest.spyOn(console, 'log');
-        // Pass same metadata as new → should skip (file is already in place)
+        // Pass same metadata as new → should skip (file is already in place).
+        // Les logs de debug ont été retirés : le skip se vérifie par le
+        // comportement (aucun déplacement)
         await classe.testUpdateParentFolder(oldMetadata, currentParentProperty, { ...oldMetadata });
 
-        const skipped = consoleSpy.mock.calls.find(c =>
-            c[0]?.includes('unchanged') && c[0]?.includes('skipping folder update')
-        );
-        expect(skipped).toBeDefined();
         expect(mockApp.move).not.toHaveBeenCalled();
     });
 });
@@ -330,17 +327,13 @@ describe('Classe Parent Value Comparison Bug', () => {
             // Mock getMetadata to return the unchanged metadata
             mockApp.getMetadata.mockResolvedValue(unchangedMetadata);
 
-            const consoleSpy = jest.spyOn(console, 'log');
             const createFolderSpy = jest.spyOn(mockApp, 'createFolder');
 
             const currentParentProperty = await classe.testGetParentProperty();
             await classe.testUpdateParentFolder(initialMetadata, currentParentProperty);
 
-            // Should log the "unchanged" message when values are truly the same
-            const unchangedMessage = consoleSpy.mock.calls.find(call => 
-                call[0] && call[0].includes('unchanged') && call[0].includes('skipping folder update')
-            );
-            expect(unchangedMessage).toBeDefined();
+            // Les logs de debug ont été retirés : le skip se vérifie par le
+            // comportement (aucune création de dossier)
 
             // Should NOT call createFolder when no change detected
             expect(createFolderSpy).not.toHaveBeenCalled();

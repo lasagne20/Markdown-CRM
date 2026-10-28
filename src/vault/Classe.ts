@@ -245,7 +245,6 @@ export class Classe {
     // Default Display methods
     async getDisplay(): Promise<HTMLElement> {
         const container = this.vault.app.createDiv('classe-display');
-        console.log('Displaying class: ' + this.getClassName());
         
         // Add class header
         const header = this.vault.app.createDiv('classe-header');
@@ -255,8 +254,6 @@ export class Classe {
         }
         container.appendChild(header);
 
-        console.log('Adding properties to display for class: ' + this.getClassName());
-        console.log('Number of properties: ' + this.properties.length);
         
         // Add properties - pass 'this' (the classe) instead of the file
         for (const property of this.properties) {
@@ -385,7 +382,6 @@ export class Classe {
         const children: Classe[] = [];
         
         // Filesystem scan for fresh data
-        console.log(`🔍 Filesystem scan for children`);
         const allFiles = await this.vault.listFiles();
         const thisFileBaseName = this.file.getName(false);
         const thisFilePath = this.file.getPath();
@@ -577,7 +573,6 @@ export class Classe {
             
             // Case 1: Parent property changed (e.g., from postes to institution)
             if (oldParentProperty?.name !== currentParentProperty?.name) {
-                console.log(`🔄 Parent property changed from "${oldParentProperty?.name}" to "${currentParentProperty?.name}"`);
                 // Continue with folder update
             }
             // Case 2: Same parent property, check if value changed
@@ -602,7 +597,6 @@ export class Classe {
                 if (valuesUnchanged) {
                     if (!resolvedParentFile) {
                         // Parent value cannot be resolved to a file: nothing to sort against
-                        console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged and unresolvable, skipping folder update`);
                         return;
                     }
                     
@@ -616,20 +610,16 @@ export class Classe {
                         : `${parentFolderPath}/${parentBaseName}`;
                     
                     if (this.file && this.file.getFolderPath().startsWith(parentDedicatedFolderPath)) {
-                        console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged and file in place, skipping folder update`);
                         return;
                     }
                     
                     // Value unchanged but the file is misplaced (imported, moved manually,
                     // or sorted under a previous parent): continue to the full folder
                     // verification below, which only moves when needed.
-                    console.log(`⏭️ Parent property "${currentParentProperty.name}" unchanged but file misplaced, verifying folder placement`);
                 } else {
                     if (!resolvedParentFile) {
-                        console.log(`⚠️ New parent value is empty/invalid, skipping folder update`);
                         return;
                     }
-                    console.log(`✅ Parent property "${currentParentProperty.name}" value changed and is valid`);
                 }
             } else {
                 // No parent property, nothing to do
@@ -762,7 +752,6 @@ export class Classe {
     // Lifecycle hooks
     async onCreate(): Promise<void> {
         // Check if parent folder should be set up on creation
-        console.log(`🚀 onCreate called for ${this.file?.getPath()}`);
         
         // Auto-initialize IdProperty fields if they don't have values
         await this.initializeIdProperties();
@@ -783,7 +772,6 @@ export class Classe {
     
     async onUpdate(): Promise<void> {
         // Let updateParentFolder decide if it needs to do anything
-        console.log(`🔄 onUpdate called for ${this.file?.getPath()}`);
         await this.updateParentFolder();
 
         // Validate and update file properties
@@ -820,7 +808,6 @@ export class Classe {
                 // Update property with validated value
                 updates[property.name] = validatedValue;
                 hasChanges = true;
-                console.log(`📝 Updated property '${property.name}' from:`, currentValue, 'to:', validatedValue);
             }
             // Note: Keep properties with broken links (when validatedValue === undefined)
         }

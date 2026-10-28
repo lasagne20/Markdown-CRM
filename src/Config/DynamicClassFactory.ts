@@ -76,22 +76,18 @@ export class DynamicClassFactory {
                 const foundParent = await vault.getFromLink(parentLink);
                 if (foundParent) {
                     parentInstance = foundParent;
-                    console.log(`✅ Parent trouvé dans le vault: ${data.parent}`);
                 }
             } catch (error) {
-                console.log(`❌ Parent ${data.parent} non trouvé dans le vault`);
             }
             
             // If not found, we need to create the parent hierarchy
             if (!parentInstance) {
-                console.log(`🔍 Recherche de ${data.parent} dans les données pour création...`);
                 
                 // Use provided data or load from config
                 const classData = allData || await this.configManager.loadClassData(className);
                 const parentData = classData.find((d: any) => (d.nom || d.name) === data.parent);
                 
                 if (parentData) {
-                    console.log(`📦 Création du parent: ${data.parent}`);
                     // Recursively create the parent (which will create its parent, etc.)
                     // Pass allData to avoid reloading
                     parentInstance = await this.createInstanceFromDataObject(className, parentData, vault, classData);
@@ -119,7 +115,6 @@ export class DynamicClassFactory {
     async loadDataForClass(className: string, vault: Vault, autoSetupDynamicReload: boolean = true): Promise<Classe[]> {
         const data = await this.configManager.loadClassData(className);
         if (data.length === 0) {
-            console.log(`No data to load for ${className}`);
             return [];
         }
 
@@ -167,7 +162,6 @@ export class DynamicClassFactory {
                         const foundParent = await vault.getFromLink(parentLink);
                         parentInstance = foundParent || null;
                     } catch (error) {
-                        console.log(`Parent ${item.parent} not found in vault, checking data...`);
                     }
                 }
                 
@@ -175,7 +169,6 @@ export class DynamicClassFactory {
                 if (!parentInstance) {
                     const parentData = data.find((d: any) => (d.nom || d.name) === item.parent);
                     if (parentData) {
-                        console.log(`Creating missing parent: ${item.parent}`);
                         
                         // Recursively create parent's parent if needed
                         let grandParentInstance: Classe | null = null;
@@ -252,7 +245,6 @@ export class DynamicClassFactory {
             if (hasDynamic) {
                 // Setup dynamic reload for this class
                 await this.setupDynamicDataReload(className, vault);
-                console.log(`🔄 Dynamic reload enabled for ${className}`);
             }
         }
         
@@ -408,7 +400,6 @@ export class DynamicClassFactory {
                         const oldHash = this.dataFileHashes.get(watchKey);
 
                         if (oldHash && newHash !== oldHash) {
-                            console.log(`🔄 Data file changed: ${dataSource.file}, reloading ${className}...`);
                             this.dataFileHashes.set(watchKey, newHash);
                             
                             // Reload data without re-setting up dynamic reload (prevents infinite loop)
@@ -427,7 +418,6 @@ export class DynamicClassFactory {
             }, 2000);
 
             this.dataWatchers.set(watchKey, watcher);
-            console.log(`📡 Watching data file: ${dataSource.file} for ${className}`);
         }
     }
 
@@ -440,7 +430,6 @@ export class DynamicClassFactory {
                 clearInterval(watcher);
                 this.dataWatchers.delete(key);
                 this.dataFileHashes.delete(key);
-                console.log(`📡 Stopped watching data for: ${className}`);
             }
         }
     }
@@ -477,7 +466,6 @@ export class DynamicClassFactory {
      */
     async getAllInstancesForClass(className: string, vault: Vault): Promise<Classe[]> {
         try {
-            console.log(`Getting all instances for class: ${className}`);
             const ClassConstructor = await this.getClass(className);
             const config = await this.configManager.getClassConfig(className);
             const instances: Classe[] = [];
@@ -500,7 +488,6 @@ export class DynamicClassFactory {
                     }
                 }
             }
-            console.log(`Found ${instances.length} instances of class ${className}`);
             return instances;
         } catch (error) {
             console.error(`Error getting instances for class ${className}:`, error);

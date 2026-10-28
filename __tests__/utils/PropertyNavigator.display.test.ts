@@ -399,15 +399,12 @@ describe('PropertyNavigator - getPropertyDisplayForPath', () => {
             consoleWarnSpy.mockRestore();
         });
 
-        it('should log debug info for successful path resolution', async () => {
+        it('should NOT log debug info on successful path resolution (debug logs removed)', async () => {
             await navigator.getPropertyDisplayForPath('animations[0].date');
 
-            expect(consoleLogSpy).toHaveBeenCalledWith(
-                expect.stringContaining('🔍 Getting display for animations[0].date')
-            );
-            expect(consoleLogSpy).toHaveBeenCalledWith(
-                expect.stringContaining('✅ Found sub-property date')
-            );
+            // Les logs de debug ont été retirés : une résolution réussie est
+            // silencieuse (la console ne doit plus être inondée par cellule)
+            expect(consoleLogSpy).not.toHaveBeenCalled();
         });
 
         it('should warn when property not found', async () => {
@@ -435,24 +432,6 @@ describe('PropertyNavigator - getPropertyDisplayForPath', () => {
             expect(consoleWarnSpy).toHaveBeenCalledWith(
                 expect.stringContaining('❌ animations is not an array'),
                 'not an array'
-            );
-        });
-
-        it('should log array value for debugging', async () => {
-            await navigator.getPropertyDisplayForPath('animations[0].date');
-
-            expect(consoleLogSpy).toHaveBeenCalledWith(
-                expect.stringContaining('📊 Array value for animations:'),
-                expect.any(Array)
-            );
-        });
-
-        it('should log final value for debugging', async () => {
-            await navigator.getPropertyDisplayForPath('animations[0].date');
-
-            expect(consoleLogSpy).toHaveBeenCalledWith(
-                expect.stringContaining('📦 Value at animations[0].date:'),
-                '2025-12-20'
             );
         });
 

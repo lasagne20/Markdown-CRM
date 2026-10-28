@@ -22,8 +22,6 @@ export class TemplateEngine {
         metadata: Record<string, any>,
         currentValue?: string
     ): Promise<string | null> {
-        console.log(`🎨 Processing template: "${template}"`);
-        console.log(`📊 Metadata:`, metadata);
         
         let result = template;
 
@@ -37,40 +35,32 @@ export class TemplateEngine {
 
             if (placeholder === 'current') {
                 if (currentValue === undefined) {
-                    console.log(`  ❌ {current} used but no currentValue provided`);
                     return null;
                 }
 
                 // Clean current value from previous template applications
                 value = this.cleanCurrentValue(currentValue, template);
-                console.log(`  🔄 {${placeholder}} = "${value}" (current value)`);
             } else if (placeholder.includes('[') && placeholder.includes(']')) {
                 // Handle array access (e.g., "clients[0].client")
                 value = this.getArrayPropertyValue(metadata, placeholder);
-                console.log(`  📦 {${placeholder}} = "${value}" (array property)`);
             } else if (placeholder.includes('.')) {
                 // Handle nested properties (e.g., "postes.poste")
                 value = this.getNestedPropertyValue(metadata, placeholder);
-                console.log(`  📦 {${placeholder}} = "${value}" (nested property)`);
             } else {
                 // Simple property
                 value = metadata[placeholder];
-                console.log(`  📝 {${placeholder}} = "${value}" (simple property)`);
             }
 
             // If any required value is missing or empty, abort processing
             if (value === undefined || value === null || value === '') {
-                console.log(`  ❌ Missing or empty value for {${placeholder}}, aborting`);
                 return null;
             }
 
             // Convert value to string
             const stringValue = this.valueToString(value);
             result = result.replace(`{${placeholder}}`, stringValue);
-            console.log(`  ✅ Replaced {${placeholder}} with "${stringValue}"`);
         }
 
-        console.log(`✨ Final result: "${result}"`);
         return result;
     }
 
@@ -86,7 +76,6 @@ export class TemplateEngine {
         instance: Classe,
         currentValue?: string
     ): Promise<string | null> {
-        console.log(`🎨 Processing template from instance: "${template}"`);
         
         const originalTemplate = template.trim();
         let result = template;
@@ -94,7 +83,6 @@ export class TemplateEngine {
         // Only treat as direct property expression if it contains {placeholders} already
         // or if it's explicitly "current" or matches array/nested notation
         if (!template.includes('{') && this.isPropertyAccessPattern(template)) {
-            console.log(`📝 Direct property expression detected: "${template}"`);            
             result = `{${template}}`;
         }
 
@@ -103,7 +91,6 @@ export class TemplateEngine {
 
         // Get metadata for fallback
         const metadata = await instance.getMetadata();
-        console.log(`📊 Metadata:`, metadata);
 
         // Replace placeholders
         for (const match of Array.from(result.matchAll(placeholderRegex))) {
@@ -112,7 +99,6 @@ export class TemplateEngine {
 
             if (placeholder === 'current') {
                 if (currentValue === undefined) {
-                    console.log(`  ❌ {current} used but no currentValue provided`);
                     return null;
                 }
 
@@ -122,38 +108,31 @@ export class TemplateEngine {
                     const file = instance.getFile();
                     if (file) {
                         value = `[[${file.path}|${currentValue}]]`;
-                        console.log(`  🔗 {${placeholder}} = "${value}" (current as full link)`);
                     } else {
                         value = currentValue;
-                        console.log(`  🔄 {${placeholder}} = "${value}" (current value, no file)`);
                     }
                 } else {
                     // Part of a larger template - clean current value from previous template applications
                     value = this.cleanCurrentValue(currentValue, originalTemplate);
-                    console.log(`  🔄 {${placeholder}} = "${value}" (current value)`);
                 }
             } else if (placeholder.includes('[') || placeholder.includes('.')) {
                 // For complex paths, use metadata directly
                 if (placeholder.includes('[') && placeholder.includes(']')) {
                     value = this.getArrayPropertyValue(metadata, placeholder);
-                    console.log(`  📦 {${placeholder}} = "${value}" (array property)`);
                 } else {
                     value = this.getNestedPropertyValue(metadata, placeholder);
-                    console.log(`  📦 {${placeholder}} = "${value}" (nested property)`);
                 }
 
                 // Clean Obsidian links in array/nested values
                 if (typeof value === 'string') {
                     const cleanedValue = this.cleanObsidianLink(value);
                     if (cleanedValue !== value) {
-                        console.log(`  🧹 Cleaned link: "${value}" → "${cleanedValue}"`);
                         value = cleanedValue;
                     }
 
                     // Extract start date from daterange
                     const extractedDate = RangeDateProperty.extractStartDateFromRange(value);
                     if (extractedDate !== value) {
-                        console.log(`  📅 Extracted start date: "${value}" → "${extractedDate}"`);
                         value = extractedDate;
                     }
                 }
@@ -170,10 +149,8 @@ export class TemplateEngine {
                         const rawValue = metadata[placeholder];
                         if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
                             value = property.getPretty(rawValue);
-                            console.log(`  ✨ {${placeholder}} = "${value}" (via getPretty)`);
                         } else {
                             value = rawValue;
-                            console.log(`  📝 {${placeholder}} = "${value}" (raw value)`);
                         }
                     } else {
                         // For date properties, use raw value to preserve YYYY-MM-DD format
@@ -182,29 +159,24 @@ export class TemplateEngine {
                         if (property.type === 'dateRange' && typeof rawValue === 'string') {
                             const { RangeDateProperty } = require('../properties/RangeDateProperty');
                             value = RangeDateProperty.extractStartDateFromRange(rawValue);
-                            console.log(`  📅 {${placeholder}} = "${value}" (dateRange - extracted start date from "${rawValue}")`);
                         } else {
                             value = rawValue;
-                            console.log(`  📅 {${placeholder}} = "${value}" (date property - raw format)`);
                         }
                     }
                 } else {
                     // Fallback to metadata value
                     value = metadata[placeholder];
-                    console.log(`  📝 {${placeholder}} = "${value}" (metadata)`);
                 }
 
                 // Clean Obsidian links and extract daterange for simple properties too
                 if (typeof value === 'string') {
                     const cleanedValue = this.cleanObsidianLink(value);
                     if (cleanedValue !== value) {
-                        console.log(`  🧹 Cleaned link: "${value}" → "${cleanedValue}"`);
                         value = cleanedValue;
                     }
 
                     const extractedDate = RangeDateProperty.extractStartDateFromRange(value);
                     if (extractedDate !== value) {
-                        console.log(`  📅 Extracted start date: "${value}" → "${extractedDate}"`);
                         value = extractedDate;
                     }
                 }
@@ -212,17 +184,14 @@ export class TemplateEngine {
 
             // If any required value is missing or empty, abort processing
             if (value === undefined || value === null || value === '') {
-                console.log(`  ❌ Missing or empty value for {${placeholder}}, aborting`);
                 return null;
             }
 
             // Convert value to string
             const stringValue = this.valueToString(value);
             result = result.replace(`{${placeholder}}`, stringValue);
-            console.log(`  ✅ Replaced {${placeholder}} with "${stringValue}"`);
         }
 
-        console.log(`✨ Final result: "${result}"`);
         return result;
     }
 
@@ -255,8 +224,6 @@ export class TemplateEngine {
                 const newValue = cleanedValue.replace(regex, '').trim();
                 if (newValue !== cleanedValue && newValue !== previousValue) {
                     cleanedValue = newValue;
-                    console.log(`  🧹 Cleaned {current}: pattern "${prefixTemplate}" matched`);
-                    console.log(`    "${previousValue}" → "${cleanedValue}"`);
                 } else {
                     break;
                 }
@@ -281,8 +248,6 @@ export class TemplateEngine {
                     const newValue = cleanedValue.replace(regex, '').trim();
                     if (newValue !== cleanedValue && newValue !== previousValue) {
                         cleanedValue = newValue;
-                        console.log(`  🧹 Cleaned {current} at start: pattern "${suffixTemplate}" matched`);
-                        console.log(`    "${previousValue}" → "${cleanedValue}"`);
                     } else {
                         break;
                     }
