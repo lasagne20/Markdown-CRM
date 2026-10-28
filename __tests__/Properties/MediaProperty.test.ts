@@ -819,7 +819,7 @@ describe('MediaProperty', () => {
             expect(link?.style.textOverflow).toBe('ellipsis');
             expect(link?.style.overflow).toBe('hidden');
             expect(link?.style.whiteSpace).toBe('nowrap');
-            expect(link?.style.maxWidth).toBe('200px');
+            expect(link?.style.maxWidth).toBe('120px');
         });
 
         it('should not truncate short text', () => {
