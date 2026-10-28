@@ -801,17 +801,24 @@ describe('MediaProperty', () => {
             jest.spyOn(mediaProperty, 'getLink');
         });
 
-        it('should create field container with truncated text', () => {
+        it('PLANTE : lien long affiché complet, tronqué visuellement en CSS (copie = URL complète)', () => {
             const mockUpdate = jest.fn();
             const testValue = '[[verylongfilename.jpg]]';
             (mediaProperty.getLink as jest.Mock).mockReturnValue('verylongfilename.jpg');
-            
+
             const container = mediaProperty.createFieldContainerContent(mockUpdate, testValue);
             const link = container.querySelector('a');
-            
+
             expect(container.classList.contains('field-container')).toBe(true);
-            expect(link?.textContent).toBe('verylongfile...');
+            // Le texte du lien porte l'URL COMPLETE : sélectionner/copier emporte
+            // le lien entier, pas le texte tronqué affiché
+            expect(link?.textContent).toBe('verylongfilename.jpg');
             expect(link?.getAttribute('full-text')).toBe('verylongfilename.jpg');
+            // La troncature est purement visuelle (ellipsis CSS)
+            expect(link?.style.textOverflow).toBe('ellipsis');
+            expect(link?.style.overflow).toBe('hidden');
+            expect(link?.style.whiteSpace).toBe('nowrap');
+            expect(link?.style.maxWidth).toBe('100%');
         });
 
         it('should not truncate short text', () => {

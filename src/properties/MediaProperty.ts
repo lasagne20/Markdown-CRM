@@ -289,15 +289,25 @@ export class MediaProperty extends FileProperty{
     override createFieldContainerContent(update: (value: string) => Promise<void>, value: string) {
       const fieldContainer = document.createElement("div");
       fieldContainer.classList.add("field-container");
+      // Nécessaire pour que l'ellipsis contrainte par max-width fonctionne
+      // dans les layouts flex/grid (les enfants ne rétrécissent pas sinon)
+      fieldContainer.style.minWidth = "0";
+      fieldContainer.style.overflow = "hidden";
       const currentField = this.getLink(value);
       const link = document.createElement("a");
       link.href = "#";
-      const truncatedField = currentField?.length > 12 ? currentField.slice(0, 12) + "..." : currentField;
-      link.textContent = truncatedField || "";
+      // Le texte porte le lien COMPLETE : la copie (sélection + Ctrl+C)
+      // emporte l'URL entière. La troncature est purement visuelle (ellipsis
+      // CSS) - ne jamais couper le texte lui-même.
+      link.textContent = currentField || "";
       link.setAttribute("full-text", currentField || "");
       link.addEventListener("click", async (event) => await this.modifyField(event));
       link.classList.add("field-link");
       link.style.display = "block";
+      link.style.whiteSpace = "nowrap";
+      link.style.overflow = "hidden";
+      link.style.textOverflow = "ellipsis";
+      link.style.maxWidth = "100%";
 
       fieldContainer.appendChild(link);
 
