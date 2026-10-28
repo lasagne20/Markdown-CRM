@@ -814,11 +814,12 @@ describe('MediaProperty', () => {
             // le lien entier, pas le texte tronqué affiché
             expect(link?.textContent).toBe('verylongfilename.jpg');
             expect(link?.getAttribute('full-text')).toBe('verylongfilename.jpg');
-            // La troncature est purement visuelle (ellipsis CSS)
+            // La troncature est purement visuelle (ellipsis CSS) avec une
+            // largeur max fixe - "100%" ne contraint pas un parent élastique
             expect(link?.style.textOverflow).toBe('ellipsis');
             expect(link?.style.overflow).toBe('hidden');
             expect(link?.style.whiteSpace).toBe('nowrap');
-            expect(link?.style.maxWidth).toBe('100%');
+            expect(link?.style.maxWidth).toBe('200px');
         });
 
         it('should not truncate short text', () => {

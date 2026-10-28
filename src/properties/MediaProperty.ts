@@ -307,7 +307,9 @@ export class MediaProperty extends FileProperty{
       link.style.whiteSpace = "nowrap";
       link.style.overflow = "hidden";
       link.style.textOverflow = "ellipsis";
-      link.style.maxWidth = "100%";
+      // Largeur max fixe : "100%" ne contraint pas quand le parent s'élargit
+      // avec son contenu, et le layout dépassait
+      link.style.maxWidth = "200px";
 
       fieldContainer.appendChild(link);
 
