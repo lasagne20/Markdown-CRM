@@ -73,6 +73,30 @@ describe('DisplayRenderer - Map Display with Boundaries', () => {
     });
 
     describe('Map Rendering with Boundaries', () => {
+        it('PLANTE : le rendu différé de la carte passe dans un scope de lecture', async () => {
+            // Le rendu de la carte se fait dans un setTimeout : sans scope, la
+            // résolution des marqueurs (getFromLink par lien) re-scannerait le
+            // vault pour CHAQUE lien et gèlerait l'interface
+            const withReadScope = jest.fn(async (work: () => Promise<any>) => work());
+            mockVault.withReadScope = withReadScope as any;
+
+            const mapItem: MapDisplayItem = {
+                type: 'map',
+                title: 'Test Map',
+                source: { class: 'Action' }
+            };
+
+            const container = document.createElement('div');
+            document.body.appendChild(container);
+            await (renderer as any).renderMap(mapItem);
+
+            // Laisse le setTimeout(100) du rendu différé se déclencher
+            await new Promise(r => setTimeout(r, 250));
+
+            expect(withReadScope).toHaveBeenCalled();
+            document.body.removeChild(container);
+        });
+
         it('should render map with boundary configuration', async () => {
             const mapItem: MapDisplayItem = {
                 type: 'map',

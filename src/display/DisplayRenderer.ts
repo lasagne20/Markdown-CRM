@@ -1085,15 +1085,25 @@ export class DisplayRenderer {
             // Load map asynchronously
             setTimeout(async () => {
                 try {
-                    // Get files based on source filter type  
-                    const files = await this.getFilesForTable(item.source, this.context);
-                    
-                    // Replace placeholder
-                    placeholder.remove();
-                    
-                    // Create map using DynamicMap.fromConfig
-                    await DynamicMap.fromConfig(item, this.vault, container, files, this.context);
-                    
+                    const work = async () => {
+                        // Get files based on source filter type
+                        const files = await this.getFilesForTable(item.source, this.context);
+
+                        // Replace placeholder
+                        placeholder.remove();
+
+                        // Create map using DynamicMap.fromConfig
+                        await DynamicMap.fromConfig(item, this.vault, container, files, this.context);
+                    };
+
+                    // Le rendu différé s'échappe du scope du rendu principal :
+                    // sans scope propre, la résolution des marqueurs re-scannerait
+                    // le vault pour chaque lien et gèlerait l'interface
+                    if (typeof (this.vault as any).withReadScope === 'function') {
+                        await (this.vault as any).withReadScope(work);
+                    } else {
+                        await work();
+                    }
                 } catch (error) {
                     console.error('Error loading map:', error);
                     placeholder.innerHTML = '❌ Erreur lors du chargement de la carte';
