@@ -521,38 +521,24 @@ export class DynamicMap {
                 popupContent = `<strong><a href="#" class="map-marker-link" data-file="${point.file}" style="color: ${point.color ?? '#2c3e50'}; text-decoration: none; font-weight: bold;">${fileName}</a></strong>`;
             }
             
-            const popup = marker.bindPopup(popupContent);
-            
-            // Add click handlers to open files using vault.open()
-            marker.on('popupopen', () => {
-                // Main file link
-                const mainLink = popup.getElement()?.querySelector('.map-marker-link');
-                if (mainLink) {
-                    mainLink.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const filePath = (e.target as HTMLElement).getAttribute('data-file');
-                        if (filePath && this.vault.open) {
-                            this.vault.open(filePath);
-                        }
-                    });
-                }
-                
-                // Property file links
-                const propertyLinks = popup.getElement()?.querySelectorAll('.map-property-link');
-                if (propertyLinks) {
-                    propertyLinks.forEach(link => {
-                        link.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            const filePath = (e.target as HTMLElement).getAttribute('data-file');
-                            if (filePath && this.vault.open) {
-                                this.vault.open(filePath);
-                            }
-                        });
-                    });
+            // Popup content wrapped in OUR element with event delegation:
+            // the listener survives Leaflet moving the node into the popup,
+            // and the links work without depending on popupopen/getElement()
+            // timing (they were not clickable with that pattern)
+            const content = document.createElement('div');
+            content.innerHTML = popupContent;
+            content.addEventListener('click', (e) => {
+                const anchor = (e.target as HTMLElement).closest?.('a.map-marker-link, a.map-property-link');
+                if (!anchor) { return; }
+                e.preventDefault();
+                const filePath = anchor.getAttribute('data-file');
+                if (filePath && this.vault.open) {
+                    this.vault.open(filePath);
                 }
             });
+            marker.bindPopup(content);
         });
-        
+
     }
 
     private extractFilePath(value: string): string {
@@ -570,8 +556,22 @@ export class DynamicMap {
 
     private formatValue(value: any): string {
         if (value === null || value === undefined) return '';
+        if (Array.isArray(value)) {
+            // Résultats de filter() : joindre proprement au lieu d'afficher
+            // le JSON brut
+            return value.map(v => this.formatValue(v)).filter(Boolean).join(', ');
+        }
         if (typeof value === 'object') return JSON.stringify(value);
-        return String(value);
+        const str = String(value);
+        // Wikilink : afficher le nom visible ([[Cible]] ou [[Cible|Alias]])
+        const match = str.match(/^\[\[(.+?)\]\]$/s);
+        if (match) {
+            const inner = match[1];
+            const pipe = inner.indexOf('|');
+            if (pipe >= 0) return inner.slice(pipe + 1).trim();
+            return inner.split('/').pop()?.replace(/\.md$/, '') ?? inner;
+        }
+        return str;
     }
 
     /**

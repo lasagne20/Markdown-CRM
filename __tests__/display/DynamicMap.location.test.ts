@@ -200,7 +200,7 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
         // Le popup doit contenir le nom du fichier comme titre
         const markerMock = L.marker.mock.results[0].value;
         expect(markerMock.bindPopup).toHaveBeenCalled();
-        const popupHtml: string = markerMock.bindPopup.mock.calls[0][0];
+        const popupHtml: string = (markerMock.bindPopup.mock.calls[0][0] as HTMLElement).innerHTML;
         expect(popupHtml).toContain('Fête de la science');
         expect(popupHtml).toContain('data-file="Test/Fête de la science.md"');
     });
@@ -242,7 +242,7 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
         await DynamicMap.fromConfig(item, mockVault, container, [action], undefined);
 
         const markerMock = L.marker.mock.results[0].value;
-        const popupHtml: string = markerMock.bindPopup.mock.calls[0][0];
+        const popupHtml: string = (markerMock.bindPopup.mock.calls[0][0] as HTMLElement).innerHTML;
         // Lignes labellisées
         expect(popupHtml).toContain('Date');
         expect(popupHtml).toContain('2025-10-05');
@@ -302,6 +302,73 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
             [[45.0, 5.0], [45.0, 6.0], [45.6, 6.0], [45.0, 5.0]],
             expect.any(Object)
         );
+    });
+
+    test("PLANTE : popup affiche les wikilinks nettoyés (sans [[...]]) et les tableaux joints", async () => {
+        const action = fakeClasse('Fête de la science', 'Action', {
+            date: '2025-10-05',
+            etat: 'Facturée',
+            clients: [{ client: '[[26700 - Pierrelatte]]' }],
+            partenariats: [{ partenariat: '[[Partenariat TE38]]', montant: '600' }]
+        });
+
+        const item = {
+            ...baseItem,
+            marker: {
+                properties: [
+                    { property: '_fileName' },
+                    { property: 'clients[0].client', label: 'Commune' },
+                    { property: 'partenariats.filter(partenariat=$current).montant', label: 'Montant' }
+                ],
+                colorProperty: 'etat'
+            }
+        };
+
+        await DynamicMap.fromConfig(item, mockVault, container, [action], undefined);
+
+        const markerMock = L.marker.mock.results[0].value;
+        const popupHtml: string = (markerMock.bindPopup.mock.calls[0][0] as HTMLElement).innerHTML;
+        // Wikilink affiché nettoyé
+        expect(popupHtml).toContain('26700 - Pierrelatte');
+        expect(popupHtml).not.toContain('[[26700 - Pierrelatte]]');
+        // Résultat de filter() (tableau) joint, pas de JSON brut
+        expect(popupHtml).toContain('600');
+        expect(popupHtml).not.toContain('["600"]');
+    });
+
+    test("PLANTE : les liens du popup sont cliquables (délégation, vault.open au clic)", async () => {
+        const action = fakeClasse('Fête de la science', 'Action', {
+            clients: [{ client: '[[26700 - Pierrelatte]]' }]
+        });
+
+        const item = {
+            ...baseItem,
+            marker: {
+                properties: [
+                    { property: '_fileName' },
+                    { property: 'clients[0].client', label: 'Commune' }
+                ]
+            }
+        };
+        await DynamicMap.fromConfig(item, mockVault, container, [action], undefined);
+
+        // bindPopup reçoit un element (délégation d'evenements), pas une string
+        const markerMock = L.marker.mock.results[0].value;
+        const popupArg = markerMock.bindPopup.mock.calls[0][0];
+        expect(popupArg).toBeInstanceOf(HTMLElement);
+
+        // Clic sur le lien du titre -> ouverture du fichier
+        const content = popupArg as HTMLElement;
+        const titleLink = content.querySelector('.map-marker-link') as HTMLElement;
+        expect(titleLink).toBeTruthy();
+        titleLink.click();
+        expect(mockVault.open).toHaveBeenCalled();
+
+        // Clic sur le lien de la commune liée -> ouverture du fichier lié
+        const propertyLink = content.querySelector('.map-property-link') as HTMLElement;
+        expect(propertyLink).toBeTruthy();
+        propertyLink.click();
+        expect(mockVault.open).toHaveBeenCalledWith('26700 - Pierrelatte.md');
     });
 
     test("PLANTE : contour MultiPolygon -> tous les polygones ajoutés", async () => {

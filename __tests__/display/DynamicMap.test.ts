@@ -248,7 +248,7 @@ describe('DynamicMap', () => {
     });
 
     describe('Click Handlers', () => {
-        it('should handle marker clicks to open files', () => {
+        it('should handle marker clicks to open files (event delegation on the popup content)', () => {
             const markers = [
                 {
                     id: 'marker1',
@@ -264,8 +264,15 @@ describe('DynamicMap', () => {
             map.addMarkers(markers);
 
             const marker = (global as any).L.marker.mock.results[0].value;
-            // The actual implementation uses 'popupopen' event, not 'click'
-            expect(marker.on).toHaveBeenCalledWith('popupopen', expect.any(Function));
+            // Le contenu du popup est notre element avec delegation d'evenements
+            // (le pattern popupopen/getElement ne rendait pas les liens cliquables)
+            expect(marker.bindPopup).toHaveBeenCalledWith(expect.any(HTMLElement));
+            const content = marker.bindPopup.mock.calls[0][0] as HTMLElement;
+            const link = content.querySelector('a.map-marker-link') as HTMLElement;
+            expect(link).toBeTruthy();
+            expect(link.getAttribute('data-file')).toBe('test.md');
+            link.click();
+            expect(mockVault.open).toHaveBeenCalledWith('test.md');
         });
     });
 });
