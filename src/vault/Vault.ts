@@ -36,6 +36,44 @@ export class Vault {
             delete this.files[oldPath];
             this.files[newPath] = cached;
         }
+        // A mutation during a read scope: the snapshots can no longer be
+        // trusted, invalidate them immediately even scope-open
+        this.listFilesSnapshot = null;
+        this.linkResolutionSnapshot.clear();
+    }
+
+    /**
+     * Read scope : cache borné au rendu d'une page. Tant qu'au moins un
+     * scope est ouvert, listFiles() sert un snapshot partagé (une seule
+     * lecture de la propriété classe par fichier et par rendu) et
+     * getFromLink() mémoïse ses résolutions, réussies comme échouées.
+     * À la fermeture du dernier scope, tout est relâché : chaque nouveau
+     * rendu relit le vault pour de vrai - aucune désynchro ne peut
+     * survivre d'un rendu à l'autre.
+     */
+    private readScopeDepth = 0;
+    private listFilesSnapshot: Promise<IFile[]> | null = null;
+    private linkResolutionSnapshot = new Map<string, Classe | null>();
+
+    beginReadScope(): void {
+        this.readScopeDepth++;
+    }
+
+    endReadScope(): void {
+        this.readScopeDepth = Math.max(0, this.readScopeDepth - 1);
+        if (this.readScopeDepth === 0) {
+            this.listFilesSnapshot = null;
+            this.linkResolutionSnapshot.clear();
+        }
+    }
+
+    async withReadScope<T>(work: () => Promise<T>): Promise<T> {
+        this.beginReadScope();
+        try {
+            return await work();
+        } finally {
+            this.endReadScope();
+        }
     }
 
     public static classes: { [key: string]: typeof Classe } = {};
@@ -156,9 +194,29 @@ export class Vault {
     }
 
     async listFiles(): Promise<IFile[]>{
+        // Read scope actif : servir le snapshot partagé (copie par appel :
+        // un appelant qui trie son résultat ne réordonne pas le snapshot)
+        if (this.readScopeDepth > 0 && this.listFilesSnapshot) {
+            return [...await this.listFilesSnapshot];
+        }
+
+        const promise = this.computeListFiles();
+        if (this.readScopeDepth > 0) {
+            this.listFilesSnapshot = promise;
+            // Ne jamais cacher un échec : un retry doit relire
+            promise.catch(() => {
+                if (this.listFilesSnapshot === promise) {
+                    this.listFilesSnapshot = null;
+                }
+            });
+        }
+        return promise;
+    }
+
+    private async computeListFiles(): Promise<IFile[]>{
         let files = await this.app.listFiles();
         const filtered: IFile[] = [];
-        
+
         for (const file of files) {
             const fileInstance = new File(this, file);
             const classeValue = await fileInstance.getClassePropertyValue();
@@ -166,7 +224,7 @@ export class Vault {
                 filtered.push(file);
             }
         }
-        
+
         return filtered;
     }
 
@@ -190,6 +248,22 @@ export class Vault {
     }
 
     async getFromLink(name: string, log=true) {
+        if (!name) { return null; }
+
+        // Read scope actif : chaque lien n'est résolu qu'une fois par rendu
+        // (les liens cassés ne re-scannent plus le vault à chaque item)
+        if (this.readScopeDepth > 0 && this.linkResolutionSnapshot.has(name)) {
+            return this.linkResolutionSnapshot.get(name) ?? null;
+        }
+
+        const result = await this.getFromLinkUncached(name, log);
+        if (this.readScopeDepth > 0) {
+            this.linkResolutionSnapshot.set(name, result ?? null);
+        }
+        return result;
+    }
+
+    private async getFromLinkUncached(name: string, log=true) {
         if (!name) { return null; }
 
         // Search with the path

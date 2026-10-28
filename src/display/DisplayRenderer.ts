@@ -43,24 +43,33 @@ export class DisplayRenderer {
 
     async renderDisplayItems(container: HTMLElement, items: DisplayItem[]): Promise<void> {
         this.subscribeToPropertyChanges();
-        for (const item of items) {
-            // Évaluer les conditions avant de rendre l'item
-            if (item.conditions && item.conditions.length > 0) {
-                const conditionsMet = await this.evaluateConditions(item.conditions);
-                if (!conditionsMet) {
-                    continue; // Skip cet item si les conditions ne sont pas remplies
+        const work = async () => {
+            for (const item of items) {
+                // Évaluer les conditions avant de rendre l'item
+                if (item.conditions && item.conditions.length > 0) {
+                    const conditionsMet = await this.evaluateConditions(item.conditions);
+                    if (!conditionsMet) {
+                        continue; // Skip cet item si les conditions ne sont pas remplies
+                    }
+                }
+
+                const __perfItemStart = Date.now(); // [PERF] instrumentation temporaire
+                const element = await this.renderDisplayItem(item);
+                if (item.type !== 'line' && item.type !== 'property') {
+                    console.log(`[PERF] renderItem(${item.type}${(item as any).title ? ' « ' + (item as any).title + ' »' : ''}): ${Date.now() - __perfItemStart}ms`);
+                }
+                if (element) {
+                    container.appendChild(element);
                 }
             }
-            
-            const __perfItemStart = Date.now(); // [PERF] instrumentation temporaire
-            const element = await this.renderDisplayItem(item);
-            if (item.type !== 'line' && item.type !== 'property') {
-                console.log(`[PERF] renderItem(${item.type}${(item as any).title ? ' « ' + (item as any).title + ' »' : ''}): ${Date.now() - __perfItemStart}ms`);
-            }
-            if (element) {
-                container.appendChild(element);
-            }
+        };
+
+        // Read scope : pendant ce rendu, listFiles/getFromLink servent depuis
+        // un snapshot partagé (mort à la fin du rendu - cf Vault.withReadScope)
+        if (typeof (this.vault as any).withReadScope === 'function') {
+            return await (this.vault as any).withReadScope(work);
         }
+        return await work();
     }
 
     /**
