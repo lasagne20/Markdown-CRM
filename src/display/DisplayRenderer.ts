@@ -381,6 +381,7 @@ export class DisplayRenderer {
     }
 
     private async renderTabs(item: any): Promise<HTMLElement> {
+        const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         const container = document.createElement("div");
         container.classList.add("metadata-tabs-container");
         
@@ -433,6 +434,7 @@ export class DisplayRenderer {
             });
         }
         
+        console.log(`[PERF] renderTabs: ${Date.now() - __perfStart}ms — ${item.tabs.length} onglets rendus d'un coup`);
         return container;
     }
 
@@ -502,6 +504,18 @@ export class DisplayRenderer {
      * Get files for a table based on source configuration
      */
     private async getFilesForTable(source: any, currentInstance?: Classe): Promise<Classe[]> {
+        const __perfStart = Date.now(); // [PERF] instrumentation temporaire
+        try {
+            const files = await this.getFilesForTableInner(source, currentInstance);
+            console.log(`[PERF] getFilesForTable(${source.class}${source.smartFilter ? ' smart=' + source.smartFilter : ''}): ${Date.now() - __perfStart}ms — ${files.length} fichiers`);
+            return files;
+        } catch (error) {
+            console.log(`[PERF] getFilesForTable(${source.class}): ERREUR après ${Date.now() - __perfStart}ms`);
+            throw error;
+        }
+    }
+
+    private async getFilesForTableInner(source: any, currentInstance?: Classe): Promise<Classe[]> {
         let instances: Classe[] = [];
         
         // Check if source.class contains a dot (ClassName.propertyName notation)

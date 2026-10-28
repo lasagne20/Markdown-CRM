@@ -478,13 +478,14 @@ export class DynamicClassFactory {
     async getAllInstancesForClass(className: string, vault: Vault): Promise<Classe[]> {
         try {
             console.log(`Getting all instances for class: ${className}`);
+            const __perfStart = Date.now(); // [PERF] instrumentation temporaire
             const ClassConstructor = await this.getClass(className);
             const config = await this.configManager.getClassConfig(className);
             const instances: Classe[] = [];
-            
+
             // Get the folder where files of this class are stored
             const folderPath = config.parent?.folder || className + 's';
-            
+
             // Get all files in the vault
             const allFiles = await vault.app.listFiles();
             
@@ -501,6 +502,7 @@ export class DynamicClassFactory {
                 }
             }
             console.log(`Found ${instances.length} instances of class ${className}`);
+            console.log(`[PERF] getAllInstancesForClass(${className}): ${Date.now() - __perfStart}ms — ${instances.length} instances trouvées / ${allFiles.length} fichiers scannés`);
             return instances;
         } catch (error) {
             console.error(`Error getting instances for class ${className}:`, error);

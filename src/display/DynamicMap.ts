@@ -83,6 +83,7 @@ export class DynamicMap {
      * the Lieu class config containing "geo.json".
      */
     static async loadGeoEntries(vault: Vault, item?: MapDisplayItem): Promise<any[]> {
+        const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         const sources: string[] = [];
         if (item?.coordinates?.geoFile) {
             sources.push(item.coordinates.geoFile);
@@ -114,10 +115,12 @@ export class DynamicMap {
                 const fileContent = await vault.app.readFile(file);
                 const data = JSON.parse(fileContent);
                 if (Array.isArray(data)) {
+                    console.log(`[PERF] loadGeoEntries(${source}): ${Date.now() - __perfStart}ms — ${data.length} entrées`);
                     return data;
                 }
                 if (data.features) {
                     // GeoJSON FeatureCollection: flatten properties + geometry
+                    console.log(`[PERF] loadGeoEntries(${source}): ${Date.now() - __perfStart}ms — ${data.features.length} features`);
                     return data.features.map((f: any) => ({
                         ...f.properties,
                         geometry: f.geometry
@@ -127,6 +130,7 @@ export class DynamicMap {
                 console.warn(`Error loading geo data from ${source}:`, error);
             }
         }
+        console.log(`[PERF] loadGeoEntries: AUCUNE donnée trouvée (${Date.now() - __perfStart}ms)`);
         return [];
     }
 
