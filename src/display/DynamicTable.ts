@@ -292,15 +292,16 @@ export class DynamicTable {
      * Render table body with filtering applied
      */
     private async renderTableBody(): Promise<void> {
+        const __perfStart = Date.now(); // [PERF] instrumentation temporaire
         // Remove existing tbody
         const existingTbody = this.table.querySelector('tbody');
         if (existingTbody) existingTbody.remove();
-        
+
         const tbody = document.createElement('tbody');
-        
+
         // Get filtered files using shared logic
         const filteredFiles = await this.getFilteredFiles();
-        
+
         // Render rows
         for (const file of filteredFiles) {
             const row = document.createElement('tr');
@@ -403,8 +404,9 @@ export class DynamicTable {
             
             tbody.appendChild(row);
         }
-        
+
         this.table.appendChild(tbody);
+        console.log(`[PERF] renderTableBody(${filteredFiles.length} lignes): ${Date.now() - __perfStart}ms`);
     }
     
     /**
