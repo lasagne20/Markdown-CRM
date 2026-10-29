@@ -125,12 +125,17 @@ export class NumberDisplay {
             for (const file of files) {
                 try {
                     let value: any;
-                    if (formula === 'count' || formula === 'countDistinct') {
+                    if (formula === 'count' || formula === 'countDistinct'
+                        || formula === 'sum' || formula === 'average' || formula === 'avg'
+                        || formula === 'min' || formula === 'max') {
                         // Collect mode: gather ALL values along the path (flattened
                         // arrays, 'parent' keyword, multi-element arrays) instead of
                         // the standard single-value navigation which discards
                         // multi-element arrays. Filter expressions already return
                         // arrays of values - keep the standard path for them.
+                        // Numeric formulas (sum/average/min/max) need it too: a
+                        // multi-element array (clients.nombre) must contribute
+                        // ALL its values, not be silently discarded.
                         const fileVault = vault || (file as any).getVault?.();
                         if (fileVault && !singlePropertyName.includes('.filter(')) {
                             const navigator = new PropertyNavigator(fileVault, context);

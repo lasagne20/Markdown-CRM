@@ -156,4 +156,39 @@ describe('NumberDisplay - countDistinct des communes desservies (multi-chemins)'
 
         expect(value).toBe(150);
     });
+
+    test('PLANTE : sum additionne TOUTES les valeurs des tableaux multi-éléments (clients.nombre)', async () => {
+        // "Personnes touchées" d'un lieu : chaque action a plusieurs clients,
+        // chacun avec son nombre de participants. La navigation standard
+        // ignore les tableaux multi-éléments : il faut le mode collecte.
+        const action1 = makeActionFile({ clients: [{ nombre: 56 }, { nombre: 20 }] });
+        const action2 = makeActionFile({ clients: [{ nombre: 71 }] });
+        const action3 = makeActionFile({}); // action sans clients
+
+        const value = await (NumberDisplay as any).calculateValue(
+            [action1, action2, action3],
+            'sum',
+            'clients.nombre',
+            undefined,
+            undefined
+        );
+
+        expect(value).toBe(147);
+    });
+
+    test('PLANTE : sum collecte aussi les montants de plusieurs financeurs par action', async () => {
+        // Plusieurs financeurs par action : chaque montant doit compter
+        const action1 = makeActionFile({ financeurs: [{ montant: 100 }, { montant: 250 }] });
+        const action2 = makeActionFile({ financeurs: [{ montant: 50 }] });
+
+        const value = await (NumberDisplay as any).calculateValue(
+            [action1, action2],
+            'sum',
+            'financeurs.montant',
+            undefined,
+            undefined
+        );
+
+        expect(value).toBe(400);
+    });
 });
