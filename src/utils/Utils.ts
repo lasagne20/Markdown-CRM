@@ -78,3 +78,32 @@ export function canonicalizeValue(value: any): any {
 export function jsonValuesEqual(a: any, b: any): boolean {
     return JSON.stringify(canonicalizeValue(a)) === JSON.stringify(canonicalizeValue(b));
 }
+
+/**
+ * Dictionnaire des valeurs par défaut nommées, résolues depuis les réglages
+ * du vault. Étend le motif historique "personalName".
+ *
+ *   personalName      -> nom brut (ex: "Léo")
+ *   defaultCommercial -> wikilink du commercial par défaut (ex: "[[Léo]]")
+ *   defaultAnimateur  -> wikilink de l'animateur par défaut
+ *
+ * Toute autre valeur est retournée inchangée (valeur littérale).
+ * Un réglage absent donne undefined (jamais le nom du réglage en littéral).
+ */
+export function resolveNamedDefaultValue(vault: any, value: any): any {
+    if (typeof value !== 'string') {
+        return value;
+    }
+    if (value === 'personalName') {
+        return vault?.getPersonalName?.() ?? vault?.settings?.personalName;
+    }
+    if (value === 'defaultCommercial') {
+        const name = vault?.settings?.defaultCommercial;
+        return name ? `[[${name}]]` : undefined;
+    }
+    if (value === 'defaultAnimateur') {
+        const name = vault?.settings?.defaultAnimateur;
+        return name ? `[[${name}]]` : undefined;
+    }
+    return value;
+}

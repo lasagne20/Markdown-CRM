@@ -853,13 +853,21 @@ export class ObjectProperty extends Property{
           for (let prop of Object.values(this.properties)) {
             let defaultValue = prop.getDefaultValue()
             if (Object.values(this.properties)[0] == prop && (prop instanceof FileProperty)) {
-                prop.vault = this.vault; // Assurez-vous que vault est défini pour le premier FileProperty
-                const fileProp = prop as any; // Cast pour accéder à handleIconClick
-                defaultValue = await new Promise(async (resolve) => {
-                    await fileProp.handleIconClick(async (value: any) => {
-                        resolve(value);
-                    }, new MouseEvent("click"));
-                });
+                // Valeur par défaut configurée (ex: defaultAnimateur) :
+                // pré-remplir directement, sans ouvrir le sélecteur de fichier.
+                // Sans défaut, on garde le sélecteur (chaque client/financeur
+                // est différent).
+                if (defaultValue) {
+                    // utiliser tel quel
+                } else {
+                    prop.vault = this.vault; // Assurez-vous que vault est défini pour le premier FileProperty
+                    const fileProp = prop as any; // Cast pour accéder à handleIconClick
+                    defaultValue = await new Promise(async (resolve) => {
+                        await fileProp.handleIconClick(async (value: any) => {
+                            resolve(value);
+                        }, new MouseEvent("click"));
+                    });
+                }
             }
 
             if (defaultValue == "like-precedent"){

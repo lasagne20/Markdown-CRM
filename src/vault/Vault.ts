@@ -11,6 +11,11 @@ export interface Settings {
   templateFolder: string;
   personalName : string;
   configPath?: string; // Path to YAML configuration files
+  // Valeurs par défaut nommées (cf resolveNamedDefaultValue) :
+  // commercial / animateur par défaut, utilisés par les champs configurés
+  // avec default: "defaultCommercial" / "defaultAnimateur"
+  defaultCommercial?: string;
+  defaultAnimateur?: string;
 }
 
 export class Vault {

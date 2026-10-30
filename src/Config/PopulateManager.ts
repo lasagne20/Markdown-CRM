@@ -1,6 +1,7 @@
 import { Vault } from '../vault/Vault';
 import { ClassConfig, PropertyConfig, PopulateConfig } from './interfaces';
 import { IApp } from '../interfaces/IApp';
+import { resolveNamedDefaultValue } from '../utils/Utils';
 
 /**
  * PopulateManager handles prompting users for property values during file creation.
@@ -437,17 +438,23 @@ export class PopulateManager {
         // First, apply default values
         for (const [propName, propConfig] of Object.entries(classConfig.properties)) {
             if (propConfig.defaultValue !== undefined) {
+                // Résoudre les valeurs par défaut nommées (defaultCommercial,
+                // defaultAnimateur, personalName) depuis les réglages du vault
+                const defaultValue = resolveNamedDefaultValue(this.vault, propConfig.defaultValue);
+                if (defaultValue === undefined) {
+                    continue;
+                }
                 // Pour ObjectProperty, normaliser {} en []
                 if (propConfig.type === 'ObjectProperty') {
-                    if (propConfig.defaultValue && !Array.isArray(propConfig.defaultValue) && typeof propConfig.defaultValue === 'object') {
-                        finalValues[propName] = [propConfig.defaultValue];
-                    } else if (!propConfig.defaultValue) {
+                    if (defaultValue && !Array.isArray(defaultValue) && typeof defaultValue === 'object') {
+                        finalValues[propName] = [defaultValue];
+                    } else if (!defaultValue) {
                         finalValues[propName] = [];
                     } else {
-                        finalValues[propName] = propConfig.defaultValue;
+                        finalValues[propName] = defaultValue;
                     }
                 } else {
-                    finalValues[propName] = propConfig.defaultValue;
+                    finalValues[propName] = defaultValue;
                 }
             }
         }

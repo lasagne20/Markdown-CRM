@@ -1,6 +1,7 @@
 import { File } from "../vault/File";
 import { IApp } from "../interfaces/IApp";
 import { Vault } from "../vault/Vault";
+import { resolveNamedDefaultValue } from "../utils/Utils";
 
 /**
  * Base class for all properties in the dynamic field system.
@@ -81,11 +82,11 @@ export class Property {
      * @returns The resolved default value of the property
      */
     getDefaultValue(){
-        // TODO use a dictionary for special default values in vault
-        if (this.default == "personalName"){
-            return this.vault.getPersonalName();
-        }
-        return this.default;
+        // Dictionnaire des valeurs par défaut nommées (personalName,
+        // defaultCommercial, defaultAnimateur...) - cf resolveNamedDefaultValue.
+        // Une valeur nommée non configurée donne '' (pas le nom en littéral).
+        const resolved = resolveNamedDefaultValue(this.vault, this.default);
+        return resolved === undefined ? '' : resolved;
     }
 
     /**
