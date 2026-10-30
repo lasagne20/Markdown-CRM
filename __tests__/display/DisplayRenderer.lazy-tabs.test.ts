@@ -156,6 +156,29 @@ describe('Optimisations de chargement', () => {
 
             expect(factory.getAllInstancesForClass).toHaveBeenCalledTimes(2);
         });
+
+        test('PLANTE : des sources ne différant que par groups ne partagent PAS le cache', async () => {
+            // Les filtres hiérarchiques (groups) sont appliqués après le cache :
+            // la clé doit les inclure, sinon le 2e chiffre d'affaires d'une page
+            // reçoit la liste filtrée du 1er (CA = CA prévisionnel = CA N-1)
+            const factory = {
+                getClassConfig: async () => ({ parent: { folder: 'Actions' } }),
+                getAllInstancesForClass: jest.fn(async () => [])
+            };
+            mockVault.getDynamicClassFactory = () => factory;
+            mockVault.conditionManager = {
+                createValidationFunction: jest.fn(() => () => true),
+                createHierarchicalValidationFunction: jest.fn(() => () => true)
+            };
+            const groupsA = [{ operator: 'AND', conditions: [{ property: 'etat', type: 'equals', value: 'Payé' }] }];
+            const groupsB = [{ operator: 'AND', conditions: [{ property: 'etat', type: 'equals', value: 'Facturé' }] }];
+
+            await (renderer as any).getFilesForTable({ class: 'Action', groups: groupsA }, mockContext);
+            await (renderer as any).getFilesForTable({ class: 'Action', groups: groupsB }, mockContext);
+
+            // Deux filtrages différents -> deux scans, pas un résultat partagé
+            expect(factory.getAllInstancesForClass).toHaveBeenCalledTimes(2);
+        });
     });
 
     describe('Cache des entrées geo.json (DynamicMap)', () => {

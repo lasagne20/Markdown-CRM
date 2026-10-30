@@ -560,7 +560,14 @@ export class DisplayRenderer {
         const cacheKey = JSON.stringify({
             class: source?.class,
             smartFilter: source?.smartFilter,
+            // groups et operator participent au filtrage APRES le cache :
+            // ils DOIVENT être dans la clé, sinon des sources ne différant
+            // que par leurs groups partagent le résultat du premier calcul
+            // (ex: les trois chiffres d'affaires d'une page affichent la
+            // même valeur, celle du premier)
             conditions: source?.conditions,
+            groups: source?.groups,
+            operator: source?.operator,
             current: currentInstance?.getPath?.() ?? null
         });
 
