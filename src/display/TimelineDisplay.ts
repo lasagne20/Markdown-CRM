@@ -73,7 +73,7 @@ export class TimelineDisplay {
         const dateProperty = item.actions?.date ?? 'date';
         for (const instance of instances ?? []) {
             try {
-                actionDates.push((await instance.getValue?.(dateProperty)) ?? null);
+                actionDates.push((await instance.getPropertyValue?.(dateProperty)) ?? null);
             } catch {
                 actionDates.push(null);
             }

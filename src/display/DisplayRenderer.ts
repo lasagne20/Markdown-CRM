@@ -574,12 +574,12 @@ export class DisplayRenderer {
             console.warn(`Timeline display item: property not found: ${item.property}`);
             return container;
         }
-        if (!this.context?.getValue) {
+        if (!this.context?.getPropertyValue) {
             console.warn(`Timeline display item "${item.property}": context is not a Classe instance`);
             return container;
         }
 
-        let values = await this.context.getValue(item.property);
+        let values = await this.context.getPropertyValue(item.property);
         if (typeof values === 'string') {
             try {
                 values = JSON.parse(values);

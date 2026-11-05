@@ -45,7 +45,7 @@ const makeAction = (name: string, path: string, date: string | null) => ({
     name: 'Action',
     getName: () => name,
     getPath: () => path,
-    getValue: async (prop: string) => (prop === 'date' ? date : undefined)
+    getPropertyValue: async (prop: string) => (prop === 'date' ? date : undefined)
 });
 
 describe('TimelineDisplay - fusion chronologique', () => {
