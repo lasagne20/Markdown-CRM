@@ -21,8 +21,8 @@
  * recollage du même fil ne crée pas de doublon.
  */
 
-import { EmailThreadParser, ParsedEmail } from '../../src/utils/EmailThreadParser';
-import { EmailIngestionService } from '../../src/utils/EmailIngestion';
+import { EmailThreadParser, ParsedEmail } from '../../../src/utils/Email/EmailThreadParser';
+import { EmailIngestionService } from '../../../src/utils/Email/EmailIngestion';
 
 const threadGmailFR = `Bonjour, nous serions intéressés par un atelier énergies pour nos CM2.
 
