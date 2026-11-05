@@ -21,7 +21,7 @@
  * recollage du même fil ne crée pas de doublon.
  */
 
-import { EmailThreadParser, ParsedEmail } from '../../../src/utils/Email/EmailThreadParser';
+import { EmailThreadParser, ParsedEmail, parseEmailDate } from '../../../src/utils/Email/EmailThreadParser';
 import { EmailIngestionService } from '../../../src/utils/Email/EmailIngestion';
 
 const threadGmailFR = `Bonjour, nous serions intéressés par un atelier énergies pour nos CM2.
@@ -52,6 +52,24 @@ Date : 20 octobre 2026
 Objet : Première demande
 
 Bonjour, je me permets de vous contacter.`;
+
+const threadSansAdresses = `Merci de votre retour !
+
+Nous avons réalisé une animation l'an dernier à l'école avec les CMs.
+
+Le 28/01/2026 à 07:49, école élémentaire du Village Saint-Clair de la Tour a écrit :
+> Bonjour,
+>
+> Diane n'est plus la directrice de l'école Saint Clair de La Tour.
+>
+> Bien cordialement,
+> Mme Delattre
+> Le 27/01/2026 à 11:13, Léo a écrit :
+>> Bonjour Diane,
+>>
+>> Un grand merci d'avoir participé à l'atelier énergie.
+>> Merci pour votre soutien
+>> Léo`;
 
 describe('EmailThreadParser - segmentation et extraction', () => {
     test('PLANTE : fil Gmail FR - deux mails, citation nettoyée, auteur et adresse de la citation extraits', () => {
@@ -131,6 +149,47 @@ Sur plusieurs lignes.`;
         // Deux mails différents du même fil -> empreintes différentes
         expect(emails1[0].fingerprint).not.toBe(emails1[1].fingerprint);
     });
+
+    test("PLANTE : fil réel sans adresses entre <> - marqueurs 'Le JJ/MM/AAAA à hh:mm, Nom a écrit :'", () => {
+        const emails = EmailThreadParser.parse(threadSansAdresses);
+
+        expect(emails).toHaveLength(3);
+
+        // Mail le plus récent (en haut) : pas d'entête, auteur inconnu
+        const recent = emails[0];
+        expect(recent.fromName).toBeNull();
+        expect(recent.fromEmail).toBeNull();
+        expect(recent.body).toContain("Merci de votre retour");
+
+        // Premier cité : école (auteur par nom SEUL, sans adresse), date numérique
+        const school = emails[1];
+        expect(school.fromName).toBe('école élémentaire du Village Saint-Clair de la Tour');
+        expect(school.fromEmail).toBeNull();
+        expect(school.date).toBe('2026-01-28');
+        expect(school.body).toContain("Diane n'est plus la directrice");
+        expect(school.body).not.toContain('> Bonjour,');
+
+        // Citation imbriquée (marqueur préfixé par '> ', corps par '>>')
+        const nested = emails[2];
+        expect(nested.fromName).toBe('Léo');
+        expect(nested.fromEmail).toBeNull();
+        expect(nested.date).toBe('2026-01-27');
+        expect(nested.body).toContain('Un grand merci');
+        expect(nested.body).not.toContain('>>');
+        // Le marqueur imbriqué ne fait pas partie du corps du mail de l'école
+        expect(school.body).not.toContain('Le 27/01/2026');
+    });
+});
+
+describe('parseEmailDate - date numérique FR', () => {
+    test("PLANTE : '28/01/2026' -> 2026-01-28 (JJ/MM/AAAA)", () => {
+        expect(parseEmailDate('28/01/2026')).toBe('2026-01-28');
+        expect(parseEmailDate('27/01/2026')).toBe('2026-01-27');
+    });
+
+    test("PLANTE : '5/1/2026' -> 2026-01-05 (chiffres non paddés)", () => {
+        expect(parseEmailDate('5/1/2026')).toBe('2026-01-05');
+    });
 });
 
 describe('EmailIngestionService - rattachement par adresse', () => {
@@ -181,6 +240,31 @@ describe('EmailIngestionService - rattachement par adresse', () => {
     test("PLANTE : l'adresse d'un Commercial est reconnue comme \"nous\"", async () => {
         expect(await service.isOwnAddress('leo@territoiressciences.fr')).toBe(true);
         expect(await service.isOwnAddress('marie@mairie-vizille.fr')).toBe(false);
+    });
+
+    test("PLANTE : rattachement par NOM (fil sans adresse email) - nom exact insensible casse/accents", async () => {
+        instances.push(
+            makeFile('école élémentaire du Village Saint-Clair de la Tour', 'Institution')
+        );
+
+        // Le nom cité différe par la casse et les accents -> trouvé quand même
+        const matches = await service.findFilesByName('École Élémentaire Du Village Saint-Clair De La Tour');
+        expect(matches).toHaveLength(1);
+        expect(matches[0].getClassName()).toBe('Institution');
+    });
+
+    test('PLANTE : nom inconnu -> aucune correspondance par nom', async () => {
+        instances.push(
+            makeFile('école élémentaire du Village Saint-Clair de la Tour', 'Institution')
+        );
+
+        const matches = await service.findFilesByName('Mme Delattre');
+        expect(matches).toHaveLength(0);
+    });
+
+    test('PLANTE : le nom d\'un Commercial est reconnu comme "nous" (exclu des cibles)', async () => {
+        expect(await service.isOwnName('Léo')).toBe(true);
+        expect(await service.isOwnName('Marie Martin')).toBe(false);
     });
 });
 

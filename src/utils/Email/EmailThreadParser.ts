@@ -63,6 +63,17 @@ export function parseEmailDate(raw: string | null | undefined): string | null {
             return `${en[3]}-${pad(month)}-${pad(parseInt(en[2], 10))}`;
         }
     }
+
+    // Numérique FR : "28/01/2026" / "5/1/2026" / "28.01.2026" (JJ/MM/AAAA)
+    const numeric = str.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{2}|\d{4})\b/);
+    if (numeric) {
+        const day = parseInt(numeric[1], 10);
+        const month = parseInt(numeric[2], 10);
+        if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+            const year = numeric[3].length === 2 ? 2000 + parseInt(numeric[3], 10) : parseInt(numeric[3], 10);
+            return `${year}-${pad(month)}-${pad(day)}`;
+        }
+    }
     return null;
 }
 
@@ -107,6 +118,17 @@ function matchQuoteMarkerFr(line: string): { name: string | null; email: string 
             dateRaw: fr[1]
         };
     }
+    // Sans adresse : "Le 28/01/2026 à 07:49, École du Village a écrit :"
+    const frNoAddress = line.match(/^Le\s+(.+?)\s+\u00e0\s+[\d:h]+,\s*(?:"([^"]+)"|([^<]+?))\s+a\s+\u00e9crit\s*:?\s*$/i);
+    if (frNoAddress) {
+        const name = (frNoAddress[2] ?? frNoAddress[3] ?? '').trim();
+        if (!name) { return null; }
+        return {
+            name,
+            email: null,
+            dateRaw: frNoAddress[1]
+        };
+    }
     return null;
 }
 
@@ -118,6 +140,17 @@ function matchQuoteMarkerEn(line: string): { name: string | null; email: string 
             name: (en[2] ?? en[3] ?? '').trim() || null,
             email: en[4].toLowerCase(),
             dateRaw: en[1]
+        };
+    }
+    // Sans adresse : "On Jan 28, 2026 at 7:49 AM, School wrote:"
+    const enNoAddress = line.match(/^On\s+(.+?),\s+at\s+[\d:\sAPM]+,?\s*(?:"([^"]+)"|([^<]+?))\s+wrote\s*:?\s*$/i);
+    if (enNoAddress) {
+        const name = (enNoAddress[2] ?? enNoAddress[3] ?? '').trim();
+        if (!name) { return null; }
+        return {
+            name,
+            email: null,
+            dateRaw: enNoAddress[1]
         };
     }
     return null;
@@ -201,9 +234,11 @@ export class EmailThreadParser {
             }
 
             // Citation FR/EN : ferme le bloc précédent (dont l'auteur est
-            // l'adresse citée = le destinataire du bloc qui le précède)
-            const quoteFr = matchQuoteMarkerFr(stripped);
-            const quoteEn = quoteFr ? null : matchQuoteMarkerEn(stripped);
+            // l'adresse citée = le destinataire du bloc qui le précède).
+            // Les marqueurs des citations imbriquées sont préfixés par ">".
+            const markerLine = stripped.replace(/^(>\s?)+/, '');
+            const quoteFr = matchQuoteMarkerFr(markerLine);
+            const quoteEn = quoteFr ? null : matchQuoteMarkerEn(markerLine);
             const quote = quoteFr ?? quoteEn;
             if (quote) {
                 if (current) {
