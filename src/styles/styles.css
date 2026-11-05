@@ -861,6 +861,20 @@ If your plugin does not need CSS, delete this file.
     color: var(--interactive-accent);
 }
 
+/* Timeline display: lignes dérivées (actions) en lecture seule */
+.metadata-object-table tr.timeline-action-row {
+  background-color: var(--background-primary);
+  font-style: italic;
+}
+.metadata-object-table tr.timeline-action-row td a.file-link {
+  font-style: normal;
+  text-decoration: none;
+  color: var(--link-color);
+}
+.metadata-object-table tr.timeline-action-row td a.file-link:hover {
+  text-decoration: underline;
+}
+
 /* Style for metadata-object-table (like dynamic-table) */
 .metadata-object-table {
   width: 100%;

@@ -64,7 +64,7 @@ export interface TableTotalConfig {
 
 // Base interface for all display items
 interface BaseDisplayItem {
-    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table' | 'number' | 'map';
+    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table' | 'number' | 'map' | 'timeline';
     conditions?: Condition[]; // Conditions that must all be true for this item to be displayed
 }
 
@@ -206,6 +206,26 @@ export interface MaxCalculationConfig {
     propertyName?: string; // Property to calculate on
 }
 
+// Timeline display item: ObjectProperty entries merged chronologically
+// with derived instances (ex: suivie + actions réalisées d'une institution)
+export interface TimelineDisplayItem extends BaseDisplayItem {
+    type: 'timeline';
+    title?: string;
+    className?: string;
+    // ObjectProperty dont les entries forment le journal manuel
+    property: string;
+    // Sens du tri chronologique (desc = plus récent en premier, défaut)
+    sort?: 'asc' | 'desc';
+    // Instances dérivées fusionnées dans la timeline
+    actions?: {
+        source: TableSourceConfig;
+        // Propriété de l'instance portant la date (défaut : "date")
+        date?: string;
+        // Valeur affichée dans la colonne type (défaut : "Action")
+        typeLabel?: string;
+    };
+}
+
 // Union type for all display items
 export type DisplayItem = 
     | PropertyDisplayItem 
@@ -215,7 +235,8 @@ export type DisplayItem =
     | FoldDisplayItem 
     | TableDisplayItem
     | NumberDisplayItem
-    | MapDisplayItem;
+    | MapDisplayItem
+    | TimelineDisplayItem;
 
 export interface DisplayConfig {
     items?: DisplayItem[]; // Legacy format

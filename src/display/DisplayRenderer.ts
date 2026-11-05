@@ -6,6 +6,7 @@ import { addFold } from '../utils/Utils';
 import { DynamicTable } from './DynamicTable';
 import { NumberDisplay } from './NumberDisplay';
 import { DynamicMap } from './DynamicMap';
+import { TimelineDisplay, TimelineItem } from './TimelineDisplay';
 import { PropertyNavigator } from '../utils/PropertyNavigator';
 import { ConditionManager } from '../Config/ConditionManager';
 import { FormulaProperty } from '../properties/FormulaProperty';
@@ -115,7 +116,10 @@ export class DisplayRenderer {
             
             case 'map':
                 return await this.renderMap(item);
-            
+
+            case 'timeline':
+                return await this.renderTimeline(item as unknown as TimelineItem);
+
             default:
                 console.warn(`Unknown display item type: ${(item as any).type}`);
                 return null;
@@ -544,7 +548,64 @@ export class DisplayRenderer {
         const dynamicTable = new DynamicTable(files, tableConfig, this.vault, currentInstance);
         const tableElement = await dynamicTable.getTable();
         container.appendChild(tableElement);
-        
+
+        return container;
+    }
+
+    /**
+     * Timeline : journal d'une ObjectProperty fusionné chronologiquement avec
+     * des instances dérivées (ex: suivie d'une institution + ses actions
+     * réalisées). Les entrées manuelles restent éditables, les lignes
+     * dérivées sont en lecture seule (données dérivées, jamais copiées).
+     */
+    private async renderTimeline(item: TimelineItem): Promise<HTMLElement | null> {
+        const container = document.createElement("div");
+        container.classList.add("metadata-table-container");
+
+        if (item.title) {
+            const title = document.createElement("h3");
+            title.textContent = item.title;
+            title.classList.add("container-section-title");
+            container.appendChild(title);
+        }
+
+        const property = this.properties[item.property];
+        if (!property) {
+            console.warn(`Timeline display item: property not found: ${item.property}`);
+            return container;
+        }
+        if (!this.context?.getValue) {
+            console.warn(`Timeline display item "${item.property}": context is not a Classe instance`);
+            return container;
+        }
+
+        let values = await this.context.getValue(item.property);
+        if (typeof values === 'string') {
+            try {
+                values = JSON.parse(values);
+            } catch {
+                values = [];
+            }
+        }
+        if (!Array.isArray(values)) {
+            values = [];
+        }
+
+        const update = this.updateCallback
+            ? async (newValue: any) => await this.updateCallback!(item.property, newValue)
+            : async (newValue: any) => {
+                if (this.context.updateValue) {
+                    await this.context.updateValue(item.property, newValue);
+                }
+            };
+
+        const timeline = new TimelineDisplay(
+            property,
+            this.vault,
+            this.context,
+            (source: any, currentInstance?: Classe) => this.getFilesForTable(source, currentInstance)
+        );
+        container.appendChild(await timeline.render(item, values, update));
         return container;
     }
 
