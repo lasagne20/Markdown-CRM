@@ -46,10 +46,12 @@ export function parseEmailDate(raw: string | null | undefined): string | null {
     if (!raw) { return null; }
     const str = raw.trim();
 
-    // FR : "ven. 25 oct. 2026" / "24 oct. 2026" / "20 octobre 2026"
+    // FR : "ven. 25 oct. 2026" / "24 oct. 2026" / "20 octobre 2026" / RFC
+    // "Mon, 2 Feb 2026 11:04:29 +0100" (jour d'abord, mois - jour - annee)
     const fr = str.match(/(\d{1,2})\s+([a-z\u00e0-\u00ff]+)\.?\s+(\d{4})/i);
     if (fr) {
-        const month = MONTHS_FR[fr[2].toLowerCase().replace(/\./g, '')];
+        const key = fr[2].toLowerCase().replace(/\./g, '');
+        const month = MONTHS_FR[key] ?? MONTHS_EN[key.slice(0, 3)];
         if (month) {
             return `${fr[3]}-${pad(month)}-${pad(parseInt(fr[1], 10))}`;
         }
@@ -255,14 +257,26 @@ export class EmailThreadParser {
                 continue;
             }
 
-            // Entête From :
+            // Entête From : Thunderbird écrit Sujet/Date AVANT De : si le
+            // segment courant n'a pas encore de corps, ce sont les entêtes
+            // du même mail -> on les réutilise au lieu d'en ouvrir un autre
             const fromHeader = matchFromHeader(stripped);
             if (fromHeader) {
-                flush();
-                current = newSegment({
-                    fromName: fromHeader.name,
-                    fromEmail: fromHeader.email
-                });
+                if (current && current.bodyLines.length === 0) {
+                    current.fromName = fromHeader.name;
+                    current.fromEmail = fromHeader.email;
+                } else {
+                    flush();
+                    current = newSegment({
+                        fromName: fromHeader.name,
+                        fromEmail: fromHeader.email
+                    });
+                }
+                continue;
+            }
+
+            // Entêtes sans valeur utile pour le suivi (Organisation, etc.)
+            if (/^(?:Organisation|Organization|Reply-To|R\u00e9pondre \u00e0)\s*[:\uff1a]/i.test(stripped)) {
                 continue;
             }
 
@@ -277,12 +291,12 @@ export class EmailThreadParser {
                 current.dateRaw = dateMatch[1].trim();
                 continue;
             }
-            const subjectMatch = stripped.match(/^(?:Subject|Objet)\s*[:\uff1a]\s*(.+)$/i);
+            const subjectMatch = stripped.match(/^(?:Subject|Objet|Sujet)\s*[:\uff1a]\s*(.+)$/i);
             if (subjectMatch && current.subject === null) {
                 current.subject = subjectMatch[1].trim();
                 continue;
             }
-            const toMatch = stripped.match(/^(?:To|\u00c0|Cc)\s*[:\uff1a]\s*(.+)$/i);
+            const toMatch = stripped.match(/^(?:To|\u00c0|Cc|Pour)\s*[:\uff1a]\s*(.+)$/i);
             if (toMatch) {
                 for (const address of extractAddresses(toMatch[1])) {
                     if (!current.toEmails.includes(address)) {

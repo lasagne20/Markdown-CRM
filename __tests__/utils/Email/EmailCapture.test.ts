@@ -71,6 +71,30 @@ Le 28/01/2026 à 07:49, école élémentaire du Village Saint-Clair de la Tour a
 >> Merci pour votre soutien
 >> Léo`;
 
+// Transfert Thunderbird FR : entêtes Sujet/Date AVANT De, tabulations après
+// les deux-points, entête Pour (To) et Organisation à ignorer
+const threadThunderbird = `-------- Message transféré --------
+Sujet : \tRe: Atelier Energie - Continuons l'aventure en 2026 !
+Date : \tMon, 2 Feb 2026 11:04:29 +0100
+De : \tLéo <leo@des-mains-en-or.com>
+Organisation : \tDes mains en or
+Pour : \técole élémentaire du Village Saint-Clair de la Tour <ce.0382562d@ac-grenoble.fr>
+
+
+Bonjour,
+
+Merci de votre retour !
+
+Le 28/01/2026 à 07:49, école élémentaire du Village Saint-Clair de la Tour a écrit :
+> Bonjour,
+>
+> Bien cordialement,
+> Mme Delattre
+> Le 27/01/2026 à 11:13, Léo a écrit :
+>> Bonjour Diane,
+>>
+>> Un grand merci d'avoir participé à l'atelier énergie.`;
+
 describe('EmailThreadParser - segmentation et extraction', () => {
     test('PLANTE : fil Gmail FR - deux mails, citation nettoyée, auteur et adresse de la citation extraits', () => {
         const emails = EmailThreadParser.parse(threadGmailFR);
@@ -179,6 +203,34 @@ Sur plusieurs lignes.`;
         // Le marqueur imbriqué ne fait pas partie du corps du mail de l'école
         expect(school.body).not.toContain('Le 27/01/2026');
     });
+
+    test("PLANTE : transfert Thunderbird FR - Sujet/Pour/Date parsés, pas de mail fantôme", () => {
+        const emails = EmailThreadParser.parse(threadThunderbird);
+
+        // 3 mails : le mail transféré + les 2 citations - PAS de segment
+        // parasite "Sujet" (entêtes avant De : réutilisés par le même mail)
+        expect(emails).toHaveLength(3);
+
+        const forwarded = emails[0];
+        expect(forwarded.fromName).toBe('Léo');
+        expect(forwarded.fromEmail).toBe('leo@des-mains-en-or.com');
+        expect(forwarded.subject).toBe("Re: Atelier Energie - Continuons l'aventure en 2026 !");
+        expect(forwarded.date).toBe('2026-02-02');
+        // Entête Pour (To Thunderbird) -> adresse
+        expect(forwarded.toEmails).toContain('ce.0382562d@ac-grenoble.fr');
+        // Corps sans les lignes d'entête
+        expect(forwarded.body).toContain('Merci de votre retour');
+        expect(forwarded.body).not.toContain('Organisation');
+        expect(forwarded.body).not.toContain('Pour :');
+
+        const school = emails[1];
+        expect(school.fromName).toBe('école élémentaire du Village Saint-Clair de la Tour');
+        expect(school.date).toBe('2026-01-28');
+
+        const nested = emails[2];
+        expect(nested.fromName).toBe('Léo');
+        expect(nested.date).toBe('2026-01-27');
+    });
 });
 
 describe('parseEmailDate - date numérique FR', () => {
@@ -189,6 +241,11 @@ describe('parseEmailDate - date numérique FR', () => {
 
     test("PLANTE : '5/1/2026' -> 2026-01-05 (chiffres non paddés)", () => {
         expect(parseEmailDate('5/1/2026')).toBe('2026-01-05');
+    });
+
+    test("PLANTE : RFC 2822 'Mon, 2 Feb 2026 11:04:29 +0100' -> 2026-02-02", () => {
+        expect(parseEmailDate('Mon, 2 Feb 2026 11:04:29 +0100')).toBe('2026-02-02');
+        expect(parseEmailDate('Thu, 5 Nov 2026 09:33:20 +0100')).toBe('2026-11-05');
     });
 });
 
