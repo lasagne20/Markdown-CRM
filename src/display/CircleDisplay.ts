@@ -23,7 +23,7 @@ export interface CircleDisplayOptions {
     /** Total affiché au centre - défaut : somme des segments */
     centerValue?: number | string;
     segments: CircleSegment[];
-    /** Diamètre du donut en px (défaut : 120) */
+        /** Diamètre du donut en px (défaut : 160) */
     size?: number;
     /** Légende sous le donut (défaut : true) */
     legend?: boolean;
@@ -68,7 +68,7 @@ export class CircleDisplay {
     }
 
     getDisplay(): HTMLElement {
-        const { segments, size = 120, legend = true } = this.options;
+        const { segments, size = 160, legend = true } = this.options;
         this.container.innerHTML = '';
 
         if (this.options.title) {
@@ -129,22 +129,39 @@ export class CircleDisplay {
 
         wrapper.appendChild(svg);
 
-        // Total au centre
+        // Total au centre ; au survol d'un segment, le centre montre la
+        // valeur et le libellé du segment, puis revient au total
         const center = document.createElement('div');
         center.className = 'crm-circle-center';
         const centerValue = document.createElement('div');
         centerValue.className = 'crm-circle-center-value';
-        centerValue.textContent = typeof this.options.centerValue === 'string'
-            ? this.options.centerValue
-            : this.formatSegmentValue(total);
+        const centerTotalText = typeof this.options.centerValue === 'number'
+            ? this.formatSegmentValue(this.options.centerValue)
+            : (typeof this.options.centerValue === 'string' ? this.options.centerValue : this.formatSegmentValue(total));
+        const centerLabelText = this.options.centerLabel ?? '';
+        centerValue.textContent = centerTotalText;
         center.appendChild(centerValue);
-        if (this.options.centerLabel) {
-            const centerLabel = document.createElement('div');
-            centerLabel.className = 'crm-circle-center-label';
-            centerLabel.textContent = this.options.centerLabel;
-            center.appendChild(centerLabel);
-        }
+        const centerLabel = document.createElement('div');
+        centerLabel.className = 'crm-circle-center-label';
+        centerLabel.textContent = centerLabelText;
+        center.appendChild(centerLabel);
         wrapper.appendChild(center);
+
+        const arcs = svg.querySelectorAll('circle.crm-circle-segment');
+        visibleSegments.forEach((segment, index) => {
+            const arc = arcs[index] as unknown as HTMLElement;
+            arc.addEventListener('mouseenter', () => {
+                centerValue.textContent = this.formatSegmentValue(segment.value);
+                centerLabel.textContent = segment.label;
+            });
+            arc.addEventListener('mouseleave', () => {
+                centerValue.textContent = centerTotalText;
+                centerLabel.textContent = centerLabelText;
+            });
+            // Accessibilité clavier : le focus montre aussi le segment
+            arc.addEventListener('focus', () => arc.dispatchEvent(new MouseEvent('mouseenter')));
+            arc.setAttribute('tabindex', '0');
+        });
 
         this.container.appendChild(wrapper);
 

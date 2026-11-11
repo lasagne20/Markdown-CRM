@@ -100,6 +100,53 @@ describe('CircleDisplay - donut SVG', () => {
         const title = display.container.querySelector('.crm-circle-title');
         expect(title?.textContent).toBe('Actions par état');
     });
+
+    test('PLANTE : cercle plus grand par défaut (160px)', () => {
+        const display = new CircleDisplay({
+            segments: [{ label: 'A', value: 50 }, { label: 'B', value: 50 }]
+        });
+        const svg = display.container.querySelector('svg.crm-circle-svg') as unknown as SVGSVGElement;
+        expect(svg.getAttribute('width')).toBe('160');
+        expect(svg.getAttribute('height')).toBe('160');
+    });
+
+    test('PLANTE : au survol d’un segment le centre montre sa valeur, retour au total en quittant', () => {
+        const display = new CircleDisplay({
+            centerLabel: 'animations',
+            segments: [
+                { label: 'Réalisé', value: 30, color: 'green' },
+                { label: 'Facturé', value: 70, color: 'blue' }
+            ]
+        });
+
+        const centerValue = display.container.querySelector('.crm-circle-center-value')!;
+        const centerLabel = display.container.querySelector('.crm-circle-center-label')!;
+        // Total par défaut
+        expect(centerValue.textContent).toBe('100');
+        expect(centerLabel.textContent).toBe('animations');
+
+        const arc = display.container.querySelector('svg circle.crm-circle-segment') as unknown as SVGCircleElement;
+        arc.dispatchEvent(new MouseEvent('mouseenter'));
+        // Le centre montre le segment survolé : valeur + libellé
+        expect(centerValue.textContent).toBe('30');
+        expect(centerLabel.textContent).toBe('Réalisé');
+
+        arc.dispatchEvent(new MouseEvent('mouseleave'));
+        expect(centerValue.textContent).toBe('100');
+        expect(centerLabel.textContent).toBe('animations');
+    });
+
+    test('PLANTE : centre sans survol configurable (centerValue explicite), légende en ligne wrap', () => {
+        const display = new CircleDisplay({
+            centerValue: 42,
+            segments: [{ label: 'A', value: 60 }, { label: 'B', value: 40 }]
+        });
+        const centerValue = display.container.querySelector('.crm-circle-center-value')!;
+        expect(centerValue.textContent).toBe('42');
+        // La légende est un conteneur prêt au wrap multi-colonnes
+        const legend = display.container.querySelector('.crm-circle-legend') as HTMLElement;
+        expect(legend).not.toBeNull();
+    });
 });
 
 describe('DisplayRenderer - item circle (groupement + calcul)', () => {

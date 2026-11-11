@@ -2575,15 +2575,21 @@ span.flatpickr-weekday {
 }
 .crm-circle-legend {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 10px;
   font-size: 12px;
+  max-width: 260px;
 }
 .crm-circle-legend-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
 }
 .crm-circle-legend-dot {
   width: 8px;
