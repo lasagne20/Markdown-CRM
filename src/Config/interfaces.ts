@@ -64,7 +64,7 @@ export interface TableTotalConfig {
 
 // Base interface for all display items
 interface BaseDisplayItem {
-    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table' | 'number' | 'map' | 'timeline';
+    type: 'property' | 'button' | 'line' | 'column' | 'tabs' | 'fold' | 'table' | 'number' | 'map' | 'timeline' | 'circle';
     conditions?: Condition[]; // Conditions that must all be true for this item to be displayed
 }
 
@@ -226,6 +226,35 @@ export interface TimelineDisplayItem extends BaseDisplayItem {
     };
 }
 
+// Circle display item : graphique circulaire (donut) des chiffres clés,
+// segments groupés par la valeur d'une propriété (ex: etat)
+export interface CircleDisplayItem extends BaseDisplayItem {
+    type: 'circle';
+    title?: string;
+    className?: string;
+    source: TableSourceConfig;
+    // Propriété groupante : une part par valeur (les fichiers sans valeur
+    // partagent un segment isolé "—")
+    groupBy: string;
+    // Calcul par segment - même mécanique que les number items
+    value?: {
+        formula: 'sum' | 'average' | 'avg' | 'count' | 'countDistinct' | 'min' | 'max';
+        propertyName?: string;
+        unit?: string;
+    };
+    // Libellé sous le total au centre
+    centerLabel?: string;
+    // Diamètre du donut en px (défaut : 120)
+    size?: number;
+    // Légende sous le donut (défaut : true)
+    legend?: boolean;
+    // Couleurs explicites par valeur du groupBy (repli : options du
+    // SelectProperty groupé, sinon palette)
+    colors?: { [value: string]: string };
+    // Séparateur de milliers (ex: " ")
+    thousandsSeparator?: string;
+}
+
 // Union type for all display items
 export type DisplayItem = 
     | PropertyDisplayItem 
@@ -236,7 +265,8 @@ export type DisplayItem =
     | TableDisplayItem
     | NumberDisplayItem
     | MapDisplayItem
-    | TimelineDisplayItem;
+    | TimelineDisplayItem
+    | CircleDisplayItem;
 
 export interface DisplayConfig {
     items?: DisplayItem[]; // Legacy format

@@ -7,6 +7,7 @@ import { DynamicTable } from './DynamicTable';
 import { NumberDisplay } from './NumberDisplay';
 import { DynamicMap } from './DynamicMap';
 import { TimelineDisplay, TimelineItem } from './TimelineDisplay';
+import { CircleDisplay, CircleSegment } from './CircleDisplay';
 import { PropertyNavigator } from '../utils/PropertyNavigator';
 import { ConditionManager } from '../Config/ConditionManager';
 import { FormulaProperty } from '../properties/FormulaProperty';
@@ -119,6 +120,9 @@ export class DisplayRenderer {
 
             case 'timeline':
                 return await this.renderTimeline(item as unknown as TimelineItem);
+
+            case 'circle':
+                return await this.renderCircle(item as any);
 
             default:
                 console.warn(`Unknown display item type: ${(item as any).type}`);
@@ -606,6 +610,82 @@ export class DisplayRenderer {
             (source: any, currentInstance?: Classe) => this.getFilesForTable(source, currentInstance)
         );
         container.appendChild(await timeline.render(item, values, update));
+        return container;
+    }
+
+    /**
+     * Circle : graphique circulaire (donut) des chiffres clés, segments
+     * groupés par la valeur d'une propriété (ex: etat), total au centre.
+     * Même résolution de source et même calcul que les number items.
+     */
+    private async renderCircle(item: any): Promise<HTMLElement | null> {
+        const container = document.createElement('div');
+        container.classList.add('metadata-table-container');
+        if (item.className) {
+            container.classList.add(item.className);
+        }
+
+        const files = await this.getFilesForTable(item.source, this.context);
+        const formula = item.value?.formula ?? 'count';
+        const propertyName = item.value?.propertyName;
+
+        // Regroupement des fichiers par valeur de la propriété groupBy.
+        // Les fichiers sans valeur partagent un segment isolé (pas fusionnés).
+        const groups = new Map<string, any[]>();
+        const groupOrders: string[] = [];
+        for (const file of files) {
+            let key: any;
+            try {
+                key = await file.getPropertyValue?.(item.groupBy);
+            } catch {
+                key = undefined;
+            }
+            const label = (key === null || key === undefined || key === '') ? '—' : String(key);
+            if (!groups.has(label)) {
+                groups.set(label, []);
+                groupOrders.push(label);
+            }
+            groups.get(label)!.push(file);
+        }
+
+        // Valeur par groupe via la mécanique des number items
+        const segments: CircleSegment[] = [];
+        for (const label of groupOrders) {
+            const groupFiles = groups.get(label)!;
+            let value = 0;
+            try {
+                value = await NumberDisplay.calculateValue(
+                    groupFiles, formula, propertyName, undefined, this.context, this.vault
+                );
+            } catch {
+                value = 0;
+            }
+            if (value <= 0) { continue; }
+
+            // Couleur : explicite depuis la config, sinon les options du
+            // SelectProperty groupé, sinon la palette par défaut
+            let color: string | undefined = item.colors?.[label];
+            if (!color) {
+                try {
+                    const property = groupFiles[0]?.getProperty?.(item.groupBy);
+                    color = property?.options?.find?.((option: any) => option.name === label)?.color;
+                } catch {
+                    color = undefined;
+                }
+            }
+            segments.push({ label, value, color: color || undefined });
+        }
+
+        const circle = new CircleDisplay({
+            title: item.title,
+            centerLabel: item.centerLabel,
+            segments,
+            size: item.size,
+            legend: item.legend,
+            unit: item.value?.unit,
+            thousandsSeparator: item.thousandsSeparator
+        });
+        container.appendChild(circle.container);
         return container;
     }
 

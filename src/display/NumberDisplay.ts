@@ -92,7 +92,9 @@ export class NumberDisplay {
     /**
      * Calculate number value from files using formula
      */
-    private static async calculateValue(
+    // Public : partagé avec les autres displays dérivés (CircleDisplay calcule
+    // ses segments avec la même mécanique que les number items)
+    static async calculateValue(
         files: Classe[],
         formula: string,
         propertyName?: string,
