@@ -833,16 +833,7 @@ export class ConditionManager {
                     const nestedValues: any[] = [];
                     for (const item of baseValue) {
                         if (item && typeof item === 'object') {
-                            // Navigate through the nested path
-                            let value = item;
-                            for (const part of parts.slice(1)) {
-                                if (value && typeof value === 'object' && part in value) {
-                                    value = value[part];
-                                } else {
-                                    value = null;
-                                    break;
-                                }
-                            }
+                            const value = await this.navigateNestedPath(item, parts.slice(1));
                             if (value !== null && value !== undefined) {
                                 nestedValues.push(value);
                             }
@@ -854,15 +845,7 @@ export class ConditionManager {
 
                 // If base value is a single object, navigate to nested property
                 if (typeof baseValue === 'object') {
-                    let value = baseValue;
-                    for (const part of parts.slice(1)) {
-                        if (value && typeof value === 'object' && part in value) {
-                            value = value[part];
-                        } else {
-                            return null;
-                        }
-                    }
-                    return value;
+                    return await this.navigateNestedPath(baseValue, parts.slice(1));
                 }
 
                 return null;
@@ -880,6 +863,47 @@ export class ConditionManager {
             console.error(`Error reading property ${propertyName}:`, error);
             return null;
         }
+    }
+
+    /**
+     * Walk a nested path inside an object (ObjectProperty entry or plain object).
+     * Navigation is done by raw dict keys. When the path tries to read a
+     * property of a mid-path STRING, the string is treated as a file link
+     * ("[[Name]]" or plain file name): it is resolved to its Classe and the
+     * remaining path is evaluated on that file. This is what makes conditions
+     * like "postes.institution.type" work — reading the type of the
+     * institution a Personne's poste links to.
+     * Returns null when navigation fails (broken link, unknown key, no vault).
+     */
+    private async navigateNestedPath(value: any, parts: string[]): Promise<any> {
+        for (let i = 0; i < parts.length; i++) {
+            if (value && typeof value === 'object' && parts[i] in value) {
+                value = value[parts[i]];
+                continue;
+            }
+
+            // Mid-path string: a file link to resolve, then delegate the
+            // remaining parts to the linked Classe
+            if (typeof value === 'string') {
+                const getFromLink = (this.vault as any)?.getFromLink;
+                if (typeof getFromLink !== 'function') {
+                    return null;
+                }
+                const linked = await getFromLink.call(this.vault, value, false);
+                if (!linked || typeof linked.getPropertyValue !== 'function') {
+                    return null;
+                }
+                try {
+                    return await linked.getPropertyValue(parts.slice(i).join('.'));
+                } catch (error) {
+                    console.warn(`Error reading "${parts.slice(i).join('.')}" from linked file "${value}":`, error);
+                    return null;
+                }
+            }
+
+            return null;
+        }
+        return value;
     }
 
     /**
