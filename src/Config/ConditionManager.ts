@@ -359,6 +359,20 @@ export class ConditionManager {
     /**
      * Handle contains/notContains logic with proper current value support
      */
+    /**
+     * Normalisation pour le "contains" : minuscules + suppression des
+     * diacritiques (accents). "Collège".normalizeForContains() === "college",
+     * ce qui rend la recherche insensible à la casse et aux accents des deux
+     * côtés. Les liaisons "current" (liens vers le fichier courant) ne sont
+     * PAS normalisées : elles matchent un fichier précis, pas un mot-clé.
+     */
+    private normalizeForContains(value: string): string {
+        return value
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+    }
+
     private handleContainsLogic(propertyValue: any, conditionValue: any, currentDocument?: Classe, negate: boolean = false): boolean {
         const resolveValue = this.createResolveFunction(currentDocument);
         const resolvedValue = resolveValue(conditionValue);
@@ -368,7 +382,7 @@ export class ConditionManager {
                 const result = this.handleCurrentComparison(propertyValue, currentDocument);
                 return negate ? !result : result;
             }
-            const result = propertyValue.includes(resolvedValue);
+            const result = this.normalizeForContains(propertyValue).includes(this.normalizeForContains(String(resolvedValue)));
             return negate ? !result : result;
         }
 
@@ -385,8 +399,8 @@ export class ConditionManager {
                     return negate ? !result : result;
                 }
             }
-            const jsonStr = JSON.stringify(propertyValue);
-            const result = jsonStr.includes(resolvedValue);
+            const jsonStr = this.normalizeForContains(JSON.stringify(propertyValue));
+            const result = jsonStr.includes(this.normalizeForContains(String(resolvedValue)));
             return negate ? !result : result;
         }
 
@@ -397,8 +411,8 @@ export class ConditionManager {
                 const result = this.handleCurrentComparison(jsonStr, currentDocument);
                 return negate ? !result : result;
             }
-            const jsonStr = JSON.stringify(propertyValue);
-            const result = jsonStr.includes(resolvedValue);
+            const jsonStr = this.normalizeForContains(JSON.stringify(propertyValue));
+            const result = jsonStr.includes(this.normalizeForContains(String(resolvedValue)));
             return negate ? !result : result;
         }
 
