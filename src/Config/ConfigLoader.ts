@@ -225,6 +225,15 @@ export class ConfigLoader {
             options.derivedFrom = (config as any).derivedFrom;
         }
 
+        // Add defaultValue from config.defaultValue. Without this, the
+        // Property instances never carry their default: PopulateManager
+        // resolves defaults from the raw YAML config at file creation, but
+        // ObjectProperty.addProperty (the + button of a list like "suivie")
+        // goes through Property.getDefaultValue() and silently got ''.
+        if (config.defaultValue !== undefined) {
+            options.defaultValue = config.defaultValue;
+        }
+
         // Use propertyKey as the name (metadata key)
         const propertyName = (config as any).propertyKey;
         
