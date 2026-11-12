@@ -27,6 +27,16 @@ export interface UpdateClassAction extends BaseAction {
 }
 
 /**
+ * Update property action - sets the value of a property on the instance.
+ * Example: pre-fill an Institution's "type" from keywords in its file name.
+ */
+export interface UpdatePropertyAction extends BaseAction {
+    type: 'UpdatePropertyAction';
+    property: string;
+    value: any;
+}
+
+/**
  * Create file action - creates a new file
  */
 export interface CreateFileAction extends BaseAction {
@@ -47,7 +57,7 @@ export interface RenameFileAction extends BaseAction {
 /**
  * Union type for all actions
  */
-export type ProcessAction = UpdateClassAction | CreateFileAction | RenameFileAction;
+export type ProcessAction = UpdateClassAction | UpdatePropertyAction | CreateFileAction | RenameFileAction;
 
 /**
  * Process configuration
@@ -211,6 +221,10 @@ export class ProcessManager {
                 await this.executeUpdateClassAction(action, instance);
                 break;
 
+            case 'UpdatePropertyAction':
+                await this.executeUpdatePropertyAction(action, instance);
+                break;
+
             case 'CreateFileAction':
                 await this.executeCreateFileAction(action, instance);
                 break;
@@ -222,6 +236,16 @@ export class ProcessManager {
             default:
                 console.warn(`⚠️  Unknown action type: ${(action as any).type}`);
         }
+    }
+
+    /**
+     * Execute UpdatePropertyAction - sets the value of a property
+     */
+    private async executeUpdatePropertyAction(
+        action: UpdatePropertyAction,
+        instance: Classe
+    ): Promise<void> {
+        await instance.updatePropertyValue(action.property, action.value);
     }
 
     /**
