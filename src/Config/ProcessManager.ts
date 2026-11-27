@@ -47,11 +47,24 @@ export interface CreateFileAction extends BaseAction {
 }
 
 /**
+ * Name normalization options for RenameFileAction
+ * separators: characters replaced by a single space (default: [".", "_", "-"])
+ * capitalizeEach: capitalize each part ("jean" -> "Jean"), accents handled (default: true)
+ */
+export interface NormalizeNameOptions {
+    separators?: string[];
+    capitalizeEach?: boolean;
+}
+
+/**
  * Rename file action - renames the file based on a template
+ * normalize: transforms the generated name into "Prénom Nom" form
+ * ("jean-pierre_dupont" -> "Jean Pierre Dupont")
  */
 export interface RenameFileAction extends BaseAction {
     type: 'RenameFileAction';
     template: string; // Template like "{current} - {property}"
+    normalize?: boolean | NormalizeNameOptions;
 }
 
 /**
@@ -406,17 +419,25 @@ export class ProcessManager {
                 return;
             }
 
+            // Apply name normalization if configured ("jean.dupont" -> "Jean Dupont")
+            const finalFileName = action.normalize
+                ? this.normalizeFileName(newFileName, action.normalize === true ? {} : action.normalize)
+                : newFileName;
+            if (!finalFileName) {
+                return;
+            }
+
             const currentPath = file.getPath();
             const currentFileName = file.basename;
 
             // Don't rename if the name is already correct
-            if (currentFileName === newFileName) {
+            if (currentFileName === finalFileName) {
                 return;
             }
 
             // Build new path
             const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
-            const newPath = `${parentPath}/${newFileName}.md`;
+            const newPath = `${parentPath}/${finalFileName}.md`;
 
             // Check if target file already exists (and it's not the same file)
             const targetExists = await this.vault.app.getFile(newPath);
@@ -448,6 +469,14 @@ export class ProcessManager {
         const file = instance.getFile();
         if (!file) return null;
 
+        // Template "{current}" alone means "the current filename": return the
+        // basename directly. TemplateEngine would resolve it as a wiki link
+        // ("[[path|name]]"), which is meant for FileProperty assignments,
+        // not for filenames.
+        if (template.trim() === '{current}' || template.trim() === 'current') {
+            return this.sanitizeFileName(file.basename);
+        }
+
         // Process template using TemplateEngine
         const fileName = await TemplateEngine.processTemplateFromInstance(
             template,
@@ -462,6 +491,46 @@ export class ProcessManager {
         // Sanitize the final filename
         const sanitized = this.sanitizeFileName(fileName);
         return sanitized;
+    }
+
+    /**
+     * Normalize a filename into "Prénom Nom" form:
+     * - replaces each separator and any whitespace run by a single space
+     * - trims, and optionally capitalizes each part ("jean" -> "Jean")
+     * - lowercases the rest of each part ("JEAN" -> "Jean")
+     * @param name Filename to normalize (without extension)
+     * @param options separators (default [".", "_", "-"]) and capitalizeEach (default true)
+     */
+    private normalizeFileName(name: string, options: NormalizeNameOptions): string {
+        const separators = options.separators ?? ['.', '_', '-'];
+
+        // Escape separators for use inside a regex character class
+        const escaped = separators
+            .map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('');
+        const pattern = escaped
+            ? new RegExp(`[${escaped}\\s]+`, 'g')
+            : /\s+/g;
+
+        const spaced = name.replace(pattern, ' ').trim();
+        if (options.capitalizeEach === false) {
+            return spaced;
+        }
+
+        return spaced
+            .split(' ')
+            .map(part => {
+                if (!part) return part;
+                // Lowercase first, then capitalize the first letter of each
+                // segment ("jean-pierre" -> "Jean-Pierre", "d'artagnan" -> "D'Artagnan")
+                const lower = part.toLocaleLowerCase('fr-FR');
+                return lower.replace(
+                    /(^|[^\p{L}\p{N}])(\p{L})/gu,
+                    (_m, boundary: string, letter: string) =>
+                        boundary + letter.toLocaleUpperCase('fr-FR')
+                );
+            })
+            .join(' ');
     }
 
     /**
