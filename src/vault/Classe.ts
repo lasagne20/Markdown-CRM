@@ -107,7 +107,9 @@ export class Classe {
         }
         const newPath = this.file.getPath();
         if (oldPath && newPath && oldPath !== newPath) {
-            this.vault.moveCachedClasse(oldPath, newPath);
+            // ?. : tolère les mocks de vault partiels (tests) ; le Vault réel
+            // a toujours la méthode
+            this.vault.moveCachedClasse?.(oldPath, newPath);
         }
     }
     
@@ -538,6 +540,9 @@ export class Classe {
             
             // Only move if not already in correct folder
             if (currentChildFolder !== childTargetFolder) {
+                // Capture du chemin d'avant déplacement : File.move mute la
+                // référence, setFile seul ne re-clerait pas l'entrée du cache
+                const childPreMovePath = childFile.getPath();
                 await childFile.move(childTargetFolder, childFile.getName());
                 
                 // Reload the child's file object
@@ -546,6 +551,7 @@ export class Classe {
                 if (reloadedFile && 'extension' in reloadedFile) {
                     child.setFile(new File(this.vault, reloadedFile as IFile));
                 }
+                this.vault.moveCachedClasse?.(childPreMovePath, child.getFile()?.getPath() ?? childPreMovePath);
 
                 // Recursively move this child's children to its folder
                 await child.moveChildrenToFolder(childTargetFolder);
@@ -729,22 +735,39 @@ export class Classe {
                     
                     
                     // Update this.file reference to point to new location
+                    // Capture the pre-move path BEFORE the move: the folder
+                    // rename changes this file's real location without
+                    // mutating this.file
+                    const preMovePath = this.file.getPath();
                     const newFilePath = `${newFolderPath}/${this.file.getName()}`;
                     const reloadedFile = await this.vault.app.getFile(newFilePath);
                     if (reloadedFile && 'extension' in reloadedFile) {
-                        this.file = new File(this.vault, reloadedFile as IFile);
+                        // setFile (et non une assignation directe) : c'est le point
+                        // unique qui appelle vault.moveCachedClasse pour faire suivre
+                        // l'entrée du cache vault.files. Une assignation directe
+                        // laisse le cache indexé sur l'ancien chemin (split-brain :
+                        // deux instances pour un même fichier).
+                        this.setFile(new File(this.vault, reloadedFile as IFile));
                     }
+                    this.vault.moveCachedClasse?.(preMovePath, this.file.getPath());
                 }
             } else {
                 // Move just this file (no children or no dedicated folder)
+                // Capture the pre-move path BEFORE File.move: it mutates the
+                // internal reference, so setFile alone would see
+                // oldPath === newPath and never re-key the cache entry
+                const preMovePath = this.file.getPath();
                 await this.file.move(targetFolderPath, this.file.getName());
                 
                 // Reload the file object from the new path to ensure all references are updated
                 const newFilePath = `${targetFolderPath}/${this.file.getName()}`;
                 const reloadedFile = await this.vault.app.getFile(newFilePath);
                 if (reloadedFile && 'extension' in reloadedFile) {
-                    this.file = new File(this.vault, reloadedFile as IFile);
+                    // setFile (et non une assignation directe) : cf. commentaire
+                    // de la branche dossier ci-dessus (cache split-brain)
+                    this.setFile(new File(this.vault, reloadedFile as IFile));
                 }
+                this.vault.moveCachedClasse?.(preMovePath, this.file.getPath());
                 
                 // Move all children recursively to their proper folders
                 // This handles creating dedicated folders for children with grandchildren

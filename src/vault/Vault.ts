@@ -48,6 +48,63 @@ export class Vault {
     }
 
     /**
+     * Report a file move that happened OUTSIDE the library (drag-drop in the
+     * Obsidian file explorer, FileFolderManager renaming a folder-note's
+     * folder, sync plugins...). The host must call this on its rename event:
+     * without it, the cached classe instance keeps referencing the old path
+     * and every subsequent property update writes to a ghost (the host's
+     * updateMetadata throws "File not found") - the display then appears
+     * frozen until the app is restarted.
+     *
+     * @param oldPath - Path of the file before the external move
+     * @param newFile - The file object at its new location (IFile or File)
+     */
+    handleExternalRename(oldPath: string, newFile: IFile | File): void {
+        const targets: Classe[] = [];
+
+        // Instance cached under the old path (normal case)
+        const direct = this.files[oldPath];
+        if (direct) {
+            targets.push(direct);
+        }
+
+        // Belt and braces: any cached instance still pointing at the old path
+        // under a stale key (desync from an older bug)
+        for (const inst of Object.values(this.files)) {
+            if (!inst || inst === direct) continue;
+            try {
+                if (inst.getFile()?.getPath() === oldPath) {
+                    targets.push(inst);
+                }
+            } catch {
+                // instance without a valid file reference: nothing to update
+            }
+        }
+
+        for (const inst of targets) {
+            // setFile wraps a plain IFile and calls moveCachedClasse so the
+            // cache entry follows the instance
+            inst.setFile(newFile as File);
+        }
+
+        // Drop a stale key if no instance claimed it
+        const leftover = this.files[oldPath];
+        if (leftover) {
+            try {
+                if (leftover.getFile()?.getPath() === oldPath) {
+                    delete this.files[oldPath];
+                }
+            } catch {
+                delete this.files[oldPath];
+            }
+        }
+
+        // The move invalidates any read-scope snapshot
+        this.listFilesSnapshot = null;
+        this.linkResolutionSnapshot.clear();
+    }
+
+    /**
      * Read scope : cache borné au rendu d'une page. Tant qu'au moins un
      * scope est ouvert, listFiles() sert un snapshot partagé (une seule
      * lecture de la propriété classe par fichier et par rendu) et
