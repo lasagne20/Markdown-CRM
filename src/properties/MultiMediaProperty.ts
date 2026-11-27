@@ -76,10 +76,16 @@ export class MultiMediaProperty extends MultiFileProperty {
     override async addProperty(values: any, update: (value: any) => Promise<void>, container: HTMLDivElement) {
         let newFile = await globalThis.selectMedia(this.vault, "Choisissez un media ");
         if (newFile) {
-            if (!values){values = []}
-            values.push(`[[${newFile.path}|${newFile.name}]]`);
-            await update(values);
-            await this.reloadObjects(values, update, container)
+            // Work on a deep copy: `values` can be the LIVE metadata cache
+            // object. Pushing into it in place poisons the cache and makes
+            // the update look like a no-op for change detection (même
+            // protection que ObjectProperty / MultiFileProperty).
+            const workingValues: any[] = Array.isArray(values)
+                ? JSON.parse(JSON.stringify(values))
+                : [];
+            workingValues.push(`[[${newFile.path}|${newFile.name}]]`);
+            await update(workingValues);
+            await this.reloadObjects(workingValues, update, container)
         }
     }
 

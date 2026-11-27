@@ -862,11 +862,16 @@ export class ObjectProperty extends Property{
                 } else {
                     prop.vault = this.vault; // Assurez-vous que vault est défini pour le premier FileProperty
                     const fileProp = prop as any; // Cast pour accéder à handleIconClick
-                    defaultValue = await new Promise(async (resolve) => {
-                        await fileProp.handleIconClick(async (value: any) => {
-                            resolve(value);
-                        }, new MouseEvent("click"));
-                    });
+                    // handleIconClick RETOURNE la sélection (ou null en cas
+                    // d'annulation). L'ancienne enveloppe par promesse ne se
+                    // résolvait qu'en cas de sélection : une annulation laissait
+                    // addProperty pendu à vie (bouton "+" bloqué).
+                    const selected = await fileProp.handleIconClick(async () => {}, new MouseEvent("click"));
+                    if (!selected) {
+                        // Annulation : ne pas ajouter de ligne, terminer proprement
+                        return;
+                    }
+                    defaultValue = selected.getLink();
                 }
             }
 

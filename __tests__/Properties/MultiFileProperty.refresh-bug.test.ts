@@ -215,23 +215,22 @@ describe('MultiFileProperty - Display Refresh Bug', () => {
         (selectMultipleFile as jest.Mock).mockResolvedValue([newFile]);
         
         // Appeler addProperty qui devrait:
-        // 1. Ajouter le fichier au tableau values
-        // 2. Appeler update(values) et attendre qu'il se termine
+        // 1. Ajouter le fichier à une COPIE profonde de values
+        // 2. Appeler update(copie) et attendre qu'il se termine
         // 3. Appeler reloadObjects avec le container spécifique (pas querySelector)
         await multiFileProperty.addProperty(values, mockUpdate, container);
         
-        // Vérifier que le tableau a bien été modifié
-        expect(values.length).toBe(4);
-        expect(values[3]).toBe('[[File4.pdf]]');
-        console.log('✅ Values array updated to 4 files');
+        // Vérifier que update a reçu les 4 fichiers (copie augmentée)
+        // — le tableau vivant `values` n'est volontairement PAS muté
+        expect(mockUpdate).toHaveBeenCalledWith([
+            '[[File1.pdf]]', '[[File2.pdf]]', '[[File3.pdf]]', '[[File4.pdf]]'
+        ]);
+        console.log('✅ update called with the 4 files (deep copy, live array untouched)');
         
         // VÉRIFICATION PRINCIPALE : L'affichage doit montrer les 4 fichiers
         rows = container.querySelectorAll('.metadata-multiFiles-row-inline');
         expect(rows.length).toBe(4);
         console.log('✅ Display correctly shows 4 files after add');
-        
-        // Vérifier que update a été appelé avec les bonnes valeurs
-        expect(mockUpdate).toHaveBeenCalledWith(values);
         
         console.log('');
         console.log('✅ REGRESSION TEST PASSED - BUG FIXED');

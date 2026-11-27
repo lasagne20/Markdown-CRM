@@ -121,6 +121,11 @@ export class DynamicClassFactory {
         const ClassConstructor = await this.getClass(className);
         const config = await this.configManager.getClassConfig(className);
         const instances: Classe[] = [];
+        // Paires {item, instance} : `instances` n'est PAS parallèle à `data`
+        // (un item sans nom, ou en erreur, ne produit PAS d'instance et
+        // décale tout le tableau — l'ancien `instances[i]` écrivait alors le
+        // lien parent sur le MAUVAIS fichier)
+        const created: Array<{ item: any; instance: Classe }> = [];
         
         // Create a map of parent instances by name for relationship resolution
         const instancesByName = new Map<string, Classe>();
@@ -139,6 +144,7 @@ export class DynamicClassFactory {
                 
                 if (instance) {
                     instances.push(instance);
+                    created.push({ item, instance });
                     instancesByName.set(item.nom || item.name, instance);
                 }
             } catch (error) {
@@ -147,10 +153,10 @@ export class DynamicClassFactory {
         }
         
         // Second pass: Establish parent relationships by updating metadata
-        for (let i = 0; i < data.length; i++) {
-            const item = data[i];
+        for (const createdEntry of created) {
+            const item = createdEntry.item;
             if (item.parent && config.parent?.property) {
-                const instance = instances[i];
+                const instance = createdEntry.instance;
                 
                 // Look for parent instance in created instances first
                 let parentInstance: Classe | null | undefined = instancesByName.get(item.parent);

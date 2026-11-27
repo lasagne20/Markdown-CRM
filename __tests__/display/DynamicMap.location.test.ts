@@ -80,15 +80,17 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
             app: {
                 getFile: async (path: string) =>
                     path.endsWith('geo.json') ? { path, extension: 'json' } : null,
-                readFile: async () => JSON.stringify(geoEntries)
+                readFile: async () => JSON.stringify(geoEntries),
+                // L'ouverture passe par l'adaptateur (vault.app.open) —
+                // l'ancien vault.open n'existe pas en production
+                open: jest.fn()
             },
             settings: { configPath: 'config' },
             getDynamicClassFactory: () => ({
                 getClassConfig: async (name: string) =>
                     name === 'Lieu' ? { data: [{ file: 'data/geo.json' }] } : null
             }),
-            getFromLink: async (link: string) => fakesByName[link.replace(/\[\[|\]\]/g, '')],
-            open: jest.fn()
+            getFromLink: async (link: string) => fakesByName[link.replace(/\[\[|\]\]/g, '')]
         };
 
         L = {
@@ -363,13 +365,13 @@ describe('DynamicMap - locationProperty (coords depuis geo.json)', () => {
         const titleLink = content.querySelector('.map-marker-link') as HTMLElement;
         expect(titleLink).toBeTruthy();
         titleLink.click();
-        expect(mockVault.open).toHaveBeenCalled();
+        expect(mockVault.app.open).toHaveBeenCalled();
 
         // Clic sur le lien de la commune liée -> ouverture du fichier lié
         const propertyLink = content.querySelector('.map-property-link') as HTMLElement;
         expect(propertyLink).toBeTruthy();
         propertyLink.click();
-        expect(mockVault.open).toHaveBeenCalledWith('26700 - Pierrelatte.md');
+        expect(mockVault.app.open).toHaveBeenCalledWith('26700 - Pierrelatte.md');
     });
 
     test("PLANTE : invalidateSize appelé quand le conteneur prend une taille réelle (onglet affiché)", async () => {

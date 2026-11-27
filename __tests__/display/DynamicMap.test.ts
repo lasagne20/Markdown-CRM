@@ -10,9 +10,11 @@ describe('DynamicMap', () => {
         mockVault = {
             app: {
                 workspace: {},
-                vault: {}
+                vault: {},
+                // L'ouverture passe par l'adaptateur (vault.app.open) —
+                // l'ancien vault.open n'existe pas en production
+                open: jest.fn()
             },
-            open: jest.fn()
         };
 
         // Mock container
@@ -272,7 +274,7 @@ describe('DynamicMap', () => {
             expect(link).toBeTruthy();
             expect(link.getAttribute('data-file')).toBe('test.md');
             link.click();
-            expect(mockVault.open).toHaveBeenCalledWith('test.md');
+            expect(mockVault.app.open).toHaveBeenCalledWith('test.md');
         });
     });
 });

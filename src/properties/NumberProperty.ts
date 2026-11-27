@@ -147,15 +147,29 @@ export class NumberProperty extends Property {
     }
 
     override async updateField(update: (value: string) => Promise<void>, input: HTMLInputElement, link: HTMLElement) {
-        let value = input.value;
-        if (value) {
-            await update(value);
-            input.style.display = "none";
-            link.textContent = value ? `${value} ${this.unit}` : "";
-            link.style.display = "block";
-        } else {
-            await update(input.value);
+        const raw = input.value;
+        const validated = this.validate(raw);
+        // Cf. Property.updateField : une saisie non vide invalide ("abc")
+        // est rejetée, pas persistée telle quelle ; vider le champ reste
+        // légitime. Une saisie acceptée par l'utilisateur mais rejetée par
+        // le validateur strict (ex: "12,5" en format FR) reste conservée
+        // telle quelle pour ne pas bloquer la saisie.
+        if (raw !== '' && !validated) {
+            const parses = !isNaN(parseFloat(raw));
+            if (!parses) {
+                try {
+                    this.vault.app.sendNotice?.(`Valeur invalide pour "${this.name}" : modification refusée`);
+                } catch { /* notice indisponible (tests) : ignorer */ }
+                input.style.display = "none";
+                link.style.display = "block";
+                return;
+            }
         }
+        const value = raw === '' ? '' : (this.validate(raw) || raw);
+        await update(value);
+        input.style.display = "none";
+        link.textContent = value ? `${value} ${this.unit}` : "";
+        link.style.display = "block";
     }
 
     override createFieldInput(value: string) {

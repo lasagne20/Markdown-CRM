@@ -202,25 +202,28 @@ export class MultiFileProperty extends ObjectProperty {
         }
 
         {
-            // S'assurer que values est un tableau
-            if (!Array.isArray(values)) {
-                values = [];
-            }
-            
+            // Work on a deep copy: `values` can be the LIVE metadata cache
+            // object (or a live sub-array of it). Pushing into it in place
+            // poisons the cache and makes the update look like a no-op for
+            // change detection (même protection que ObjectProperty).
+            const workingValues: any[] = Array.isArray(values)
+                ? JSON.parse(JSON.stringify(values))
+                : [];
+
             newFiles.forEach((fileObj: any) => {
                 const link = fileObj.getLink();
-                values.push(link);
+                workingValues.push(link);
             });
-            
-            
+
+
             // FIX: Appeler update ET attendre qu'il se termine avant de reloadObjects
             // Cela garantit que les valeurs sont persistées avant le refresh
-            await update(values);
-            
+            await update(workingValues);
+
             // FIX: S'assurer que le container passé est bien celui que nous voulons rafraîchir
             // En passant explicitement le container, on évite le problème de querySelector
             // qui pourrait trouver le mauvais container s'il y en a plusieurs avec la même classe
-            await this.reloadObjects(values, update, container);
+            await this.reloadObjects(workingValues, update, container);
         }
     }
 

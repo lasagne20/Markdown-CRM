@@ -199,20 +199,22 @@ describe('MultiMediaProperty', () => {
     });
 
     describe('addProperty', () => {
-        it('should add media when selectMedia returns file', async () => {
+        it('should add media to a COPY of values (the live array is not mutated)', async () => {
             const mockUpdate = jest.fn();
             const container = document.createElement('div');
             const mockFile = { path: 'path/to/image.jpg', name: 'image.jpg' };
             const values: any[] = [];
             multiMediaProperty.vault = mockVault;
-            
+
             (selectMedia as jest.Mock).mockResolvedValue(mockFile);
             jest.spyOn(multiMediaProperty, 'reloadObjects').mockResolvedValue(undefined);
-            
+
             await multiMediaProperty.addProperty(values, mockUpdate, container);
-            
-            expect(values).toContain('[[path/to/image.jpg|image.jpg]]');
-            expect(mockUpdate).toHaveBeenCalledWith(values);
+
+            // update reçoit la copie augmentée ; le tableau vivant n'est
+            // volontairement PAS muté (protection du cache de métadonnées)
+            expect(mockUpdate).toHaveBeenCalledWith(['[[path/to/image.jpg|image.jpg]]']);
+            expect(values).toEqual([]);
         });
 
         it('should initialize values array if null', async () => {

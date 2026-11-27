@@ -326,18 +326,23 @@ describe('Property', () => {
             expect(link.style.display).toBe('block');
         });
 
-        it('should update field with invalid value', async () => {
+        it('should REJECT an invalid value instead of saving the raw input', async () => {
             const updateFn = jest.fn();
             const input = document.createElement('input') as HTMLInputElement;
             const link = document.createElement('div');
-            
+
             input.value = 'invalid value';
             property.validate = jest.fn(() => '');
-            
+
             await property.updateField(updateFn, input, link);
-            
+
             expect(property.validate).toHaveBeenCalledWith('invalid value');
-            expect(updateFn).toHaveBeenCalledWith('invalid value');
+            // Une saisie non vide dont la validation échoue n'est pas
+            // persistée (l'ancien comportement sauvegardait la valeur brute)
+            expect(updateFn).not.toHaveBeenCalled();
+            // Le champ ne reste pas bloqué en mode édition
+            expect(input.style.display).toBe('none');
+            expect(link.style.display).toBe('block');
         });
 
         it('should update href for anchor elements', async () => {

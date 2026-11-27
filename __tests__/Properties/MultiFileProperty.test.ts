@@ -315,19 +315,20 @@ describe('MultiFileProperty', () => {
             );
         });
 
-        test('should add files to values when files are selected', async () => {
+        test('should add files to a COPY of values (the live array is not mutated)', async () => {
             const container = document.createElement('div');
             const values: any[] = [];
             const mockFiles = [
                 { getLink: () => '[[File1]]' },
                 { getLink: () => '[[File2]]' }
             ];
-            
+
             (selectMultipleFile as jest.Mock).mockResolvedValue(mockFiles);
-            
+
             await multiFileProperty.addProperty(values, mockUpdate, container);
 
-            expect(values).toEqual(['[[File1]]', '[[File2]]']);
+            // update reçoit les nouveaux liens, mais le tableau vivant
+            // (potentiellement le cache de métadonnées) n'est pas muté
             expect(mockUpdate).toHaveBeenCalledWith(['[[File1]]', '[[File2]]']);
         });
         
@@ -365,7 +366,7 @@ describe('MultiFileProperty', () => {
             expect(mockUpdate).not.toHaveBeenCalled();
         });
 
-        test('should call reloadObjects when files are added', async () => {
+        test('should call reloadObjects with the new values when files are added', async () => {
             const container = document.createElement('div');
             const values: any[] = [];
             const mockFiles = [{ getLink: () => '[[File1]]' }];
@@ -374,7 +375,8 @@ describe('MultiFileProperty', () => {
 
             await multiFileProperty.addProperty(values, mockUpdate, container);
 
-            expect(multiFileProperty.reloadObjects).toHaveBeenCalledWith(values, mockUpdate, container);
+            // reloadObjects reçoit la copie augmentée, pas le tableau vivant
+            expect(multiFileProperty.reloadObjects).toHaveBeenCalledWith(['[[File1]]'], mockUpdate, container);
         });
     });
 

@@ -528,8 +528,11 @@ export class DynamicMap {
                 if (!anchor) { return; }
                 e.preventDefault();
                 const filePath = anchor.getAttribute('data-file');
-                if (filePath && this.vault.open) {
-                    this.vault.open(filePath);
+                // vault.open n'existe pas : l'ouverture passe par l'adaptateur
+                // (vault.app.open), comme dans DynamicTable et TimelineDisplay.
+                // L'ancien `this.vault.open` rendait le clic silencieusement inopérant.
+                if (filePath && this.vault.app && typeof this.vault.app.open === 'function') {
+                    this.vault.app.open(filePath);
                 }
             });
             marker.bindPopup(content);

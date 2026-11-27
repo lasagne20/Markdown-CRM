@@ -206,6 +206,11 @@ export class FileProperty extends LinkProperty{
               }
           }
           }
+        // Retourne la sélection (ou null en cas d'annulation) : permet aux
+        // appelants (ex: ObjectProperty.addProperty) de distinguer une
+        // annulation d'une sélection au lieu d'attendre un callback qui ne
+        // viendra jamais
+        return selectedFileObj ?? null;
     }
 
     // Fonction pour gérer le clic sur l'icône

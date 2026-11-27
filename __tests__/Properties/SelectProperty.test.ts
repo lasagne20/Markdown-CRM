@@ -169,20 +169,23 @@ describe('SelectProperty', () => {
             expect(selectElement.style.backgroundColor).toBeTruthy();
         });
 
-        it('should handle no initial value by selecting first option', async () => {
+        it('should handle no initial value by displaying first option WITHOUT persisting it', async () => {
             const updateFn = jest.fn();
             const selectElement = selectProperty.createSelectWidget('', updateFn);
             
             expect(selectElement.style.backgroundColor).toBeTruthy(); // First option color set
-            expect(updateFn).toHaveBeenCalledWith('todo'); // First option name
+            // Le rendu ne doit PAS écrire dans les métadonnées (bug du
+            // frontmatter pollué à chaque ouverture d'un fichier vide) :
+            // la valeur n'est persistée qu'au choix explicite (onchange)
+            expect(updateFn).not.toHaveBeenCalled();
         });
 
-        it('should handle empty value by selecting first option', async () => {
+        it('should handle empty value by displaying first option WITHOUT persisting it', async () => {
             const updateFn = jest.fn();
             const selectElement = selectProperty.createSelectWidget(null as any, updateFn);
             
             expect(selectElement.style.backgroundColor).toBeTruthy(); // First option color set
-            expect(updateFn).toHaveBeenCalledWith('todo'); // First option name
+            expect(updateFn).not.toHaveBeenCalled();
         });
 
         it('should handle empty options array gracefully', () => {

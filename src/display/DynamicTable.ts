@@ -1415,8 +1415,20 @@ export class DynamicTable {
                 }
             }
 
-            // Default: alphabetical comparison
-            const comparison = a.value.localeCompare(b.value);
+            // Default: smart comparison. Numeric values (amounts, counters)
+            // compare numerically — a plain localeCompare would sort "10"
+            // between "1" and "2". Text falls back to a natural collation
+            // (numeric: true keeps "file-2" < "file-10" for names too).
+            const aNum = this.parseNumericValue(a.value);
+            const bNum = this.parseNumericValue(b.value);
+            let comparison: number;
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                comparison = aNum === bNum
+                    ? a.value.localeCompare(b.value)
+                    : aNum - bNum;
+            } else {
+                comparison = a.value.localeCompare(b.value, undefined, { numeric: true });
+            }
             return this.tableData.currentSort.ascending ? comparison : -comparison;
         });
         

@@ -480,7 +480,9 @@ describe('LinkProperty', () => {
             // Must always exit edit mode regardless of validation result
             expect(input.style.display).toBe('none');
             expect(link.style.display).toBe('block');
-            expect(mockUpdate).toHaveBeenCalledWith('not-a-valid-url');
+            // Une URL invalide n'est PLUS persistée : la saisie brute
+            // n'est plus sauvegardée quand la validation échoue
+            expect(mockUpdate).not.toHaveBeenCalled();
         });
 
         it('should use validated value when URL is valid', async () => {

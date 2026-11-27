@@ -118,8 +118,10 @@ export class SelectProperty extends Property {
             if (this.options.length > 0) {
                 selectElement.style.backgroundColor = this.options[0].color;
                 selectElement.style.color = this.isLightColor(this.options[0].color) ? '#000000' : '#ffffff';
-                // Met à jour avec la première valeur de la liste
-                update(this.options[0].name);
+                // Affichage seulement : la valeur n'est PERSISTÉE que si
+                // l'utilisateur choisit réellement une option (onchange).
+                // Écrire options[0] pendant le rendu polluait silencieusement
+                // le frontmatter à chaque ouverture d'un fichier vide.
             }
         }
 

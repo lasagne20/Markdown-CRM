@@ -411,10 +411,22 @@ export class Property {
      * @param link - Link element to update and show
      */
     async updateField(update: (value: string) => Promise<void>, input: HTMLInputElement | HTMLTextAreaElement, link: HTMLElement) {
-        const validated = this.validate(input.value);
-        // Use the validated value when available, otherwise keep the raw input
-        // (avoids trapping the user in edit mode when validation returns '')
-        const toSave = validated !== '' ? validated : input.value;
+        const raw = input.value;
+        const validated = this.validate(raw);
+        // validate() renvoie '' dans deux cas : champ vidé (légitime) ou
+        // valeur INVALIDE. On distingue sur la valeur brute : une saisie
+        // non vide dont la validation échoue est REJETÉE — on ne persiste
+        // pas la valeur brute non validée, le champ revient à l'affichage
+        // précédent.
+        if (raw !== '' && (validated === '' || validated === null || validated === undefined)) {
+            try {
+                this.vault.app.sendNotice?.(`Valeur invalide pour "${this.name}" : modification refusée`);
+            } catch { /* notice indisponible (tests) : ignorer */ }
+            input.style.display = "none";
+            link.style.display = "block";
+            return;
+        }
+        const toSave = raw === '' ? '' : validated;
         await update(toSave);
         // Always exit edit mode — never leave the input stuck open
         input.style.display = "none";
