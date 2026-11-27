@@ -435,9 +435,14 @@ export class ProcessManager {
                 return;
             }
 
-            // Build new path
-            const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
-            const newPath = `${parentPath}/${finalFileName}.md`;
+            // Build new path (a file at vault root has no parent folder:
+            // no leading '/' which Obsidian's APIs don't resolve)
+            const parentPath = currentPath.includes('/')
+                ? currentPath.substring(0, currentPath.lastIndexOf('/'))
+                : '';
+            const newPath = parentPath
+                ? `${parentPath}/${finalFileName}.md`
+                : `${finalFileName}.md`;
 
             // Check if target file already exists (and it's not the same file)
             const targetExists = await this.vault.app.getFile(newPath);

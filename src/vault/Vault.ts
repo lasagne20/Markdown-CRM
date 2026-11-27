@@ -611,6 +611,17 @@ export class Vault {
             // before file creation, so we don't need to update them here
             
             await classe.onCreate();
+
+            // onCreate processes (RenameFileAction with normalize, updateParentFolder)
+            // may have renamed/moved the file. The classe holds the up-to-date
+            // reference (the rename action reloads and setFile()s the new file);
+            // the local `file` still points at the pre-creation path. Returning
+            // the stale reference makes callers (file suggester, open after
+            // create) target a path that no longer exists.
+            const refreshedFile = classe.getFile();
+            if (refreshedFile) {
+                file = refreshedFile;
+            }
         });
         return file;
     }
